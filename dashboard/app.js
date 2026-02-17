@@ -52,6 +52,12 @@ function createApp() {
       return;
     }
 
+    if (pathname === '/api/tags' && req.method === 'GET') {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(store.allTags()));
+      return;
+    }
+
     const rateMatch = pathname.match(/^\/api\/games\/([^/]+)\/rate$/);
     if (rateMatch && req.method === 'POST') {
       try {

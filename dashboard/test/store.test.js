@@ -53,6 +53,22 @@ describe('GameStore', () => {
     expect(() => store.rateGame('g1', 6)).toThrow(/between 1 and 5/i);
   });
 
+  it('stores tags, howToPlay, and whyFun', () => {
+    const store = loadStore();
+    store.addGame({ id: 'g1', name: 'G1', description: 'Test', date: '2026-02-18', tags: ['action', 'fun'], howToPlay: 'Click things', whyFun: 'Because explosions' });
+    const game = store.listGames()[0];
+    expect(game.tags).toEqual(['action', 'fun']);
+    expect(game.howToPlay).toBe('Click things');
+    expect(game.whyFun).toBe('Because explosions');
+  });
+
+  it('returns all unique tags', () => {
+    const store = loadStore();
+    store.addGame({ id: 'g1', name: 'G1', description: 'T', date: '2026-02-18', tags: ['action', 'logic'] });
+    store.addGame({ id: 'g2', name: 'G2', description: 'T', date: '2026-02-18', tags: ['action', 'multiplayer'] });
+    expect(store.allTags()).toEqual(['action', 'logic', 'multiplayer']);
+  });
+
   it('persists data to disk', () => {
     const store = loadStore();
     store.addGame({ id: 'g1', name: 'G1', description: 'Test', date: '2026-02-18' });

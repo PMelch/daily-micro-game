@@ -23,10 +23,17 @@ function createStore(overridePath) {
     }));
   }
 
-  function addGame({ id, name, description, date }) {
+  function addGame({ id, name, description, date, tags, howToPlay, whyFun }) {
     const data = load();
-    data.games.push({ id, name, description, date, ratings: [] });
+    data.games.push({ id, name, description, date, tags: tags || [], howToPlay: howToPlay || '', whyFun: whyFun || '', ratings: [] });
     save(data);
+  }
+
+  function allTags() {
+    const { games } = load();
+    const set = new Set();
+    games.forEach(g => (g.tags || []).forEach(t => set.add(t)));
+    return [...set].sort();
   }
 
   function rateGame(id, rating) {
@@ -38,7 +45,7 @@ function createStore(overridePath) {
     save(data);
   }
 
-  return { listGames, addGame, rateGame };
+  return { listGames, addGame, rateGame, allTags };
 }
 
 // Default singleton for server use
