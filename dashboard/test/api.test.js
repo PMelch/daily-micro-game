@@ -1,61 +1,47 @@
-const { describe, it, before, after, beforeEach } = require('node:test');
-const assert = require('node:assert/strict');
-const http = require('node:http');
-const path = require('node:path');
-const fs = require('node:fs');
+import { describe, it, beforeAll, afterAll, expect } from 'bun:test';
+import fs from 'node:fs';
+import path from 'node:path';
 
-const STORE_PATH = path.join(__dirname, '..', 'test-api-data.json');
-
-function request(server, method, urlPath, body) {
-  return new Promise((resolve, reject) => {
-    const addr = server.address();
-    const opts = { hostname: '127.0.0.1', port: addr.port, path: urlPath, method };
-    if (body) opts.headers = { 'Content-Type': 'application/json' };
-    const req = http.request(opts, (res) => {
-      let data = '';
-      res.on('data', c => data += c);
-      res.on('end', () => resolve({ status: res.statusCode, body: data, json: () => JSON.parse(data) }));
-    });
-    req.on('error', reject);
-    if (body) req.write(JSON.stringify(body));
-    req.end();
-  });
-}
+const STORE_PATH = path.join(import.meta.dir, '..', 'test-api-data.json');
 
 describe('API', () => {
   let server;
+  let baseUrl;
 
-  before(async () => {
+  beforeAll(async () => {
     if (fs.existsSync(STORE_PATH)) fs.unlinkSync(STORE_PATH);
     process.env.GAMES_DATA_PATH = STORE_PATH;
-    // Clear cache
-    for (const key of Object.keys(require.cache)) {
-      if (key.includes('daily-games/dashboard')) delete require.cache[key];
-    }
     const createApp = require('../app');
     server = createApp();
     await new Promise(r => server.listen(0, '127.0.0.1', r));
+    const addr = server.address();
+    baseUrl = `http://127.0.0.1:${addr.port}`;
   });
 
-  after(async () => {
+  afterAll(async () => {
     await new Promise(r => server.close(r));
     if (fs.existsSync(STORE_PATH)) fs.unlinkSync(STORE_PATH);
   });
 
   it('GET /api/games returns empty list', async () => {
-    const res = await request(server, 'GET', '/api/games');
-    assert.equal(res.status, 200);
-    assert.deepStrictEqual(res.json(), []);
+    const res = await fetch(`${baseUrl}/api/games`);
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual([]);
   });
 
   it('POST /api/games/:id/rate returns 404 for unknown game', async () => {
-    const res = await request(server, 'POST', '/api/games/nope/rate', { rating: 3 });
-    assert.equal(res.status, 404);
+    const res = await fetch(`${baseUrl}/api/games/nope/rate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ rating: 3 })
+    });
+    expect(res.status).toBe(404);
   });
 
   it('GET / returns HTML', async () => {
-    const res = await request(server, 'GET', '/');
-    assert.equal(res.status, 200);
-    assert.ok(res.body.includes('<!DOCTYPE html>') || res.body.includes('<html'));
+    const res = await fetch(`${baseUrl}/`);
+    expect(res.status).toBe(200);
+    const text = await res.text();
+    expect(text).toContain('<html');
   });
 });

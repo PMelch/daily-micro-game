@@ -1,8 +1,8 @@
 const fs = require('node:fs');
 const path = require('node:path');
 
-function createStore() {
-  const dataPath = process.env.GAMES_DATA_PATH || path.join(__dirname, 'data.json');
+function createStore(overridePath) {
+  const dataPath = overridePath || process.env.GAMES_DATA_PATH || path.join(__dirname, 'data.json');
 
   function load() {
     if (!fs.existsSync(dataPath)) return { games: [] };
@@ -41,4 +41,8 @@ function createStore() {
   return { listGames, addGame, rateGame };
 }
 
-module.exports = createStore();
+// Default singleton for server use
+const defaultStore = createStore();
+
+module.exports = defaultStore;
+module.exports.createStore = createStore;
