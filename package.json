@@ -1,0 +1,11 @@
+{
+  "name": "daily-games",
+  "version": "1.0.0",
+  "description": "A new micro game every day — dashboard + game collection",
+  "private": true,
+  "scripts": {
+    "test": "node --test --test-reporter spec",
+    "test:dashboard": "node --test --test-reporter spec dashboard/test/",
+    "start": "node dashboard/server.js"
+  }
+}
