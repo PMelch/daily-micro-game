@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Number Hunt</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0a0a1a; color: #eee; font-family: system-ui, sans-serif; min-height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+  .back-bar { width: 100%; background: #0a0a1a; padding: 0.5rem 1rem; border-bottom: 1px solid #333; }
+  .back-bar a { color: #ffcc00; text-decoration: none; font-size: 0.9rem; font-family: system-ui, sans-serif; }
+  .back-bar a:hover { text-decoration: underline; }
+
+  .header { text-align: center; padding: 0.8rem 0 0.4rem; }
+  .header h1 { font-size: 1.5rem; color: #ffcc00; margin-bottom: 0.2rem; }
+  .stats { display: flex; justify-content: center; gap: 1.5rem; font-size: 1rem; color: #aaa; }
+  .stats span { font-variant-numeric: tabular-nums; }
+  .stats .val { color: #fff; font-weight: bold; }
+
+  .grid-wrap { flex: 1; display: flex; align-items: center; justify-content: center; padding: 0.5rem; }
+  .grid {
+    display: grid;
+    gap: 4px;
+    max-width: 95vw;
+    max-height: 70vh;
+    aspect-ratio: 1;
+    width: min(95vw, 70vh);
+  }
+  .cell {
+    background: #1a1a2e;
+    border: 2px solid #333;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: clamp(1rem, 4vw, 2rem);
+    font-weight: bold;
+    color: #ccc;
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
+    transition: all 0.15s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .cell:active { transform: scale(0.92); }
+  .cell.found {
+    background: #0d3320;
+    border-color: #2ecc71;
+    color: #2ecc71;
+    cursor: default;
+    opacity: 0.5;
+  }
+  .cell.wrong {
+    animation: shake 0.3s;
+    border-color: #e74c3c;
+    color: #e74c3c;
+  }
+  .cell.next-hint {
+    border-color: #ffcc00;
+    color: #ffcc00;
+  }
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-4px); }
+    75% { transform: translateX(4px); }
+  }
+
+  .overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.85);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 10;
+  }
+  .overlay.hidden { display: none; }
+  .modal {
+    background: #1a1a2e;
+    border: 2px solid #ffcc00;
+    border-radius: 16px;
+    padding: 2rem;
+    text-align: center;
+    max-width: 90vw;
+  }
+  .modal h2 { color: #ffcc00; font-size: 1.8rem; margin-bottom: 0.5rem; }
+  .modal p { color: #ccc; margin: 0.4rem 0; font-size: 1.1rem; }
+  .modal .time-big { font-size: 2.5rem; color: #2ecc71; font-weight: bold; margin: 0.5rem 0; }
+  .modal .best { color: #ffcc00; }
+  .btn {
+    display: inline-block;
+    margin-top: 1rem;
+    padding: 0.8rem 2rem;
+    background: #ffcc00;
+    color: #0a0a1a;
+    border: none;
+    border-radius: 8px;
+    font-size: 1.1rem;
+    font-weight: bold;
+    cursor: pointer;
+  }
+  .btn:hover { background: #ffd633; }
+
+  .size-picker { display: flex; gap: 0.5rem; justify-content: center; margin-top: 0.8rem; }
+  .size-btn {
+    padding: 0.4rem 0.8rem;
+    background: #1a1a2e;
+    color: #aaa;
+    border: 1px solid #444;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9rem;
+  }
+  .size-btn.active { border-color: #ffcc00; color: #ffcc00; }
+</style>
+</head>
+<body>
+<div class="back-bar"><a href="/">← Back to Games</a></div>
+
+<div class="header">
+  <h1>🔢 Number Hunt</h1>
+  <div class="stats">
+    <span>Next: <span class="val" id="next-num">1</span></span>
+    <span>Time: <span class="val" id="timer">0.00s</span></span>
+    <span>Errors: <span class="val" id="errors">0</span></span>
+  </div>
+  <div class="size-picker">
+    <button class="size-btn" data-size="3">3×3</button>
+    <button class="size-btn" data-size="4">4×4</button>
+    <button class="size-btn active" data-size="5">5×5</button>
+    <button class="size-btn" data-size="6">6×6</button>
+  </div>
+</div>
+
+<div class="grid-wrap">
+  <div class="grid" id="grid"></div>
+</div>
+
+<!-- Start overlay -->
+<div class="overlay" id="start-overlay">
+  <div class="modal">
+    <h2>🔢 Number Hunt</h2>
+    <p>Tap numbers in order: 1, 2, 3...</p>
+    <p>As fast as you can!</p>
+    <button class="btn" id="start-btn">Start!</button>
+  </div>
+</div>
+
+<!-- Finish overlay -->
+<div class="overlay hidden" id="finish-overlay">
+  <div class="modal">
+    <h2>🏆 Complete!</h2>
+    <div class="time-big" id="final-time">0.00s</div>
+    <p>Mistakes: <span id="final-errors">0</span></p>
+    <p class="best" id="best-msg"></p>
+    <button class="btn" id="again-btn">Play Again</button>
+  </div>
+</div>
+
+<script>
+(function() {
+  let gridSize = 5;
+  let game = null;
+  let timerInterval = null;
+
+  const gridEl = document.getElementById('grid');
+  const nextEl = document.getElementById('next-num');
+  const timerEl = document.getElementById('timer');
+  const errorsEl = document.getElementById('errors');
+  const startOverlay = document.getElementById('start-overlay');
+  const finishOverlay = document.getElementById('finish-overlay');
+  const finalTimeEl = document.getElementById('final-time');
+  const finalErrorsEl = document.getElementById('final-errors');
+  const bestMsgEl = document.getElementById('best-msg');
+
+  function bestKey() { return `number-hunt-best-${gridSize}`; }
+
+  function getBest() {
+    const v = localStorage.getItem(bestKey());
+    return v ? parseFloat(v) : null;
+  }
+  function setBest(t) { localStorage.setItem(bestKey(), t); }
+
+  function createGame() {
+    const total = gridSize * gridSize;
+    const positions = [];
+    for (let i = 0; i < total; i++) positions.push(i);
+    for (let i = positions.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [positions[i], positions[j]] = [positions[j], positions[i]];
+    }
+    const numbers = [];
+    for (let i = 0; i < total; i++) {
+      numbers.push({ value: i + 1, pos: positions[i], found: false });
+    }
+    return { gridSize, total, numbers, nextTarget: 1, startTime: null, endTime: null, mistakes: 0, finished: false };
+  }
+
+  function renderGrid() {
+    gridEl.style.gridTemplateColumns = `repeat(${gridSize}, 1fr)`;
+    gridEl.innerHTML = '';
+    const cells = new Array(game.total);
+    for (const n of game.numbers) {
+      cells[n.pos] = n;
+    }
+    for (let i = 0; i < game.total; i++) {
+      const n = cells[i];
+      const div = document.createElement('div');
+      div.className = 'cell';
+      div.textContent = n.value;
+      div.dataset.value = n.value;
+      div.addEventListener('click', () => handleTap(n.value, div));
+      gridEl.appendChild(div);
+    }
+  }
+
+  function handleTap(value, el) {
+    if (game.finished) return;
+    if (game.numbers.find(n => n.value === value).found) return;
+
+    if (!game.startTime) {
+      game.startTime = Date.now();
+      startTimer();
+    }
+
+    if (value === game.nextTarget) {
+      game.numbers.find(n => n.value === value).found = true;
+      el.classList.add('found');
+      game.nextTarget++;
+      nextEl.textContent = game.nextTarget <= game.total ? game.nextTarget : '✓';
+
+      if (game.nextTarget > game.total) {
+        game.finished = true;
+        game.endTime = Date.now();
+        clearInterval(timerInterval);
+        showFinish();
+      }
+    } else {
+      game.mistakes++;
+      errorsEl.textContent = game.mistakes;
+      el.classList.add('wrong');
+      setTimeout(() => el.classList.remove('wrong'), 300);
+    }
+  }
+
+  function startTimer() {
+    timerInterval = setInterval(() => {
+      if (game.startTime && !game.finished) {
+        const s = (Date.now() - game.startTime) / 1000;
+        timerEl.textContent = s.toFixed(2) + 's';
+      }
+    }, 50);
+  }
+
+  function showFinish() {
+    const t = ((game.endTime - game.startTime) / 1000);
+    finalTimeEl.textContent = t.toFixed(2) + 's';
+    finalErrorsEl.textContent = game.mistakes;
+    const best = getBest();
+    if (!best || t < best) {
+      setBest(t.toFixed(2));
+      bestMsgEl.textContent = best ? `🎉 New record! (was ${best.toFixed(2)}s)` : '🎉 First record set!';
+    } else {
+      bestMsgEl.textContent = `Best: ${best.toFixed(2)}s`;
+    }
+    finishOverlay.classList.remove('hidden');
+  }
+
+  function init() {
+    game = createGame();
+    nextEl.textContent = '1';
+    timerEl.textContent = '0.00s';
+    errorsEl.textContent = '0';
+    clearInterval(timerInterval);
+    finishOverlay.classList.add('hidden');
+    renderGrid();
+  }
+
+  document.getElementById('start-btn').addEventListener('click', () => {
+    startOverlay.classList.add('hidden');
+    init();
+  });
+  document.getElementById('again-btn').addEventListener('click', () => {
+    init();
+  });
+
+  document.querySelectorAll('.size-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      gridSize = parseInt(btn.dataset.size);
+      init();
+    });
+  });
+
+  // Pre-render behind start overlay
+  init();
+})();
+</script>
+</body>
+</html>
