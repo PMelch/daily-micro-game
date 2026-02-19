@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Turf War – Daily Game 007</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:#0a0a1a;color:#eee;font-family:system-ui,sans-serif;min-height:100vh;display:flex;flex-direction:column;}
+.back-bar{width:100%;background:#0a0a1a;padding:0.5rem 1rem;border-bottom:1px solid #333;}
+.back-bar a{color:#ffcc00;text-decoration:none;font-size:0.9rem;font-family:system-ui,sans-serif;}
+.back-bar a:hover{text-decoration:underline;}
+
+.screen{display:none;flex:1;flex-direction:column;align-items:center;justify-content:center;padding:1rem;text-align:center;}
+.screen.active{display:flex;}
+
+/* Setup Screen */
+#setup h1{font-size:2rem;margin-bottom:0.5rem;background:linear-gradient(135deg,#ff4466,#4488ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+#setup .subtitle{color:#888;margin-bottom:1.5rem;font-size:0.95rem;}
+.player-count{display:flex;gap:0.5rem;margin-bottom:1.5rem;}
+.player-count button{padding:0.5rem 1.2rem;border:2px solid #333;background:#151530;color:#eee;border-radius:8px;cursor:pointer;font-size:1rem;transition:all .2s;}
+.player-count button.active{border-color:#ffcc00;color:#ffcc00;background:#1a1a3a;}
+.player-count button:hover{border-color:#ffcc00;}
+.name-inputs{display:flex;flex-direction:column;gap:0.75rem;margin-bottom:1.5rem;width:100%;max-width:320px;}
+.name-input-row{display:flex;align-items:center;gap:0.5rem;}
+.name-input-row .dot{width:14px;height:14px;border-radius:50%;flex-shrink:0;}
+.name-input-row input{flex:1;padding:0.5rem 0.75rem;background:#151530;border:1px solid #333;color:#eee;border-radius:8px;font-size:1rem;outline:none;}
+.name-input-row input:focus{border-color:#ffcc00;}
+#startBtn{padding:0.75rem 2.5rem;background:linear-gradient(135deg,#ff4466,#ffaa22);border:none;color:#fff;font-size:1.2rem;font-weight:700;border-radius:12px;cursor:pointer;transition:transform .15s;}
+#startBtn:hover{transform:scale(1.05);}
+
+/* Game Screen */
+#game-screen{padding:0.5rem;}
+.turn-bar{width:100%;max-width:500px;display:flex;justify-content:space-between;align-items:center;padding:0.5rem;margin-bottom:0.5rem;}
+.turn-indicator{font-size:1.1rem;font-weight:700;display:flex;align-items:center;gap:0.4rem;}
+.turn-dot{width:12px;height:12px;border-radius:50%;display:inline-block;}
+.scoreboard{display:flex;gap:0.75rem;flex-wrap:wrap;justify-content:center;margin-bottom:0.5rem;}
+.score-chip{padding:0.25rem 0.7rem;border-radius:20px;font-size:0.85rem;font-weight:600;display:flex;align-items:center;gap:0.3rem;border:2px solid transparent;}
+.score-chip.current{border-color:#ffcc00;}
+.score-chip .sdot{width:8px;height:8px;border-radius:50%;display:inline-block;}
+
+#grid-container{display:flex;justify-content:center;margin-bottom:0.5rem;}
+canvas{border-radius:8px;cursor:pointer;max-width:100%;touch-action:none;}
+
+.point-popup{position:fixed;pointer-events:none;font-size:1.4rem;font-weight:800;color:#ffcc00;text-shadow:0 0 8px rgba(255,204,0,0.6);animation:floatUp 1s ease-out forwards;z-index:999;}
+@keyframes floatUp{0%{opacity:1;transform:translateY(0)}100%{opacity:0;transform:translateY(-60px)}}
+
+/* Transition Screen */
+#transition{background:rgba(10,10,26,0.97);}
+#transition h2{font-size:1.8rem;margin-bottom:0.5rem;}
+#transition .pass-msg{font-size:1.2rem;color:#888;margin-bottom:1.5rem;}
+#transition .tap-msg{font-size:0.9rem;color:#555;animation:pulse 1.5s infinite;}
+@keyframes pulse{0%,100%{opacity:0.5}50%{opacity:1}}
+
+/* Game Over */
+#gameover h2{font-size:2rem;margin-bottom:1rem;}
+.final-scores{display:flex;flex-direction:column;gap:0.5rem;margin-bottom:1.5rem;}
+.final-row{display:flex;align-items:center;gap:0.5rem;font-size:1.2rem;}
+.final-row .rank{width:28px;font-weight:800;}
+.final-row .fdot{width:14px;height:14px;border-radius:50%;}
+#playAgainBtn{padding:0.75rem 2rem;background:#ffcc00;border:none;color:#0a0a1a;font-size:1.1rem;font-weight:700;border-radius:12px;cursor:pointer;}
+
+/* Legend */
+.legend{display:flex;gap:1rem;justify-content:center;margin-bottom:0.25rem;font-size:0.75rem;color:#888;}
+.legend span{display:flex;align-items:center;gap:0.3rem;}
+.legend-box{width:14px;height:14px;border-radius:3px;display:inline-block;}
+</style>
+</head>
+<body>
+<div class="back-bar"><a href="/">← Back to Games</a></div>
+
+<!-- Setup Screen -->
+<div id="setup" class="screen active">
+  <h1>⚔️ Turf War</h1>
+  <p class="subtitle">Erobere das Spielfeld – Feld für Feld!</p>
+  <p style="color:#aaa;margin-bottom:0.75rem;font-size:0.9rem;">Anzahl Spieler:</p>
+  <div class="player-count">
+    <button data-count="2" class="active">2</button>
+    <button data-count="3">3</button>
+    <button data-count="4">4</button>
+  </div>
+  <div class="name-inputs" id="nameInputs"></div>
+  <button id="startBtn">Spiel starten!</button>
+</div>
+
+<!-- Game Screen -->
+<div id="game-screen" class="screen">
+  <div class="turn-bar">
+    <div class="turn-indicator" id="turnIndicator"></div>
+    <div style="font-size:0.85rem;color:#888;" id="turnsLeft"></div>
+  </div>
+  <div class="scoreboard" id="scoreboard"></div>
+  <div class="legend" id="legend"></div>
+  <div id="grid-container"><canvas id="canvas"></canvas></div>
+</div>
+
+<!-- Transition Screen -->
+<div id="transition" class="screen">
+  <h2 id="transNextPlayer"></h2>
+  <p class="pass-msg" id="transMsg"></p>
+  <p class="tap-msg">Tippen zum Weiterspielen</p>
+</div>
+
+<!-- Game Over Screen -->
+<div id="gameover" class="screen">
+  <h2 id="winnerText"></h2>
+  <div class="final-scores" id="finalScores"></div>
+  <button id="playAgainBtn">Nochmal spielen!</button>
+</div>
+
+<script type="module">
+import { TurfWarGame } from './game.js';
+
+const COLORS = TurfWarGame.COLORS;
+const $ = id => document.getElementById(id);
+let game, canvas, ctx, cellSize, padding = 4;
+
+// --- Setup ---
+let playerCount = 2;
+const countBtns = document.querySelectorAll('.player-count button');
+countBtns.forEach(btn => {
+  btn.addEventListener('click', () => {
+    countBtns.forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    playerCount = +btn.dataset.count;
+    renderNameInputs();
+  });
+});
+
+function renderNameInputs() {
+  const container = $('nameInputs');
+  container.innerHTML = '';
+  for (let i = 0; i < playerCount; i++) {
+    const row = document.createElement('div');
+    row.className = 'name-input-row';
+    row.innerHTML = `<span class="dot" style="background:${COLORS[i]}"></span>
+      <input type="text" placeholder="Spieler ${i+1}" maxlength="16" data-idx="${i}">`;
+    container.appendChild(row);
+  }
+}
+renderNameInputs();
+
+$('startBtn').addEventListener('click', startGame);
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  $(id).classList.add('active');
+}
+
+function startGame() {
+  const inputs = document.querySelectorAll('#nameInputs input');
+  const names = Array.from(inputs).map((inp, i) => inp.value.trim() || `Spieler ${i+1}`);
+  game = new TurfWarGame(names);
+  initCanvas();
+  updateUI();
+  showScreen('game-screen');
+}
+
+// --- Canvas ---
+function initCanvas() {
+  canvas = $('canvas');
+  ctx = canvas.getContext('2d');
+  const maxW = Math.min(window.innerWidth - 20, 500);
+  cellSize = Math.floor((maxW - padding * 2) / game.gridSize);
+  const size = cellSize * game.gridSize + padding * 2;
+  canvas.width = size;
+  canvas.height = size;
+  canvas.style.width = size + 'px';
+  canvas.style.height = size + 'px';
+  drawGrid();
+
+  canvas.onclick = handleClick;
+  canvas.ontouchstart = e => { e.preventDefault(); handleTouch(e); };
+}
+
+function drawGrid() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = '#151530';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  for (let r = 0; r < game.gridSize; r++) {
+    for (let c = 0; c < game.gridSize; c++) {
+      const x = padding + c * cellSize;
+      const y = padding + r * cellSize;
+      const cell = game.grid[r][c];
+      const gap = 2;
+
+      if (cell.owner !== null) {
+        ctx.fillStyle = COLORS[cell.owner];
+        ctx.globalAlpha = 0.85;
+        roundRect(ctx, x+gap, y+gap, cellSize-gap*2, cellSize-gap*2, 4);
+        ctx.fill();
+        ctx.globalAlpha = 1;
+      } else {
+        // Unclaimed - show bonus
+        const alpha = cell.bonus === 3 ? 0.35 : cell.bonus === 2 ? 0.2 : 0.08;
+        ctx.fillStyle = cell.bonus === 3 ? '#ffcc00' : cell.bonus === 2 ? '#aabbcc' : '#445566';
+        ctx.globalAlpha = alpha;
+        roundRect(ctx, x+gap, y+gap, cellSize-gap*2, cellSize-gap*2, 4);
+        ctx.fill();
+        ctx.globalAlpha = 1;
+
+        // Bonus number
+        if (cell.bonus > 1) {
+          ctx.fillStyle = cell.bonus === 3 ? '#ffcc00' : '#8899aa';
+          ctx.font = `bold ${cellSize * 0.35}px system-ui`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.globalAlpha = 0.7;
+          ctx.fillText(cell.bonus === 3 ? '★' : '×2', x + cellSize/2, y + cellSize/2);
+          ctx.globalAlpha = 1;
+        }
+      }
+    }
+  }
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x+r, y);
+  ctx.lineTo(x+w-r, y);
+  ctx.quadraticCurveTo(x+w, y, x+w, y+r);
+  ctx.lineTo(x+w, y+h-r);
+  ctx.quadraticCurveTo(x+w, y+h, x+w-r, y+h);
+  ctx.lineTo(x+r, y+h);
+  ctx.quadraticCurveTo(x, y+h, x, y+h-r);
+  ctx.lineTo(x, y+r);
+  ctx.quadraticCurveTo(x, y, x+r, y);
+  ctx.closePath();
+}
+
+function getCellFromPos(px, py) {
+  const rect = canvas.getBoundingClientRect();
+  const x = px - rect.left - padding;
+  const y = py - rect.top - padding;
+  const c = Math.floor(x / cellSize);
+  const r = Math.floor(y / cellSize);
+  if (r >= 0 && r < game.gridSize && c >= 0 && c < game.gridSize) return [r, c];
+  return null;
+}
+
+function handleClick(e) { processInput(e.clientX, e.clientY); }
+function handleTouch(e) { const t = e.touches[0]; processInput(t.clientX, t.clientY); }
+
+function processInput(px, py) {
+  if (game.gameOver) return;
+  const cell = getCellFromPos(px, py);
+  if (!cell) return;
+  const [r, c] = cell;
+  const prevPlayer = game.currentPlayerIndex;
+  const result = game.claimCell(r, c);
+  if (!result.success) return;
+
+  // Animate point popup
+  showPointPopup(px, py, result.points, result.player.color);
+  drawGrid();
+
+  if (result.gameOver) {
+    setTimeout(() => showGameOver(), 600);
+  } else {
+    // Show transition screen
+    setTimeout(() => showTransition(), 300);
+  }
+}
+
+function showPointPopup(x, y, pts, color) {
+  const el = document.createElement('div');
+  el.className = 'point-popup';
+  el.textContent = `+${pts}`;
+  el.style.left = x + 'px';
+  el.style.top = (y - 20) + 'px';
+  el.style.color = color;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 1000);
+}
+
+function updateUI() {
+  const p = game.currentPlayer;
+  $('turnIndicator').innerHTML = `<span class="turn-dot" style="background:${p.color}"></span> ${p.name}`;
+  $('turnsLeft').textContent = `${game.turnsLeft} Felder übrig`;
+
+  let sb = '';
+  game.getScores().forEach((s, i) => {
+    const cur = i === game.currentPlayerIndex ? ' current' : '';
+    sb += `<div class="score-chip${cur}" style="background:${s.color}22">
+      <span class="sdot" style="background:${s.color}"></span>${s.name}: ${s.score}
+    </div>`;
+  });
+  $('scoreboard').innerHTML = sb;
+
+  $('legend').innerHTML = `<span><span class="legend-box" style="background:#ffcc0059"></span>★ = 3 Pkt</span>
+    <span><span class="legend-box" style="background:#aabbcc33"></span>×2 = 2 Pkt</span>
+    <span><span class="legend-box" style="background:#44556614"></span>Normal = 1 Pkt</span>
+    <span>+ Nachbarbonus</span>`;
+}
+
+// --- Transition ---
+function showTransition() {
+  const p = game.currentPlayer;
+  $('transNextPlayer').innerHTML = `<span style="color:${p.color}">${p.name}</span> ist dran!`;
+  $('transMsg').textContent = `Gib das Gerät an ${p.name} weiter!`;
+  showScreen('transition');
+  $('transition').onclick = () => {
+    $('transition').onclick = null;
+    showScreen('game-screen');
+    updateUI();
+    drawGrid();
+  };
+}
+
+// --- Game Over ---
+function showGameOver() {
+  const scores = game.getScores().sort((a, b) => b.score - a.score);
+  const winner = game.getWinner();
+  $('winnerText').innerHTML = winner
+    ? `🏆 <span style="color:${winner.color}">${winner.name}</span> gewinnt!`
+    : '🤝 Unentschieden!';
+
+  let html = '';
+  scores.forEach((s, i) => {
+    const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : '';
+    html += `<div class="final-row">
+      <span class="rank">${medal || (i+1)+'.'}</span>
+      <span class="fdot" style="background:${s.color}"></span>
+      <span>${s.name}</span>
+      <span style="margin-left:auto;font-weight:700;color:${s.color}">${s.score} Pkt</span>
+    </div>`;
+  });
+  $('finalScores').innerHTML = html;
+  showScreen('gameover');
+}
+
+$('playAgainBtn').addEventListener('click', () => {
+  showScreen('setup');
+});
+</script>
+</body>
+</html>
