@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Stroop Sprint</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #0f0f23; color: #ccc; font-family: 'Segoe UI', system-ui, sans-serif;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    min-height: 100vh; min-height: 100dvh; touch-action: manipulation;
+    -webkit-user-select: none; user-select: none;
+  }
+  h1 { color: #ffcc00; font-size: 1.4em; margin-bottom: 0.3em; }
+  .hud {
+    display: flex; gap: 1.5em; font-size: 1.1em; margin-bottom: 1em;
+  }
+  .hud span { color: #888; }
+  .hud .val { color: #fff; font-weight: bold; }
+  .lives .val { color: #ff4444; }
+  #word-display {
+    font-size: 3.5em; font-weight: 900; letter-spacing: 0.05em;
+    margin: 0.3em 0 0.5em; min-height: 1.3em; text-align: center;
+    transition: opacity 0.15s;
+  }
+  .timer-bar {
+    width: 80%; max-width: 400px; height: 6px; background: #1a1a3a;
+    border-radius: 3px; overflow: hidden; margin-bottom: 1.2em;
+  }
+  .timer-bar-inner {
+    height: 100%; background: #ffcc00; transition: width linear;
+    border-radius: 3px;
+  }
+  .buttons {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+    width: 90%; max-width: 400px;
+  }
+  .btn {
+    padding: 14px 8px; border: 2px solid #333; border-radius: 10px;
+    background: #1a1a3a; color: #fff; font-size: 1em; font-weight: 700;
+    cursor: pointer; transition: transform 0.1s, border-color 0.15s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .btn:active { transform: scale(0.93); }
+  .btn.correct { border-color: #44dd44; background: #1a3a1a; }
+  .btn.wrong { border-color: #ff4444; background: #3a1a1a; }
+  #overlay {
+    position: fixed; inset: 0; background: rgba(15,15,35,0.92);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    z-index: 10;
+  }
+  #overlay h2 { color: #ffcc00; font-size: 2em; margin-bottom: 0.3em; }
+  #overlay .final-score { font-size: 1.4em; margin-bottom: 0.2em; }
+  #overlay .high-score { color: #888; margin-bottom: 1em; }
+  #overlay .new-best { color: #ffcc00; font-weight: bold; }
+  #start-btn {
+    padding: 14px 40px; background: #ffcc00; color: #0f0f23; border: none;
+    border-radius: 10px; font-size: 1.2em; font-weight: 700; cursor: pointer;
+  }
+  .hidden { display: none !important; }
+  .back-bar{width:100%;background:#0a0a1a;padding:0.5rem 1rem;border-bottom:1px solid #333;}.back-bar a{color:#ffcc00;text-decoration:none;font-size:0.9rem;font-family:system-ui,sans-serif;}.back-bar a:hover{text-decoration:underline;}
+</style>
+</head>
+<body>
+<div class="back-bar"><a href="/">← Back to Games</a></div>
+
+<h1>⚡ Stroop Sprint</h1>
+<div class="hud">
+  <span>Score: <span class="val" id="score">0</span></span>
+  <span class="lives">Lives: <span class="val" id="lives">❤❤❤</span></span>
+</div>
+<div id="word-display">TAP START</div>
+<div class="timer-bar"><div class="timer-bar-inner" id="timer-bar" style="width:100%"></div></div>
+<div class="buttons" id="buttons"></div>
+
+<div id="overlay">
+  <h2 id="overlay-title">Stroop Sprint</h2>
+  <p class="final-score" id="final-score"></p>
+  <p class="high-score" id="high-score"></p>
+  <button id="start-btn">START</button>
+</div>
+
+<script type="module">
+import { COLORS, generateRound, handleAnswer, createGameState, getTimeLimit } from './game.js';
+
+const $ = id => document.getElementById(id);
+const LS_KEY = 'stroop-sprint-highscore';
+
+let state, currentRound, timerInterval, roundStart;
+
+function getHighScore() { return parseInt(localStorage.getItem(LS_KEY) || '0', 10); }
+function setHighScore(s) { localStorage.setItem(LS_KEY, String(s)); }
+
+// Build color buttons
+const btnContainer = $('buttons');
+COLORS.forEach(c => {
+  const b = document.createElement('button');
+  b.className = 'btn';
+  b.textContent = c.name;
+  b.style.color = c.hex;
+  b.dataset.color = c.name;
+  b.addEventListener('click', () => onAnswer(c.name));
+  btnContainer.appendChild(b);
+});
+
+function showOverlay(title, score, isNew) {
+  $('overlay').classList.remove('hidden');
+  $('overlay-title').textContent = title;
+  if (score !== null) {
+    $('final-score').textContent = `Score: ${score}`;
+    $('final-score').classList.remove('hidden');
+  } else {
+    $('final-score').classList.add('hidden');
+  }
+  const hs = getHighScore();
+  $('high-score').textContent = isNew ? `🏆 NEW BEST!` : `Best: ${hs}`;
+  $('high-score').classList.toggle('new-best', isNew);
+  $('start-btn').textContent = score !== null ? 'PLAY AGAIN' : 'START';
+}
+
+function startGame() {
+  $('overlay').classList.add('hidden');
+  state = createGameState();
+  updateHUD();
+  nextRound();
+}
+
+function updateHUD() {
+  $('score').textContent = state.score;
+  $('lives').textContent = '❤'.repeat(state.lives) + '🖤'.repeat(3 - state.lives);
+}
+
+function nextRound() {
+  currentRound = generateRound();
+  const display = $('word-display');
+  display.textContent = currentRound.word;
+  display.style.color = currentRound.inkHex;
+  display.style.opacity = '1';
+  // Clear button feedback
+  btnContainer.querySelectorAll('.btn').forEach(b => {
+    b.classList.remove('correct', 'wrong');
+  });
+  startTimer();
+}
+
+function startTimer() {
+  clearInterval(timerInterval);
+  const limit = getTimeLimit(state.round);
+  roundStart = Date.now();
+  const bar = $('timer-bar');
+  bar.style.transition = 'none';
+  bar.style.width = '100%';
+  // Force reflow then animate
+  bar.offsetWidth;
+  bar.style.transition = `width ${limit}ms linear`;
+  bar.style.width = '0%';
+
+  timerInterval = setTimeout(() => {
+    onAnswer(null); // time ran out
+  }, limit);
+}
+
+function onAnswer(colorName) {
+  clearTimeout(timerInterval);
+  if (!state || state.gameOver) return;
+
+  const correct = colorName === currentRound.inkColor;
+
+  // Flash button feedback
+  btnContainer.querySelectorAll('.btn').forEach(b => {
+    if (b.dataset.color === currentRound.inkColor) b.classList.add('correct');
+    else if (b.dataset.color === colorName && !correct) b.classList.add('wrong');
+  });
+
+  state = handleAnswer(state, currentRound, colorName);
+  updateHUD();
+
+  if (state.gameOver) {
+    const hs = getHighScore();
+    const isNew = state.score > hs;
+    if (isNew) setHighScore(state.score);
+    setTimeout(() => showOverlay('Game Over', state.score, isNew), 600);
+    return;
+  }
+
+  setTimeout(nextRound, 400);
+}
+
+// Init
+$('start-btn').addEventListener('click', startGame);
+showOverlay('Stroop Sprint', null, false);
+</script>
+</body>
+</html>

@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>One-Bit Runner</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: #0f0f23;
+  color: #e0e0e0;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 100vh;
+  overflow: hidden;
+  touch-action: manipulation;
+  user-select: none;
+}
+h1 {
+  font-size: 1.6rem;
+  margin-top: 0.8rem;
+  color: #ffcc00;
+  text-shadow: 0 0 20px rgba(255,204,0,0.3);
+  letter-spacing: 2px;
+}
+#hud {
+  margin: 0.4rem 0;
+  font-size: 0.95rem;
+  color: #aaa;
+  display: flex;
+  gap: 2rem;
+}
+#hud span { color: #ffcc00; font-weight: bold; }
+canvas {
+  border: 1px solid #ffcc0033;
+  border-radius: 4px;
+  margin-top: 0.4rem;
+  max-width: 100vw;
+  cursor: pointer;
+  image-rendering: pixelated;
+}
+#msg {
+  margin-top: 0.6rem;
+  font-size: 1rem;
+  color: #888;
+  height: 1.4rem;
+}
+  .back-bar{width:100%;background:#0a0a1a;padding:0.5rem 1rem;border-bottom:1px solid #333;}.back-bar a{color:#ffcc00;text-decoration:none;font-size:0.9rem;font-family:system-ui,sans-serif;}.back-bar a:hover{text-decoration:underline;}
+</style>
+</head>
+<body>
+<div class="back-bar"><a href="/">← Back to Games</a></div>
+<h1>ONE-BIT RUNNER</h1>
+<div id="hud">
+  Score: <span id="score">0</span>
+  Best: <span id="best">0</span>
+</div>
+<canvas id="c" width="800" height="400"></canvas>
+<div id="msg">Tap or press Space to start</div>
+<script type="module">
+import {
+  createGameState, jump, update, checkCollision, generateObstacle,
+  getSpeed, getScore, GROUND_Y, PLAYER_W, PLAYER_H
+} from './game.js';
+
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+const scoreEl = document.getElementById('score');
+const bestEl = document.getElementById('best');
+const msgEl = document.getElementById('msg');
+
+let state = createGameState();
+let lastTime = 0;
+let started = false;
+let highScore = parseInt(localStorage.getItem('oneBitRunner_hi') || '0');
+bestEl.textContent = highScore;
+
+// Resize canvas to fit screen
+function resize() {
+  const maxW = Math.min(800, window.innerWidth - 16);
+  canvas.style.width = maxW + 'px';
+  canvas.style.height = (maxW * 0.5) + 'px';
+}
+resize();
+window.addEventListener('resize', resize);
+
+function handleInput() {
+  if (!state.alive) {
+    state = createGameState();
+    started = true;
+    msgEl.textContent = '';
+    return;
+  }
+  if (!started) {
+    started = true;
+    msgEl.textContent = '';
+  }
+  jump(state);
+}
+
+document.addEventListener('keydown', e => {
+  if (e.code === 'Space' || e.code === 'ArrowUp') { e.preventDefault(); handleInput(); }
+});
+canvas.addEventListener('pointerdown', e => { e.preventDefault(); handleInput(); });
+
+// Rendering
+const BG = '#0f0f23';
+const ACCENT = '#ffcc00';
+const GROUND_COL = '#1a1a3a';
+const PLAYER_COL = '#ffcc00';
+const OBS_COL = '#ff4466';
+
+function drawPlayer(p) {
+  ctx.fillStyle = PLAYER_COL;
+  ctx.fillRect(p.x, p.y, PLAYER_W, PLAYER_H);
+  // eye
+  ctx.fillStyle = BG;
+  ctx.fillRect(p.x + PLAYER_W - 8, p.y + 6, 4, 4);
+  // legs animation
+  const legOff = started && state.alive && p.grounded ? Math.sin(state.distance * 0.05) * 3 : 0;
+  ctx.fillStyle = PLAYER_COL;
+  ctx.fillRect(p.x + 4, p.y + PLAYER_H, 4, 4 + legOff);
+  ctx.fillRect(p.x + PLAYER_W - 8, p.y + PLAYER_H, 4, 4 - legOff);
+}
+
+function drawObstacle(obs) {
+  ctx.fillStyle = OBS_COL;
+  if (obs.type === 'spike') {
+    // triangle
+    ctx.beginPath();
+    ctx.moveTo(obs.x + obs.w / 2, obs.y);
+    ctx.lineTo(obs.x + obs.w, obs.y + obs.h);
+    ctx.lineTo(obs.x, obs.y + obs.h);
+    ctx.closePath();
+    ctx.fill();
+  } else {
+    ctx.fillRect(obs.x, obs.y, obs.w, obs.h);
+    ctx.fillStyle = '#cc2244';
+    ctx.fillRect(obs.x + 2, obs.y + 2, obs.w - 4, 3);
+  }
+}
+
+function draw() {
+  ctx.fillStyle = BG;
+  ctx.fillRect(0, 0, 800, 400);
+
+  // ground
+  ctx.fillStyle = GROUND_COL;
+  ctx.fillRect(0, GROUND_Y, 800, 60);
+
+  // ground line
+  ctx.strokeStyle = ACCENT + '44';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(0, GROUND_Y);
+  ctx.lineTo(800, GROUND_Y);
+  ctx.stroke();
+
+  // scrolling ground dots
+  const dotOff = state.distance % 40;
+  ctx.fillStyle = '#ffffff11';
+  for (let x = -dotOff; x < 820; x += 40) {
+    ctx.fillRect(x, GROUND_Y + 10, 2, 2);
+    ctx.fillRect(x + 20, GROUND_Y + 25, 2, 2);
+  }
+
+  // obstacles
+  for (const obs of state.obstacles) drawObstacle(obs);
+
+  // player
+  drawPlayer(state.player);
+
+  // death overlay
+  if (!state.alive) {
+    ctx.fillStyle = 'rgba(15,15,35,0.6)';
+    ctx.fillRect(0, 0, 800, 400);
+    ctx.fillStyle = '#ff4466';
+    ctx.font = 'bold 36px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('GAME OVER', 400, 180);
+    ctx.fillStyle = ACCENT;
+    ctx.font = '20px monospace';
+    ctx.fillText('Score: ' + getScore(state.distance), 400, 220);
+    ctx.fillStyle = '#aaa';
+    ctx.font = '16px monospace';
+    ctx.fillText('Tap or Space to retry', 400, 260);
+    ctx.textAlign = 'left';
+  }
+}
+
+function loop(ts) {
+  const dt = Math.min((ts - lastTime) / 1000, 0.05);
+  lastTime = ts;
+
+  if (started && state.alive) {
+    update(state, dt);
+    const s = getScore(state.distance);
+    scoreEl.textContent = s;
+    if (!state.alive) {
+      if (s > highScore) {
+        highScore = s;
+        localStorage.setItem('oneBitRunner_hi', String(highScore));
+        bestEl.textContent = highScore;
+        msgEl.textContent = '🏆 New high score!';
+      } else {
+        msgEl.textContent = 'Tap or Space to retry';
+      }
+    }
+  }
+
+  draw();
+  requestAnimationFrame(loop);
+}
+
+requestAnimationFrame(ts => { lastTime = ts; loop(ts); });
+</script>
+</body>
+</html>

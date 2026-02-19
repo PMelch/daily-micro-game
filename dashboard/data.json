@@ -1,0 +1,60 @@
+{
+  "games": [
+    {
+      "id": "day-002-stroop-sprint",
+      "name": "Stroop Sprint",
+      "description": "Words say one color but are painted in another — tap the COLOR you see, not the word. Gets faster every round. How long can you keep your brain from short-circuiting?",
+      "date": "2026-02-19",
+      "tags": [
+        "action",
+        "reflex",
+        "brain-teaser"
+      ],
+      "howToPlay": "A color word appears in a conflicting ink color. Tap the button matching the INK color, not the word. Speed increases each round. 3 wrong = game over.",
+      "whyFun": "Your brain fights itself every round. The Stroop effect is real psychology — simple concept, maddeningly hard at speed.",
+      "ratings": []
+    },
+    {
+      "id": "day-004-memory-pulse",
+      "name": "Memory Pulse",
+      "description": "Watch the tiles pulse, then repeat the pattern. Each round adds one more step. How far can your memory stretch?",
+      "date": "2026-02-21",
+      "tags": [
+        "memory",
+        "reflex",
+        "classic"
+      ],
+      "howToPlay": "Watch the colored tiles flash in sequence. Then tap them in the same order. Each round adds one more step to the pattern. One wrong tap and it's game over.",
+      "whyFun": "That sweet spot between confidence and panic as the sequence gets longer. You KNOW you can do one more round... right?",
+      "ratings": []
+    },
+    {
+      "id": "day-005-one-bit-runner",
+      "name": "One-Bit Runner",
+      "description": "Run. Jump. Survive. A one-button endless runner with procedurally generated obstacles. How far can you go?",
+      "date": "2026-02-22",
+      "tags": [
+        "action",
+        "arcade",
+        "endless"
+      ],
+      "howToPlay": "Tap or press Space to jump. That's it. Dodge obstacles, clear gaps, survive as long as possible. Speed increases over time.",
+      "whyFun": "Pure flow state gaming. One button, infinite challenge. The \"just one more run\" factor is off the charts.",
+      "ratings": []
+    },
+    {
+      "id": "day-003-ricochet",
+      "name": "Ricochet",
+      "description": "Aim, shoot, and bounce your ball off walls to hit every target. Geometry meets billiards in this satisfying physics puzzler.",
+      "date": "2026-02-20",
+      "tags": [
+        "puzzle",
+        "physics",
+        "strategy"
+      ],
+      "howToPlay": "Drag to aim — a trajectory preview shows where the ball will go. Release to fire. The ball bounces off walls. Clear all targets to advance. Fewer shots = better score.",
+      "whyFun": "The satisfying click of a perfect bank shot. Each level is a mini geometry puzzle that rewards creative angles and careful planning.",
+      "ratings": []
+    }
+  ]
+}

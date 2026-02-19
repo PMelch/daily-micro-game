@@ -14,7 +14,7 @@
   .stat { text-align: center; }
   .stat-num { font-size: 1.8rem; font-weight: bold; color: #ffcc00; }
   .stat-label { font-size: 0.8rem; color: #888; }
-  .container { max-width: 900px; margin: 2rem auto; padding: 0 1rem; }
+  .container { max-width: 1200px; margin: 2rem auto; padding: 0 1rem; }
   .empty { text-align: center; padding: 4rem 1rem; color: #666; }
   .empty h2 { color: #888; margin-bottom: 0.5rem; }
 
@@ -25,24 +25,29 @@
   .tag-btn:hover { border-color: #ffcc00; color: #ffcc00; }
   .tag-btn.active { background: #ffcc00; color: #000; border-color: #ffcc00; font-weight: 600; }
 
+  /* Multi-column flow layout */
+  .games-grid { columns: 1; column-gap: 1rem; }
+  @media (min-width: 640px) { .games-grid { columns: 2; } }
+  @media (min-width: 960px) { .games-grid { columns: 3; } }
+
   /* Game cards */
-  .game-card { background: #1a1a2e; border: 1px solid #333; border-radius: 12px; padding: 1.5rem; margin-bottom: 1rem; transition: border-color 0.2s; }
-  .game-card:hover { border-color: #ffcc00; }
-  .game-card h2 { color: #fff; font-size: 1.2rem; margin-bottom: 0.3rem; }
-  .game-card .meta { color: #888; font-size: 0.85rem; margin-bottom: 0.5rem; }
-  .game-card .desc { color: #aaa; margin-bottom: 0.75rem; line-height: 1.5; }
-  .game-card .details { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 1rem; font-size: 0.9rem; }
-  .game-card .details dt { color: #888; }
-  .game-card .details dd { color: #bbb; }
-  .game-card .tags { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 1rem; }
-  .game-tag { background: #2a2a4a; color: #aaa; padding: 0.2rem 0.6rem; border-radius: 12px; font-size: 0.75rem; }
-  .game-card .actions { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
-  .play-btn { background: #ffcc00; color: #000; text-decoration: none; padding: 0.5rem 1.2rem; border-radius: 6px; font-weight: bold; font-size: 0.9rem; }
+  .game-card { background: #1a1a2e; border: 1px solid #333; border-radius: 12px; overflow: hidden; margin-bottom: 1rem; break-inside: avoid; transition: border-color 0.2s, transform 0.2s; }
+  .game-card:hover { border-color: #ffcc00; transform: translateY(-2px); }
+  .game-screenshot { width: 100%; object-fit: contain; display: block; border-bottom: 1px solid #333; background: #12122a; }
+  .game-screenshot.missing { display: flex; align-items: center; justify-content: center; color: #444; font-size: 3rem; }
+  .game-body { padding: 1rem 1.2rem 1.2rem; }
+  .game-card h2 { color: #fff; font-size: 1.1rem; margin-bottom: 0.25rem; }
+  .game-card .meta { color: #888; font-size: 0.8rem; margin-bottom: 0.5rem; }
+  .game-card .desc { color: #aaa; font-size: 0.9rem; margin-bottom: 0.75rem; line-height: 1.5; }
+  .game-card .tags { display: flex; flex-wrap: wrap; gap: 0.3rem; margin-bottom: 0.75rem; }
+  .game-tag { background: #2a2a4a; color: #aaa; padding: 0.15rem 0.5rem; border-radius: 12px; font-size: 0.7rem; }
+  .game-card .actions { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+  .play-btn { background: #ffcc00; color: #000; text-decoration: none; padding: 0.45rem 1rem; border-radius: 6px; font-weight: bold; font-size: 0.85rem; }
   .play-btn:hover { background: #ffd633; }
   .stars { display: flex; gap: 2px; }
-  .star { cursor: pointer; font-size: 1.4rem; color: #444; transition: color 0.15s; user-select: none; }
+  .star { cursor: pointer; font-size: 1.3rem; color: #444; transition: color 0.15s; user-select: none; }
   .star.active { color: #ffcc00; }
-  .rating-info { color: #888; font-size: 0.85rem; }
+  .rating-info { color: #888; font-size: 0.8rem; }
 </style>
 </head>
 <body>
@@ -58,7 +63,7 @@
   <div class="filter-bar" id="filter-bar" style="display:none">
     <span class="filter-label">Filter:</span>
   </div>
-  <div id="games-list">
+  <div id="games-list" class="games-grid">
     <div class="empty"><h2>No games yet</h2><p>The first game drops tomorrow morning! 🌅</p></div>
   </div>
 </div>
@@ -80,7 +85,6 @@ function buildFilters() {
   const allTags = [...new Set(allGames.flatMap(g => g.tags || []))].sort();
   if (allTags.length === 0) { bar.style.display = 'none'; return; }
   bar.style.display = 'flex';
-  // Keep the label, remove old buttons
   bar.querySelectorAll('.tag-btn').forEach(b => b.remove());
   allTags.forEach(tag => {
     const btn = document.createElement('button');
@@ -110,20 +114,19 @@ function render() {
 
   container.innerHTML = games.map(g => `
     <div class="game-card">
-      <h2>${esc(g.name)}</h2>
-      <div class="meta">Day ${g.id.match(/day-(\d+)/)?.[1] || '?'} · ${g.date}${g.averageRating ? ` · ⭐ ${g.averageRating.toFixed(1)} (${g.ratings.length})` : ''}</div>
-      <div class="desc">${esc(g.description)}</div>
-      ${g.howToPlay || g.whyFun ? `<div class="details">
-        ${g.howToPlay ? `<dt>🕹️ How to play</dt><dd>${esc(g.howToPlay)}</dd>` : ''}
-        ${g.whyFun ? `<dt>✨ Why it's fun</dt><dd>${esc(g.whyFun)}</dd>` : ''}
-      </div>` : ''}
-      ${(g.tags||[]).length ? `<div class="tags">${g.tags.map(t => `<span class="game-tag">${esc(t)}</span>`).join('')}</div>` : ''}
-      <div class="actions">
-        <a class="play-btn" href="/games/${g.id}/">▶ Play</a>
-        <div class="stars" data-game="${g.id}">
-          ${[1,2,3,4,5].map(n => `<span class="star${g.averageRating && n <= Math.round(g.averageRating) ? ' active' : ''}" data-rating="${n}">★</span>`).join('')}
+      <img class="game-screenshot" src="/games/${g.id}/screenshot.png" alt="${esc(g.name)}" onerror="if(!this.dataset.retry){this.dataset.retry='1';this.src='/games/${g.id}/screenshot.jpg';}else{this.outerHTML='<div class=\\'game-screenshot missing\\'>🎮</div>';}" loading="lazy">
+      <div class="game-body">
+        <h2>${esc(g.name)}</h2>
+        <div class="meta">Day ${g.id.match(/day-(\d+)/)?.[1] || '?'} · ${g.date}${g.averageRating ? ` · ⭐ ${g.averageRating.toFixed(1)} (${g.ratings.length})` : ''}</div>
+        <div class="desc">${esc(g.description)}</div>
+        ${(g.tags||[]).length ? `<div class="tags">${g.tags.map(t => `<span class="game-tag">${esc(t)}</span>`).join('')}</div>` : ''}
+        <div class="actions">
+          <a class="play-btn" href="/games/${g.id}/">▶ Play</a>
+          <div class="stars" data-game="${g.id}">
+            ${[1,2,3,4,5].map(n => `<span class="star${g.averageRating && n <= Math.round(g.averageRating) ? ' active' : ''}" data-rating="${n}">★</span>`).join('')}
+          </div>
+          <span class="rating-info">${g.ratings?.length ? g.ratings.length + ' rating' + (g.ratings.length > 1 ? 's' : '') : 'Not rated yet'}</span>
         </div>
-        <span class="rating-info">${g.ratings?.length ? g.ratings.length + ' rating' + (g.ratings.length > 1 ? 's' : '') : 'Not rated yet'}</span>
       </div>
     </div>
   `).join('');

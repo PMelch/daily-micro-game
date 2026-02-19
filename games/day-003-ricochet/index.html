@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Ricochet</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #0f0f23;
+    color: #e0e0e0;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100vh;
+    overflow: hidden;
+    touch-action: manipulation;
+  }
+  h1 {
+    font-size: 1.8rem;
+    margin-top: 0.8rem;
+    color: #ffcc00;
+    text-shadow: 0 0 20px rgba(255,204,0,0.3);
+    letter-spacing: 2px;
+  }
+  #info {
+    margin: 0.4rem 0;
+    font-size: 1rem;
+    color: #aaa;
+    display: flex;
+    gap: 1.5rem;
+  }
+  #info span { color: #ffcc00; }
+  canvas {
+    border: 2px solid #333;
+    border-radius: 8px;
+    cursor: crosshair;
+    max-width: 95vw;
+    max-height: 70vh;
+  }
+  #message {
+    margin-top: 0.6rem;
+    font-size: 1.2rem;
+    color: #ffcc00;
+    min-height: 1.6rem;
+  }
+  #restart {
+    margin-top: 0.5rem;
+    padding: 0.5rem 1.5rem;
+    background: #ffcc00;
+    color: #0f0f23;
+    border: none;
+    border-radius: 6px;
+    font-size: 1rem;
+    font-weight: bold;
+    cursor: pointer;
+    display: none;
+  }
+  #restart:hover { background: #ffd633; }
+  .back-bar{width:100%;background:#0a0a1a;padding:0.5rem 1rem;border-bottom:1px solid #333;}.back-bar a{color:#ffcc00;text-decoration:none;font-size:0.9rem;font-family:system-ui,sans-serif;}.back-bar a:hover{text-decoration:underline;}
+</style>
+</head>
+<body>
+<div class="back-bar"><a href="/">← Back to Games</a></div>
+<h1>🎯 Ricochet</h1>
+<div id="info">
+  Level <span id="lvl">1</span> &nbsp;|&nbsp; Shots: <span id="shots">0</span>
+</div>
+<canvas id="c" width="800" height="600"></canvas>
+<div id="message"></div>
+<button id="restart">Next Level →</button>
+
+<script type="module">
+import { createBallState, stepBall, simulateTrajectory, LEVELS } from './game.js';
+
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+const msgEl = document.getElementById('message');
+const restartBtn = document.getElementById('restart');
+const lvlEl = document.getElementById('lvl');
+const shotsEl = document.getElementById('shots');
+
+let currentLevel = 0;
+let ball, targets, walls, bounds, spawn;
+let shots = 0;
+let dragging = false;
+let dragStart = null, dragEnd = null;
+let animating = false;
+let totalShots = 0;
+
+function loadLevel(idx) {
+  const lvl = LEVELS[idx];
+  bounds = lvl.bounds;
+  spawn = lvl.spawn;
+  walls = lvl.walls || [];
+  targets = lvl.targets.map(t => ({ ...t, hit: false }));
+  ball = createBallState(spawn.x, spawn.y);
+  shots = 0;
+  animating = false;
+  dragging = false;
+  msgEl.textContent = '';
+  restartBtn.style.display = 'none';
+  lvlEl.textContent = idx + 1;
+  shotsEl.textContent = '0';
+  draw();
+}
+
+function getCanvasPos(e) {
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = canvas.width / rect.width;
+  const scaleY = canvas.height / rect.height;
+  const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+  const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+  return { x: (clientX - rect.left) * scaleX, y: (clientY - rect.top) * scaleY };
+}
+
+function onDown(e) {
+  if (animating) return;
+  e.preventDefault();
+  const pos = getCanvasPos(e);
+  const dx = pos.x - ball.x, dy = pos.y - ball.y;
+  if (Math.sqrt(dx * dx + dy * dy) < 50) {
+    dragging = true;
+    dragStart = { x: ball.x, y: ball.y };
+    dragEnd = pos;
+  }
+}
+
+function onMove(e) {
+  if (!dragging) return;
+  e.preventDefault();
+  dragEnd = getCanvasPos(e);
+  draw();
+}
+
+function onUp(e) {
+  if (!dragging) return;
+  e.preventDefault();
+  dragging = false;
+  const dx = dragStart.x - dragEnd.x;
+  const dy = dragStart.y - dragEnd.y;
+  const power = Math.min(Math.sqrt(dx * dx + dy * dy) * 0.15, 20);
+  if (power < 1) { draw(); return; }
+  const angle = Math.atan2(dy, dx);
+  ball.vx = Math.cos(angle) * power;
+  ball.vy = Math.sin(angle) * power;
+  shots++;
+  totalShots++;
+  shotsEl.textContent = shots;
+  animating = true;
+  animate();
+}
+
+canvas.addEventListener('mousedown', onDown);
+canvas.addEventListener('mousemove', onMove);
+canvas.addEventListener('mouseup', onUp);
+canvas.addEventListener('touchstart', onDown, { passive: false });
+canvas.addEventListener('touchmove', onMove, { passive: false });
+canvas.addEventListener('touchend', onUp, { passive: false });
+
+restartBtn.addEventListener('click', () => {
+  if (currentLevel < LEVELS.length - 1) {
+    currentLevel++;
+    loadLevel(currentLevel);
+  } else {
+    msgEl.textContent = `🏆 All levels complete! Total shots: ${totalShots}`;
+    restartBtn.textContent = 'Play Again';
+    restartBtn.onclick = () => { currentLevel = 0; totalShots = 0; restartBtn.textContent = 'Next Level →'; loadLevel(0); };
+  }
+});
+
+function animate() {
+  const result = stepBall(ball, bounds, walls, targets);
+  ball = result.ball;
+  targets = result.targets;
+  draw();
+
+  if (targets.every(t => t.hit)) {
+    animating = false;
+    if (currentLevel < LEVELS.length - 1) {
+      msgEl.textContent = `✨ Level cleared in ${shots} shot${shots !== 1 ? 's' : ''}!`;
+      restartBtn.style.display = 'inline-block';
+    } else {
+      msgEl.textContent = `🏆 All levels complete! Total shots: ${totalShots}`;
+      restartBtn.textContent = 'Play Again';
+      restartBtn.style.display = 'inline-block';
+      restartBtn.onclick = () => { currentLevel = 0; totalShots = 0; restartBtn.textContent = 'Next Level →'; loadLevel(0); };
+    }
+    return;
+  }
+
+  if (result.stopped) {
+    animating = false;
+    draw();
+    return;
+  }
+
+  requestAnimationFrame(animate);
+}
+
+function draw() {
+  ctx.fillStyle = '#0f0f23';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // Walls
+  ctx.strokeStyle = '#556';
+  ctx.lineWidth = 4;
+  ctx.lineCap = 'round';
+  for (const w of walls) {
+    ctx.beginPath();
+    ctx.moveTo(w.x1, w.y1);
+    ctx.lineTo(w.x2, w.y2);
+    ctx.stroke();
+  }
+
+  // Targets
+  for (const t of targets) {
+    if (t.hit) {
+      ctx.globalAlpha = 0.25;
+      ctx.fillStyle = '#555';
+    } else {
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = '#ff4444';
+      ctx.shadowColor = '#ff4444';
+      ctx.shadowBlur = 15;
+    }
+    ctx.beginPath();
+    ctx.arc(t.x, t.y, t.r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.globalAlpha = 1;
+
+    if (!t.hit) {
+      // Inner ring
+      ctx.strokeStyle = '#ff8888';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(t.x, t.y, t.r * 0.5, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+  }
+
+  // Trajectory preview
+  if (dragging && dragEnd) {
+    const dx = dragStart.x - dragEnd.x;
+    const dy = dragStart.y - dragEnd.y;
+    const power = Math.min(Math.sqrt(dx * dx + dy * dy) * 0.15, 20);
+    if (power >= 1) {
+      const angle = Math.atan2(dy, dx);
+      const preview = { x: ball.x, y: ball.y, vx: Math.cos(angle) * power, vy: Math.sin(angle) * power, r: ball.r };
+      const pts = simulateTrajectory(preview, bounds, walls, 120);
+      ctx.strokeStyle = 'rgba(255,204,0,0.4)';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([6, 4]);
+      ctx.beginPath();
+      ctx.moveTo(pts[0].x, pts[0].y);
+      for (let i = 1; i < pts.length; i++) {
+        ctx.globalAlpha = 1 - i / pts.length;
+        ctx.lineTo(pts[i].x, pts[i].y);
+      }
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.globalAlpha = 1;
+    }
+
+    // Draw aim line
+    ctx.strokeStyle = '#ffcc00';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(ball.x, ball.y);
+    ctx.lineTo(ball.x + (dragStart.x - dragEnd.x) * 0.3, ball.y + (dragStart.y - dragEnd.y) * 0.3);
+    ctx.stroke();
+  }
+
+  // Ball
+  ctx.fillStyle = '#ffcc00';
+  ctx.shadowColor = '#ffcc00';
+  ctx.shadowBlur = 12;
+  ctx.beginPath();
+  ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.shadowBlur = 0;
+
+  // Border
+  ctx.strokeStyle = '#333';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(1, 1, canvas.width - 2, canvas.height - 2);
+}
+
+loadLevel(0);
+</script>
+</body>
+</html>

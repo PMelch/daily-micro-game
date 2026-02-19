@@ -41,6 +41,7 @@ function createStore(overridePath) {
     const data = load();
     const game = data.games.find(g => g.id === id);
     if (!game) throw new Error(`Game not found: ${id}`);
+    if (!game.ratings) game.ratings = [];
     game.ratings.push(rating);
     save(data);
   }
