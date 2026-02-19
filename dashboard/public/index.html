@@ -101,7 +101,11 @@ function render() {
   if (activeTags.size > 0) {
     games = games.filter(g => (g.tags || []).some(t => activeTags.has(t)));
   }
-  games.sort((a, b) => b.date.localeCompare(a.date));
+  games.sort((a, b) => {
+    const dayA = parseInt(a.id.match(/day-(\d+)/)?.[1] || '0');
+    const dayB = parseInt(b.id.match(/day-(\d+)/)?.[1] || '0');
+    return dayB - dayA;
+  });
 
   if (games.length === 0 && allGames.length === 0) {
     container.innerHTML = '<div class="empty"><h2>No games yet</h2><p>The first game drops tomorrow morning! 🌅</p></div>';
