@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Color Flood</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:#0a0a1a;color:#eee;font-family:system-ui,sans-serif;display:flex;flex-direction:column;min-height:100vh;min-height:100dvh;}
+.back-bar{width:100%;background:#0a0a1a;padding:0.5rem 1rem;border-bottom:1px solid #333;}
+.back-bar a{color:#ffcc00;text-decoration:none;font-size:0.9rem;font-family:system-ui,sans-serif;}
+.back-bar a:hover{text-decoration:underline;}
+.container{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:1rem;gap:0.8rem;}
+h1{font-size:1.5rem;color:#ffcc00;text-align:center;}
+.info{display:flex;gap:1.5rem;font-size:1rem;opacity:0.9;}
+.info span{font-weight:bold;color:#ffcc00;}
+#board{display:grid;gap:2px;max-width:min(90vw,400px);max-height:min(60vh,400px);aspect-ratio:1;width:100%;}
+.cell{border-radius:3px;cursor:default;transition:background 0.15s;}
+.palette{display:flex;gap:0.6rem;flex-wrap:wrap;justify-content:center;}
+.palette button{width:48px;height:48px;border:3px solid transparent;border-radius:8px;cursor:pointer;transition:transform 0.1s,border-color 0.2s;}
+.palette button:hover{transform:scale(1.15);}
+.palette button.active{border-color:#fff;transform:scale(1.2);}
+.msg{font-size:1.2rem;text-align:center;min-height:1.5em;color:#aaffaa;}
+#restart{background:#ffcc00;color:#0a0a1a;border:none;padding:0.6rem 1.5rem;border-radius:6px;font-size:1rem;cursor:pointer;font-weight:bold;display:none;}
+#restart:hover{background:#ffdd44;}
+.size-select{display:flex;gap:0.5rem;align-items:center;font-size:0.9rem;}
+.size-select button{background:#222;color:#eee;border:1px solid #555;padding:0.3rem 0.7rem;border-radius:4px;cursor:pointer;}
+.size-select button.active{background:#ffcc00;color:#0a0a1a;border-color:#ffcc00;}
+</style>
+</head>
+<body>
+<div class="back-bar"><a href="/">← Back to Games</a></div>
+<div class="container">
+<h1>🎨 Color Flood</h1>
+<div class="size-select">
+  Grid: <button data-size="8">8×8</button><button data-size="10" class="active">10×10</button><button data-size="14">14×14</button>
+</div>
+<div class="info">Moves: <span id="moves">0</span> / <span id="maxMoves">25</span></div>
+<div id="board"></div>
+<div class="palette" id="palette"></div>
+<div class="msg" id="msg"></div>
+<button id="restart">Play Again</button>
+</div>
+<script>
+const PALETTE=['#e74c3c','#3498db','#2ecc71','#f1c40f','#9b59b6','#e67e22'];
+const MAX_MOVES_MAP={8:20,10:25,14:34};
+let size=10,board=[],moves=0,maxMoves=25,won=false;
+
+function seed(){return Math.floor(Math.random()*999999);}
+function createBoard(sz,s){
+  let st=s;const n=()=>{st=(st*1103515245+12345)&0x7fffffff;return st;};
+  return Array.from({length:sz},()=>Array.from({length:sz},()=>n()%6));
+}
+
+function getRegion(b,r,c,color,visited){
+  const stack=[[r,c]];const key=(r,c)=>r*1000+c;visited.add(key(r,c));const cells=[];
+  while(stack.length){const[r,c]=stack.pop();if(b[r][c]!==color)continue;cells.push([r,c]);
+  for(const[dr,dc]of[[0,1],[0,-1],[1,0],[-1,0]]){const nr=r+dr,nc=c+dc;
+  if(nr>=0&&nr<b.length&&nc>=0&&nc<b[0].length&&!visited.has(key(nr,nc))){visited.add(key(nr,nc));stack.push([nr,nc]);}}}
+  return cells;
+}
+
+function flood(b,newColor){
+  const old=b[0][0];if(old===newColor)return false;
+  const visited=new Set();const region=getRegion(b,0,0,old,visited);
+  for(const[r,c]of region)b[r][c]=newColor;
+  // expand into adjacent same-color
+  const stack=[...region];const v2=new Set(region.map(([r,c])=>r*1000+c));
+  while(stack.length){const[r,c]=stack.pop();
+  for(const[dr,dc]of[[0,1],[0,-1],[1,0],[-1,0]]){const nr=r+dr,nc=c+dc,k=nr*1000+nc;
+  if(nr>=0&&nr<b.length&&nc>=0&&nc<b[0].length&&!v2.has(k)&&b[nr][nc]===newColor){v2.add(k);stack.push([nr,nc]);}}}
+  return true;
+}
+
+function countFilled(b){
+  const visited=new Set();return getRegion(b,0,0,b[0][0],visited).length;
+}
+
+function render(){
+  const el=document.getElementById('board');
+  el.style.gridTemplateColumns=`repeat(${size},1fr)`;
+  el.innerHTML='';
+  for(let r=0;r<size;r++)for(let c=0;c<size;c++){
+    const d=document.createElement('div');d.className='cell';
+    d.style.background=PALETTE[board[r][c]];el.appendChild(d);
+  }
+  document.getElementById('moves').textContent=moves;
+  document.getElementById('maxMoves').textContent=maxMoves;
+  // highlight current color in palette
+  document.querySelectorAll('.palette button').forEach((b,i)=>{
+    b.classList.toggle('active',i===board[0][0]);
+  });
+}
+
+function pickColor(c){
+  if(won||moves>=maxMoves)return;
+  if(board[0][0]===c)return;
+  if(!flood(board,c))return;
+  moves++;
+  render();
+  const total=size*size;
+  if(countFilled(board)===total){
+    won=true;
+    document.getElementById('msg').textContent=`🎉 You flooded the board in ${moves} moves!`;
+    document.getElementById('restart').style.display='inline-block';
+  }else if(moves>=maxMoves){
+    document.getElementById('msg').textContent=`😵 Out of moves! ${countFilled(board)}/${total} filled.`;
+    document.getElementById('restart').style.display='inline-block';
+  }
+}
+
+function init(){
+  board=createBoard(size,seed());moves=0;won=false;
+  maxMoves=MAX_MOVES_MAP[size];
+  document.getElementById('msg').textContent='';
+  document.getElementById('restart').style.display='none';
+  // palette
+  const pal=document.getElementById('palette');pal.innerHTML='';
+  PALETTE.forEach((col,i)=>{
+    const b=document.createElement('button');b.style.background=col;
+    b.onclick=()=>pickColor(i);pal.appendChild(b);
+  });
+  render();
+}
+
+document.getElementById('restart').onclick=init;
+document.querySelectorAll('.size-select button').forEach(b=>{
+  b.onclick=()=>{
+    document.querySelectorAll('.size-select button').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');size=+b.dataset.size;init();
+  };
+});
+init();
+</script>
+</body>
+</html>
