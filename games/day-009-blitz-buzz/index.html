@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Blitz Buzz ⚡</title>
+  <style>
+    :root {
+      --bg: #0a0a1a;
+      --card: #131328;
+      --card2: #1c1c3a;
+      --border: #2a2a50;
+      --accent: #7c3aed;
+      --accent2: #a855f7;
+      --gold: #f59e0b;
+      --gold2: #fbbf24;
+      --green: #10b981;
+      --red: #ef4444;
+      --buzz: #f97316;
+      --text: #f1f5f9;
+      --muted: #94a3b8;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: system-ui, -apple-system, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .back-bar {
+      width: 100%;
+      background: #0a0a1a;
+      padding: 0.5rem 1rem;
+      border-bottom: 1px solid #333;
+      flex-shrink: 0;
+    }
+    .back-bar a {
+      color: #ffcc00;
+      text-decoration: none;
+      font-size: 0.9rem;
+      font-family: system-ui, sans-serif;
+    }
+    .back-bar a:hover { text-decoration: underline; }
+
+    /* ─── Screens ─── */
+    .screen {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      flex: 1;
+      padding: 1.5rem 1rem 2rem;
+      overflow-y: auto;
+      animation: fadeIn 0.3s ease;
+    }
+    .screen.active { display: flex; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* ─── Typography ─── */
+    h1.logo {
+      font-size: 2.8rem;
+      font-weight: 900;
+      letter-spacing: -1px;
+      background: linear-gradient(135deg, var(--gold), var(--buzz));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 0.25rem;
+    }
+    .logo-sub { color: var(--muted); font-size: 0.9rem; text-align: center; margin-bottom: 2rem; }
+
+    /* ─── Cards ─── */
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 1.5rem;
+      width: 100%;
+      max-width: 480px;
+      margin-bottom: 1rem;
+    }
+    .card h2 { font-size: 1rem; font-weight: 700; color: var(--accent2); margin-bottom: 1rem; }
+
+    /* ─── Inputs ─── */
+    .field { display: flex; flex-direction: column; gap: 0.35rem; margin-bottom: 0.75rem; }
+    .field label { font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+    input[type=text] {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--card2);
+      color: var(--text);
+      font-size: 1rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    input[type=text]:focus { border-color: var(--accent2); }
+
+    /* ─── Buttons ─── */
+    .btn {
+      display: flex; align-items: center; justify-content: center; gap: 0.4rem;
+      width: 100%; max-width: 480px;
+      padding: 0.85rem 1.5rem;
+      border-radius: 12px;
+      font-size: 1rem; font-weight: 700;
+      border: none; cursor: pointer;
+      transition: transform 0.1s, opacity 0.2s;
+      margin-bottom: 0.6rem;
+    }
+    .btn:active { transform: scale(0.97); }
+    .btn:disabled { opacity: 0.4; cursor: default; }
+    .btn-primary { background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #fff; }
+    .btn-gold { background: linear-gradient(135deg, #d97706, var(--gold)); color: #0a0a1a; }
+    .btn-secondary { background: var(--card2); color: var(--text); border: 1px solid var(--border); }
+    .btn-buzz {
+      background: linear-gradient(135deg, #ea580c, var(--buzz));
+      color: #fff;
+      font-size: 1.6rem;
+      padding: 1.5rem;
+      border-radius: 20px;
+      width: 100%; max-width: 480px;
+      min-height: 120px;
+      box-shadow: 0 4px 32px rgba(249,115,22,0.4);
+      letter-spacing: 2px;
+    }
+    .btn-buzz:disabled {
+      background: var(--card2);
+      color: var(--muted);
+      box-shadow: none;
+    }
+    .btn-buzz.buzzed {
+      background: linear-gradient(135deg, var(--green), #059669);
+      box-shadow: 0 4px 32px rgba(16,185,129,0.4);
+    }
+
+    /* ─── Code display ─── */
+    .room-code {
+      font-size: 3rem; font-weight: 900;
+      letter-spacing: 8px;
+      color: var(--gold);
+      text-align: center;
+      padding: 1rem;
+      background: rgba(245,158,11,0.1);
+      border: 2px solid var(--gold);
+      border-radius: 12px;
+      margin: 0.5rem 0 1rem;
+    }
+    .code-hint { color: var(--muted); font-size: 0.8rem; text-align: center; margin-bottom: 1.5rem; }
+
+    /* ─── Player list ─── */
+    .player-list { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1rem; }
+    .player-row {
+      display: flex; align-items: center; gap: 0.75rem;
+      padding: 0.6rem 0.9rem;
+      background: var(--card2);
+      border-radius: 10px;
+    }
+    .player-dot { width: 10px; height: 10px; border-radius: 50%; }
+    .player-name { flex: 1; font-weight: 600; }
+    .player-badge { font-size: 0.7rem; color: var(--muted); background: var(--border); padding: 0.15rem 0.5rem; border-radius: 4px; }
+
+    /* ─── Question screen ─── */
+    .q-header {
+      display: flex; align-items: center; justify-content: space-between;
+      width: 100%; max-width: 480px;
+      margin-bottom: 1.5rem;
+    }
+    .q-counter { font-size: 0.85rem; color: var(--muted); font-weight: 600; }
+    .q-dots { display: flex; gap: 4px; }
+    .qdot { width: 8px; height: 8px; border-radius: 50%; background: var(--border); transition: background 0.3s; }
+    .qdot.done { background: var(--green); }
+    .qdot.current { background: var(--gold); }
+
+    .question-card {
+      width: 100%; max-width: 480px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 2rem 1.5rem;
+      margin-bottom: 1.5rem;
+      text-align: center;
+    }
+    .q-text {
+      font-size: 1.25rem;
+      font-weight: 700;
+      line-height: 1.5;
+      margin-bottom: 1rem;
+      color: var(--text);
+    }
+    .q-category {
+      font-size: 0.7rem; color: var(--muted);
+      text-transform: uppercase; letter-spacing: 2px;
+      margin-bottom: 0.75rem;
+    }
+
+    /* ─── Answer choices ─── */
+    .choices { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; width: 100%; max-width: 480px; margin-bottom: 1rem; }
+    .choice-btn {
+      padding: 0.9rem 0.6rem;
+      border-radius: 12px;
+      border: 2px solid var(--border);
+      background: var(--card2);
+      color: var(--text);
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+      text-align: center;
+    }
+    .choice-btn:hover { border-color: var(--accent2); background: rgba(168,85,247,0.1); }
+    .choice-btn:active { transform: scale(0.97); }
+    .choice-btn.correct { border-color: var(--green); background: rgba(16,185,129,0.15); color: var(--green); }
+    .choice-btn.wrong { border-color: var(--red); background: rgba(239,68,68,0.1); color: var(--red); }
+    .choice-btn.was-correct { border-color: var(--green); background: rgba(16,185,129,0.1); }
+
+    /* ─── Buzzer status ─── */
+    .buzz-status {
+      text-align: center;
+      padding: 1rem;
+      border-radius: 12px;
+      font-weight: 700;
+      font-size: 1rem;
+      width: 100%; max-width: 480px;
+      margin-bottom: 1rem;
+    }
+    .buzz-status.waiting { background: rgba(245,158,11,0.1); border: 1px solid var(--gold); color: var(--gold); }
+    .buzz-status.my-turn { background: rgba(249,115,22,0.15); border: 1px solid var(--buzz); color: var(--buzz); }
+    .buzz-status.other { background: rgba(168,85,247,0.1); border: 1px solid var(--accent2); color: var(--accent2); }
+
+    /* ─── Score reveal ─── */
+    .score-reveal {
+      width: 100%; max-width: 480px;
+      padding: 1rem 1.25rem;
+      border-radius: 14px;
+      text-align: center;
+      margin-bottom: 1rem;
+    }
+    .score-reveal.correct { background: rgba(16,185,129,0.15); border: 2px solid var(--green); }
+    .score-reveal.wrong { background: rgba(239,68,68,0.1); border: 2px solid var(--red); }
+    .score-reveal .big { font-size: 2rem; margin-bottom: 0.25rem; }
+    .score-reveal .detail { color: var(--muted); font-size: 0.85rem; }
+
+    /* ─── Scoreboard ─── */
+    .scoreboard { display: flex; flex-direction: column; gap: 0.5rem; width: 100%; max-width: 480px; }
+    .score-row {
+      display: flex; align-items: center; gap: 0.75rem;
+      padding: 0.75rem 1rem;
+      background: var(--card2);
+      border-radius: 10px;
+    }
+    .score-rank { font-size: 1rem; font-weight: 900; width: 1.5rem; text-align: center; }
+    .score-name { flex: 1; font-weight: 600; }
+    .score-pts { font-size: 1.2rem; font-weight: 900; color: var(--gold); }
+    .score-bar-wrap { flex: 2; background: var(--border); border-radius: 4px; height: 5px; }
+    .score-bar { height: 5px; border-radius: 4px; background: linear-gradient(90deg, var(--accent), var(--gold)); transition: width 0.6s ease; }
+
+    /* ─── End screen ─── */
+    .trophy { font-size: 4rem; text-align: center; margin: 0.5rem 0; }
+    .winner-name { font-size: 2rem; font-weight: 900; text-align: center; color: var(--gold); }
+    .winner-sub { color: var(--muted); text-align: center; margin-bottom: 1.5rem; }
+
+    /* ─── Status bar ─── */
+    .status-bar {
+      width: 100%; max-width: 480px;
+      padding: 0.5rem 1rem;
+      background: var(--card2);
+      border-radius: 8px;
+      font-size: 0.8rem;
+      color: var(--muted);
+      text-align: center;
+      margin-bottom: 1rem;
+    }
+    .status-bar.connected { color: var(--green); }
+    .status-bar.error { color: var(--red); }
+
+    .section-label {
+      font-size: 0.75rem; text-transform: uppercase; letter-spacing: 2px;
+      color: var(--muted); font-weight: 700;
+      width: 100%; max-width: 480px;
+      margin-bottom: 0.5rem;
+    }
+    .gap { height: 1rem; }
+    .gap-lg { height: 2rem; }
+
+    /* ─── Spectator bar (when someone else is answering) ─── */
+    .spectator-msg {
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.95rem;
+      padding: 1rem;
+      width: 100%; max-width: 480px;
+    }
+
+    /* ─── Timer bar ─── */
+    .timer-bar-wrap {
+      width: 100%; max-width: 480px;
+      height: 6px;
+      background: var(--border);
+      border-radius: 6px;
+      margin-bottom: 1.5rem;
+      overflow: hidden;
+    }
+    .timer-bar {
+      height: 6px;
+      background: linear-gradient(90deg, var(--gold), var(--buzz));
+      border-radius: 6px;
+      transition: width 0.1s linear;
+    }
+  </style>
+</head>
+<body>
+<div class="back-bar"><a href="/">← Back to Games</a></div>
+
+<!-- ── SCREEN: Landing ── -->
+<div class="screen active" id="screen-landing">
+  <div class="gap-lg"></div>
+  <h1 class="logo">⚡ Blitz Buzz</h1>
+  <p class="logo-sub">Echtzeit-Quiz Buzzer · Wer drückt zuerst?</p>
+
+  <div class="status-bar" id="ws-status">Verbinde…</div>
+
+  <div class="card">
+    <h2>Spiel erstellen</h2>
+    <div class="field">
+      <label>Dein Name</label>
+      <input type="text" id="create-name" placeholder="Dein Name" maxlength="16">
+    </div>
+    <button class="btn btn-gold" id="btn-create">Raum erstellen 🎯</button>
+  </div>
+
+  <div class="card">
+    <h2>Beitreten</h2>
+    <div class="field">
+      <label>Dein Name</label>
+      <input type="text" id="join-name" placeholder="Dein Name" maxlength="16">
+    </div>
+    <div class="field">
+      <label>Raumcode</label>
+      <input type="text" id="join-code" placeholder="z.B. ABCD" maxlength="4" style="text-transform:uppercase;letter-spacing:4px;font-weight:700;font-size:1.2rem;">
+    </div>
+    <button class="btn btn-primary" id="btn-join">Beitreten →</button>
+  </div>
+
+  <div class="card">
+    <h2>🎮 Wie wird gespielt?</h2>
+    <p style="color:var(--muted);font-size:0.88rem;line-height:1.7">
+      Jeder spielt auf seinem eigenen Gerät. Eine Frage erscheint <b>gleichzeitig</b> auf allen Bildschirmen.
+      Wer zuerst <b>BUZZ!</b> drückt, darf antworten.<br><br>
+      ✅ Richtig → <b>+3 Punkte</b> &nbsp; ❌ Falsch → <b>−1 Punkt</b><br><br>
+      10 Fragen. Höchste Punktzahl gewinnt. Los!
+    </p>
+  </div>
+</div>
+
+<!-- ── SCREEN: Lobby ── -->
+<div class="screen" id="screen-lobby">
+  <div class="gap"></div>
+  <div style="color:var(--muted);font-size:0.8rem;text-align:center;margin-bottom:0.25rem">RAUMCODE — teile ihn mit deinen Freunden!</div>
+  <div class="room-code" id="lobby-code">????</div>
+  <div class="code-hint" id="lobby-hint"></div>
+
+  <div style="width:100%;max-width:480px">
+    <div class="section-label" id="players-label">Spieler (1/6)</div>
+    <div class="player-list" id="lobby-players"></div>
+  </div>
+
+  <div id="host-controls" style="display:none;width:100%;max-width:480px">
+    <button class="btn btn-gold" id="btn-start-game">Spiel starten ▶</button>
+    <p style="color:var(--muted);font-size:0.8rem;text-align:center">Mindestens 2 Spieler nötig</p>
+  </div>
+  <div id="guest-waiting" style="display:none;width:100%;max-width:480px">
+    <div class="buzz-status waiting">⏳ Warte auf den Host…</div>
+  </div>
+</div>
+
+<!-- ── SCREEN: Game ── -->
+<div class="screen" id="screen-game">
+  <div class="q-header">
+    <div class="q-counter" id="q-counter">Frage 1/10</div>
+    <div class="q-dots" id="q-dots"></div>
+  </div>
+
+  <div class="question-card">
+    <div class="q-category">QUIZ</div>
+    <div class="q-text" id="q-text">Laden…</div>
+  </div>
+
+  <!-- Timer bar -->
+  <div class="timer-bar-wrap" id="timer-wrap" style="display:none">
+    <div class="timer-bar" id="timer-bar" style="width:100%"></div>
+  </div>
+
+  <!-- For spectators: buzz button or waiting message -->
+  <div id="buzz-zone">
+    <button class="btn btn-buzz" id="btn-buzz">⚡ BUZZ!</button>
+  </div>
+
+  <!-- For the answerer: choice buttons -->
+  <div id="choice-zone" style="display:none">
+    <div class="buzz-status my-turn">🎯 Du bist dran — wähle die Antwort!</div>
+    <div class="choices" id="choices"></div>
+  </div>
+
+  <!-- While waiting for someone else to answer -->
+  <div id="waiting-zone" style="display:none">
+    <div class="buzz-status other" id="who-buzzed">⚡ jemand tippt…</div>
+    <div class="spectator-msg">Zuschauermodus — warte auf die Antwort</div>
+  </div>
+
+  <!-- Reveal -->
+  <div id="reveal-zone" style="display:none">
+    <div class="score-reveal" id="reveal-banner">
+      <div class="big" id="reveal-emoji">✅</div>
+      <div id="reveal-text">Richtig! +3 Punkte</div>
+      <div class="detail" id="reveal-detail"></div>
+    </div>
+    <div class="section-label">Punktestand</div>
+    <div class="scoreboard" id="game-scoreboard"></div>
+  </div>
+
+  <div class="gap"></div>
+</div>
+
+<!-- ── SCREEN: Game Over ── -->
+<div class="screen" id="screen-gameover">
+  <div class="gap-lg"></div>
+  <div class="trophy">🏆</div>
+  <div class="winner-name" id="final-winner"></div>
+  <div class="winner-sub" id="final-sub"></div>
+
+  <div style="width:100%;max-width:480px;margin:1rem 0">
+    <div class="section-label">Endergebnis</div>
+    <div class="scoreboard" id="final-scoreboard"></div>
+  </div>
+
+  <button class="btn btn-primary" id="btn-play-again">Nochmal spielen 🔄</button>
+  <div class="gap"></div>
+  <a href="/" style="color:var(--muted);font-size:0.9rem;text-decoration:none">← Zur Spieleübersicht</a>
+</div>
+
+<script>
+// ─── WebSocket connection ─────────────────────────────────────────────────
+const WS_URL = 'wss://day-009-blitz-buzz.lab.gogerl.com';
+let ws = null;
+let myName = '';
+let myCode = '';
+let isHost = false;
+let gameState = null;
+let buzzerEnabled = false;
+let timerInterval = null;
+let timerStart = 0;
+const ANSWER_TIME = 10; // seconds to answer after buzzing
+
+// ─── DOM ─────────────────────────────────────────────────────────────────
+const screens = {
+  landing:  document.getElementById('screen-landing'),
+  lobby:    document.getElementById('screen-lobby'),
+  game:     document.getElementById('screen-game'),
+  gameover: document.getElementById('screen-gameover'),
+};
+const wsStatus = document.getElementById('ws-status');
+
+function showScreen(id) {
+  Object.values(screens).forEach(s => s.classList.remove('active'));
+  screens[id].classList.add('active');
+}
+
+// ─── WebSocket ─────────────────────────────────────────────────────────
+function connect() {
+  ws = new WebSocket(WS_URL);
+
+  ws.onopen = () => {
+    wsStatus.textContent = '✅ Verbunden';
+    wsStatus.className = 'status-bar connected';
+  };
+
+  ws.onerror = () => {
+    wsStatus.textContent = '❌ Verbindungsfehler — Seite neu laden';
+    wsStatus.className = 'status-bar error';
+  };
+
+  ws.onclose = () => {
+    wsStatus.textContent = '⚠️ Verbindung getrennt';
+    wsStatus.className = 'status-bar error';
+    setTimeout(connect, 3000);
+  };
+
+  ws.onmessage = (e) => {
+    const msg = JSON.parse(e.data);
+    handleMessage(msg);
+  };
+}
+
+function send(msg) {
+  if (ws && ws.readyState === 1) {
+    ws.send(JSON.stringify(msg));
+  }
+}
+
+connect();
+
+// ─── Message Handler ──────────────────────────────────────────────────
+function handleMessage(msg) {
+  switch (msg.type) {
+    case 'created':
+      myCode = msg.code;
+      isHost = true;
+      updateLobby(msg.state);
+      showScreen('lobby');
+      break;
+
+    case 'joined':
+      updateLobby(msg.state);
+      showScreen('lobby');
+      break;
+
+    case 'player_joined':
+      updateLobby(msg.state);
+      break;
+
+    case 'state':
+      gameState = msg.state;
+      handleState(msg.state);
+      break;
+
+    case 'gameover':
+      gameState = msg.state;
+      showEndScreen(msg.scores);
+      break;
+
+    case 'error':
+      alert('Fehler: ' + msg.message);
+      break;
+  }
+}
+
+function handleState(state) {
+  if (state.phase === 'lobby') {
+    updateLobby(state);
+    showScreen('lobby');
+    return;
+  }
+  showScreen('game');
+  updateGameScreen(state);
+}
+
+// ─── Lobby ────────────────────────────────────────────────────────────
+function updateLobby(state) {
+  document.getElementById('lobby-code').textContent = myCode || state.code;
+  myCode = myCode || state.code;
+
+  const count = state.players.length;
+  document.getElementById('players-label').textContent = `Spieler (${count}/6)`;
+  document.getElementById('lobby-hint').textContent =
+    count < 2 ? 'Noch mindestens 1 Spieler nötig…' :
+    count === 6 ? 'Raum voll — bereit!' :
+    `${count} Spieler bereit — ${6 - count} Plätze frei`;
+
+  const listEl = document.getElementById('lobby-players');
+  const COLORS = ['#a78bfa','#60a5fa','#34d399','#f87171','#fbbf24','#f97316'];
+  listEl.innerHTML = '';
+  state.players.forEach((p, i) => {
+    const row = document.createElement('div');
+    row.className = 'player-row';
+    row.innerHTML = `
+      <div class="player-dot" style="background:${COLORS[i]}"></div>
+      <div class="player-name">${escHtml(p.name)}</div>
+      ${p.isHost ? '<div class="player-badge">Host</div>' : ''}
+      ${p.name === myName ? '<div class="player-badge" style="border-color:var(--accent2);color:var(--accent2)">Du</div>' : ''}
+    `;
+    listEl.appendChild(row);
+  });
+
+  if (isHost) {
+    document.getElementById('host-controls').style.display = 'block';
+    document.getElementById('guest-waiting').style.display = 'none';
+    document.getElementById('btn-start-game').disabled = count < 2;
+  } else {
+    document.getElementById('host-controls').style.display = 'none';
+    document.getElementById('guest-waiting').style.display = 'block';
+  }
+}
+
+// ─── Game Screen ──────────────────────────────────────────────────────
+function updateGameScreen(state) {
+  // Question counter + dots
+  document.getElementById('q-counter').textContent = `Frage ${state.questionIndex + 1} / ${state.totalQuestions}`;
+  renderDots(state.questionIndex, state.totalQuestions);
+
+  // Question text
+  if (state.currentQuestion) {
+    document.getElementById('q-text').textContent = state.currentQuestion.text;
+  }
+
+  const buzzZone     = document.getElementById('buzz-zone');
+  const choiceZone   = document.getElementById('choice-zone');
+  const waitingZone  = document.getElementById('waiting-zone');
+  const revealZone   = document.getElementById('reveal-zone');
+  const timerWrap    = document.getElementById('timer-wrap');
+
+  // Reset zones
+  buzzZone.style.display = 'none';
+  choiceZone.style.display = 'none';
+  waitingZone.style.display = 'none';
+  revealZone.style.display = 'none';
+  timerWrap.style.display = 'none';
+  stopTimer();
+
+  if (state.phase === 'question') {
+    buzzerEnabled = true;
+    buzzZone.style.display = 'block';
+    const buzzBtn = document.getElementById('btn-buzz');
+    buzzBtn.disabled = false;
+    buzzBtn.className = 'btn btn-buzz';
+    buzzBtn.textContent = '⚡ BUZZ!';
+
+  } else if (state.phase === 'answering') {
+    if (state.buzzedBy === myName) {
+      // I buzzed — show answer choices
+      choiceZone.style.display = 'block';
+      renderChoices(state.currentQuestion, null);
+      timerWrap.style.display = 'block';
+      startTimer(ANSWER_TIME);
+    } else {
+      // Someone else buzzed
+      waitingZone.style.display = 'block';
+      document.getElementById('who-buzzed').textContent = `⚡ ${escHtml(state.buzzedBy)} tippt…`;
+    }
+
+  } else if (state.phase === 'reveal') {
+    revealZone.style.display = 'block';
+    stopTimer();
+
+    const la = state.lastAnswer;
+    if (la) {
+      const banner = document.getElementById('reveal-banner');
+      const me = state.players.find(p => p.name === myName);
+
+      if (la.player === myName) {
+        banner.className = `score-reveal ${la.correct ? 'correct' : 'wrong'}`;
+        document.getElementById('reveal-emoji').textContent = la.correct ? '✅' : '❌';
+        document.getElementById('reveal-text').textContent = la.correct ? 'Richtig! +3 Punkte' : 'Falsch! −1 Punkt';
+        document.getElementById('reveal-detail').textContent =
+          la.correct ? '' : `Die richtige Antwort: ${state.currentQuestion?.options?.[la.correctIndex] ?? ''}`;
+      } else {
+        banner.className = 'score-reveal ' + (la.correct ? 'correct' : 'wrong');
+        document.getElementById('reveal-emoji').textContent = la.correct ? '🎉' : '😬';
+        document.getElementById('reveal-text').textContent = la.correct
+          ? `${escHtml(la.player)} hat richtig geantwortet! (+3)`
+          : `${escHtml(la.player)} lag daneben! (−1)`;
+        document.getElementById('reveal-detail').textContent = `Richtige Antwort: ${state.currentQuestion?.options?.[la.correctIndex] ?? ''}`;
+      }
+
+      // Also show correct in choice view if I was the answerer
+      if (la.player === myName) {
+        choiceZone.style.display = 'block';
+        renderChoices(state.currentQuestion, la);
+      }
+    }
+
+    renderScoreboard('game-scoreboard', state.players);
+  }
+}
+
+function renderDots(current, total) {
+  const el = document.getElementById('q-dots');
+  el.innerHTML = '';
+  for (let i = 0; i < total; i++) {
+    const d = document.createElement('div');
+    d.className = 'qdot' + (i < current ? ' done' : '') + (i === current ? ' current' : '');
+    el.appendChild(d);
+  }
+}
+
+function renderChoices(question, lastAnswer) {
+  const el = document.getElementById('choices');
+  el.innerHTML = '';
+  if (!question) return;
+
+  question.options.forEach((opt, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'choice-btn';
+    btn.textContent = opt;
+
+    if (lastAnswer) {
+      btn.disabled = true;
+      if (i === lastAnswer.correctIndex) btn.classList.add('was-correct');
+      if (i === lastAnswer.choice && !lastAnswer.correct) btn.classList.add('wrong');
+      if (i === lastAnswer.choice && lastAnswer.correct) btn.classList.add('correct');
+    } else {
+      btn.addEventListener('click', () => {
+        // Disable all choices immediately
+        el.querySelectorAll('.choice-btn').forEach(b => b.disabled = true);
+        send({ type: 'answer', choice: i });
+      });
+    }
+    el.appendChild(btn);
+  });
+}
+
+function renderScoreboard(containerId, players) {
+  const el = document.getElementById(containerId);
+  const sorted = [...players].sort((a, b) => b.score - a.score);
+  const maxScore = Math.max(...players.map(p => p.score), 1);
+  const MEDALS = ['🥇','🥈','🥉'];
+  el.innerHTML = '';
+  sorted.forEach((p, i) => {
+    const pct = Math.max(0, (p.score / Math.max(maxScore, 10)) * 100);
+    const row = document.createElement('div');
+    row.className = 'score-row';
+    row.innerHTML = `
+      <div class="score-rank">${MEDALS[i] || (i + 1)}</div>
+      <div class="score-name">${escHtml(p.name)}${p.name === myName ? ' <span style="color:var(--accent2);font-size:0.75rem">(Du)</span>' : ''}</div>
+      <div class="score-bar-wrap"><div class="score-bar" style="width:${pct}%"></div></div>
+      <div class="score-pts">${p.score}</div>
+    `;
+    el.appendChild(row);
+  });
+}
+
+// ─── Timer ────────────────────────────────────────────────────────────
+function startTimer(seconds) {
+  const bar = document.getElementById('timer-bar');
+  timerStart = Date.now();
+  const duration = seconds * 1000;
+
+  timerInterval = setInterval(() => {
+    const elapsed = Date.now() - timerStart;
+    const pct = Math.max(0, 100 - (elapsed / duration) * 100);
+    bar.style.width = pct + '%';
+    bar.style.background = pct > 40
+      ? 'linear-gradient(90deg, var(--gold), var(--buzz))'
+      : 'linear-gradient(90deg, #ef4444, #f97316)';
+    if (pct <= 0) stopTimer();
+  }, 100);
+}
+
+function stopTimer() {
+  if (timerInterval) {
+    clearInterval(timerInterval);
+    timerInterval = null;
+  }
+}
+
+// ─── End screen ───────────────────────────────────────────────────────
+function showEndScreen(scores) {
+  stopTimer();
+  showScreen('gameover');
+  const winner = scores[0];
+  const tied = scores.filter(s => s.score === winner.score);
+
+  if (tied.length > 1) {
+    document.getElementById('final-winner').textContent = 'Unentschieden!';
+    document.getElementById('final-sub').textContent = tied.map(p => p.name).join(' & ') + ` mit je ${winner.score} Punkten`;
+  } else {
+    document.getElementById('final-winner').textContent = `🏆 ${winner.name}`;
+    document.getElementById('final-sub').textContent = `${winner.score} Punkte — Blitz Buzz Champion!`;
+  }
+  renderScoreboard('final-scoreboard', scores);
+}
+
+// ─── Buttons ──────────────────────────────────────────────────────────
+document.getElementById('btn-create').addEventListener('click', () => {
+  const name = document.getElementById('create-name').value.trim();
+  if (!name) { document.getElementById('create-name').focus(); return; }
+  myName = name;
+  send({ type: 'create', name });
+});
+
+document.getElementById('btn-join').addEventListener('click', () => {
+  const name = document.getElementById('join-name').value.trim();
+  const code = document.getElementById('join-code').value.trim().toUpperCase();
+  if (!name || !code) return;
+  myName = name;
+  myCode = code;
+  send({ type: 'join', name, code });
+});
+
+document.getElementById('btn-start-game').addEventListener('click', () => {
+  send({ type: 'start' });
+});
+
+document.getElementById('btn-buzz').addEventListener('click', () => {
+  if (!buzzerEnabled) return;
+  buzzerEnabled = false;
+  const btn = document.getElementById('btn-buzz');
+  btn.disabled = true;
+  btn.className = 'btn btn-buzz buzzed';
+  btn.textContent = '⚡ GEDRÜCKT!';
+  send({ type: 'buzz' });
+});
+
+document.getElementById('btn-play-again').addEventListener('click', () => {
+  location.reload();
+});
+
+// Enter key support
+document.getElementById('create-name').addEventListener('keydown', e => e.key === 'Enter' && document.getElementById('btn-create').click());
+document.getElementById('join-code').addEventListener('keydown', e => e.key === 'Enter' && document.getElementById('btn-join').click());
+document.getElementById('join-code').addEventListener('input', e => { e.target.value = e.target.value.toUpperCase(); });
+
+// ─── Helpers ──────────────────────────────────────────────────────────
+function escHtml(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+</script>
+</body>
+</html>
