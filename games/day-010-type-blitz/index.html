@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Type Blitz ⚡</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    .back-bar {
+      width: 100%;
+      background: #0a0a1a;
+      padding: 0.5rem 1rem;
+      border-bottom: 1px solid #333;
+    }
+    .back-bar a {
+      color: #ffcc00;
+      text-decoration: none;
+      font-size: 0.9rem;
+      font-family: system-ui, sans-serif;
+    }
+    .back-bar a:hover { text-decoration: underline; }
+
+    body {
+      background: #050510;
+      color: #eee;
+      font-family: 'Courier New', monospace;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      overflow: hidden;
+    }
+
+    #game-wrapper {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+      max-width: 480px;
+    }
+
+    canvas {
+      display: block;
+      background: #050510;
+      cursor: none;
+    }
+
+    /* HUD */
+    #hud {
+      width: 100%;
+      max-width: 480px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 12px;
+      background: rgba(0, 0, 0, 0.6);
+      border-bottom: 1px solid #1a1a3a;
+      font-size: 0.85rem;
+      letter-spacing: 0.05em;
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+    #hud .hud-score { color: #00ffcc; font-size: 1rem; font-weight: bold; }
+    #hud .hud-lives { color: #ff4466; }
+    #hud .hud-level { color: #aa88ff; }
+    #hud .hud-combo { color: #ffcc00; min-width: 80px; }
+
+    /* Type input display */
+    #type-display {
+      width: 100%;
+      max-width: 480px;
+      background: rgba(0, 255, 200, 0.05);
+      border-top: 1px solid #1a3a2a;
+      padding: 8px 12px;
+      font-size: 1.1rem;
+      letter-spacing: 0.15em;
+      color: #00ffcc;
+      min-height: 36px;
+      text-transform: uppercase;
+    }
+    #type-display .cursor {
+      display: inline-block;
+      width: 2px;
+      height: 1.1em;
+      background: #00ffcc;
+      margin-left: 2px;
+      vertical-align: text-bottom;
+      animation: blink 0.7s step-end infinite;
+    }
+    @keyframes blink { 50% { opacity: 0; } }
+
+    /* Overlay screens */
+    .overlay {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: rgba(5, 5, 16, 0.92);
+      z-index: 10;
+      padding: 20px;
+      text-align: center;
+    }
+    .overlay h1 {
+      font-size: 2.2rem;
+      letter-spacing: 0.2em;
+      margin-bottom: 0.5rem;
+    }
+    .overlay h2 {
+      font-size: 1.3rem;
+      letter-spacing: 0.1em;
+      margin-bottom: 1.5rem;
+    }
+    .overlay p {
+      font-size: 0.9rem;
+      line-height: 1.7;
+      color: #aaa;
+      max-width: 340px;
+      margin-bottom: 1.2rem;
+    }
+    .overlay .score-big {
+      font-size: 3rem;
+      color: #00ffcc;
+      font-weight: bold;
+      letter-spacing: 0.1em;
+      text-shadow: 0 0 20px #00ffcc88;
+    }
+    .btn {
+      background: transparent;
+      border: 2px solid #00ffcc;
+      color: #00ffcc;
+      padding: 10px 28px;
+      font-size: 1rem;
+      font-family: 'Courier New', monospace;
+      letter-spacing: 0.1em;
+      cursor: pointer;
+      border-radius: 4px;
+      text-transform: uppercase;
+      transition: all 0.15s;
+      margin-top: 8px;
+    }
+    .btn:hover, .btn:focus {
+      background: #00ffcc22;
+      box-shadow: 0 0 12px #00ffcc66;
+      outline: none;
+    }
+    .glow-title {
+      color: #00ffcc;
+      text-shadow: 0 0 30px #00ffccaa, 0 0 60px #00ffcc44;
+    }
+    .glow-yellow {
+      color: #ffcc00;
+      text-shadow: 0 0 20px #ffcc0088;
+    }
+    .how-to {
+      background: rgba(0, 255, 200, 0.05);
+      border: 1px solid #1a3a2a;
+      border-radius: 6px;
+      padding: 12px 16px;
+      text-align: left;
+      max-width: 340px;
+      margin-bottom: 1.2rem;
+    }
+    .how-to li {
+      color: #ccc;
+      font-size: 0.82rem;
+      margin-bottom: 6px;
+      line-height: 1.5;
+      padding-left: 4px;
+    }
+    .how-to li strong { color: #00ffcc; }
+    .stat-row {
+      display: flex;
+      gap: 24px;
+      margin-bottom: 12px;
+    }
+    .stat-item { text-align: center; }
+    .stat-item .label { font-size: 0.7rem; color: #666; text-transform: uppercase; letter-spacing: 0.1em; }
+    .stat-item .value { font-size: 1.4rem; color: #00ffcc; }
+    .new-best { color: #ffcc00; font-size: 0.8rem; letter-spacing: 0.1em; margin-top: -8px; margin-bottom: 12px; }
+
+    /* Mobile input trick */
+    #hidden-input {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
+      top: 0;
+      left: 0;
+      width: 1px;
+      height: 1px;
+    }
+  </style>
+</head>
+<body>
+<div class="back-bar"><a href="/">← Back to Games</a></div>
+
+<div id="game-wrapper">
+  <div id="hud">
+    <span class="hud-score">⚡ <span id="hud-score">0</span></span>
+    <span class="hud-level">LVL <span id="hud-level">1</span></span>
+    <span class="hud-combo" id="hud-combo"></span>
+    <span class="hud-lives" id="hud-lives">♥ ♥ ♥</span>
+  </div>
+
+  <canvas id="canvas" width="480" height="560"></canvas>
+
+  <div id="type-display">
+    <span id="typed-text"></span><span class="cursor"></span>
+  </div>
+
+  <!-- Start screen -->
+  <div class="overlay" id="screen-start">
+    <h1 class="glow-title">TYPE BLITZ</h1>
+    <h2 class="glow-yellow">⚡ Alien Typing Attack</h2>
+    <div class="how-to">
+      <ul style="list-style:none; padding:0;">
+        <li>🛸 <strong>Aliens</strong> descend with words on them</li>
+        <li>⌨️ <strong>Start typing</strong> — the first letter locks a target</li>
+        <li>💥 <strong>Type the full word</strong> to blast it</li>
+        <li>❌ <strong>Wrong key</strong> resets your progress</li>
+        <li>💀 <strong>Enemy reaches bottom</strong> = lose a life</li>
+        <li>🏆 <strong>3 lives</strong> — get the highest score!</li>
+      </ul>
+    </div>
+    <button class="btn" id="btn-start">START GAME</button>
+    <p style="font-size:0.75rem; margin-top:12px; color:#444;">Mobile: tap screen to activate keyboard</p>
+  </div>
+
+  <!-- Game over screen -->
+  <div class="overlay" id="screen-gameover" style="display:none">
+    <h1 style="color:#ff4466; text-shadow: 0 0 30px #ff446688;">GAME OVER</h1>
+    <div class="score-big" id="final-score">0</div>
+    <div id="new-best-badge" class="new-best" style="display:none">🏆 NEW HIGH SCORE!</div>
+    <div class="stat-row">
+      <div class="stat-item">
+        <div class="label">Words Typed</div>
+        <div class="value" id="stat-words">0</div>
+      </div>
+      <div class="stat-item">
+        <div class="label">Best Combo</div>
+        <div class="value" id="stat-combo">0</div>
+      </div>
+      <div class="stat-item">
+        <div class="label">Level Reached</div>
+        <div class="value" id="stat-level">1</div>
+      </div>
+    </div>
+    <button class="btn" id="btn-restart">PLAY AGAIN</button>
+    <p id="best-score-display" style="font-size:0.8rem; color:#555; margin-top:8px;"></p>
+  </div>
+
+  <input id="hidden-input" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
+</div>
+
+<script type="module">
+import {
+  getLevelFromScore, getEnemySpeed, getPointsForKill,
+  getRandomWord, findTarget, createEnemy,
+  processTypedChar, updateEnemies, shouldSpawn,
+  MAX_ENEMIES_BY_LEVEL
+} from './game-logic.js';
+
+// ── Canvas & DOM ──────────────────────────────────────────────────────────────
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const W = canvas.width, H = canvas.height;
+
+// Responsive sizing
+function fitCanvas() {
+  const maxW = Math.min(window.innerWidth, 480);
+  const scale = maxW / W;
+  canvas.style.width = maxW + 'px';
+  canvas.style.height = (H * scale) + 'px';
+}
+fitCanvas();
+window.addEventListener('resize', fitCanvas);
+
+// ── Stars background ──────────────────────────────────────────────────────────
+const STARS = Array.from({ length: 120 }, () => ({
+  x: Math.random() * W,
+  y: Math.random() * H,
+  r: Math.random() * 1.5 + 0.3,
+  speed: Math.random() * 0.3 + 0.05,
+  alpha: Math.random() * 0.6 + 0.2,
+}));
+
+function drawStars() {
+  for (const s of STARS) {
+    ctx.beginPath();
+    ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(200,210,255,${s.alpha})`;
+    ctx.fill();
+    s.y += s.speed;
+    if (s.y > H) { s.y = -2; s.x = Math.random() * W; }
+  }
+}
+
+// ── Game state ────────────────────────────────────────────────────────────────
+let state; // 'start' | 'playing' | 'gameover'
+let enemies, typedBuffer, targetIdx, score, lives, combo, maxCombo, frame, wordsTyped;
+let particles = [];
+
+function initGame() {
+  enemies = [];
+  typedBuffer = '';
+  targetIdx = -1;
+  score = 0;
+  lives = 3;
+  combo = 0;
+  maxCombo = 0;
+  frame = 0;
+  wordsTyped = 0;
+  particles = [];
+  updateHUD();
+}
+
+function updateHUD() {
+  document.getElementById('hud-score').textContent = score;
+  document.getElementById('hud-level').textContent = getLevelFromScore(score) + 1;
+  const h = ['♥','♥','♥'].map((h,i) => i < lives ? `<span style="color:#ff4466">${h}</span>` : `<span style="color:#333">♡</span>`).join(' ');
+  document.getElementById('hud-lives').innerHTML = h;
+  const comboEl = document.getElementById('hud-combo');
+  if (combo >= 3) {
+    comboEl.innerHTML = `🔥 x${combo}`;
+  } else {
+    comboEl.textContent = '';
+  }
+}
+
+function updateTypeDisplay() {
+  const el = document.getElementById('typed-text');
+  if (targetIdx >= 0 && enemies[targetIdx]) {
+    const e = enemies[targetIdx];
+    const typed = e.typed;
+    const remaining = e.word.slice(typed.length);
+    el.innerHTML = `<span style="color:#ffcc00">${typed}</span><span style="color:#00ffcc">${remaining}</span>`;
+  } else if (typedBuffer) {
+    el.innerHTML = `<span style="color:#ff4466">${typedBuffer}</span>`;
+  } else {
+    el.textContent = '';
+  }
+}
+
+// ── Particles ─────────────────────────────────────────────────────────────────
+function spawnExplosion(x, y, color = '#00ffcc') {
+  for (let i = 0; i < 18; i++) {
+    const angle = (Math.PI * 2 * i) / 18 + Math.random() * 0.3;
+    const speed = Math.random() * 3 + 1;
+    particles.push({
+      x, y,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      life: 1,
+      decay: Math.random() * 0.04 + 0.03,
+      size: Math.random() * 3 + 1,
+      color,
+    });
+  }
+}
+
+function spawnMissParticles(x, y) {
+  for (let i = 0; i < 6; i++) {
+    particles.push({
+      x, y,
+      vx: (Math.random() - 0.5) * 4,
+      vy: (Math.random() - 0.5) * 4,
+      life: 1,
+      decay: 0.08,
+      size: 2,
+      color: '#ff4466',
+    });
+  }
+}
+
+function updateParticles() {
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const p = particles[i];
+    p.x += p.vx;
+    p.y += p.vy;
+    p.vy += 0.08;
+    p.life -= p.decay;
+    if (p.life <= 0) particles.splice(i, 1);
+  }
+}
+
+function drawParticles() {
+  for (const p of particles) {
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+    ctx.fillStyle = p.color + Math.floor(p.life * 255).toString(16).padStart(2, '0');
+    ctx.fill();
+  }
+}
+
+// ── Enemy drawing ─────────────────────────────────────────────────────────────
+const LEVEL_COLORS = ['#00ffcc', '#aa88ff', '#ff8800', '#ff4466'];
+const SHIP_GLOWS  = ['#00ffcc44', '#aa88ff44', '#ff880044', '#ff446644'];
+
+function drawEnemy(e, level) {
+  if (e.exploding) {
+    const prog = e.explodeFrame / 20;
+    ctx.globalAlpha = Math.max(0, 1 - prog);
+    const r = 30 + prog * 40;
+    const grad = ctx.createRadialGradient(e.x, e.y, 0, e.x, e.y, r);
+    grad.addColorStop(0, LEVEL_COLORS[Math.min(level, 3)]);
+    grad.addColorStop(1, 'transparent');
+    ctx.beginPath();
+    ctx.arc(e.x, e.y, r, 0, Math.PI * 2);
+    ctx.fillStyle = grad;
+    ctx.fill();
+    ctx.globalAlpha = 1;
+    if (e.explodeFrame >= 20) e.exploding = false;
+    return;
+  }
+  if (!e.alive) return;
+
+  const isTarget = (enemies.indexOf(e) === targetIdx);
+  const col = LEVEL_COLORS[Math.min(level, 3)];
+
+  ctx.save();
+  ctx.translate(e.x, e.y);
+
+  // Glow
+  if (isTarget) {
+    ctx.shadowBlur = 20;
+    ctx.shadowColor = col;
+  }
+
+  // Ship body — alien saucer shape
+  ctx.beginPath();
+  ctx.ellipse(0, 0, 26, 10, 0, 0, Math.PI * 2);
+  ctx.fillStyle = isTarget ? col + 'aa' : '#1a1a2a';
+  ctx.strokeStyle = col;
+  ctx.lineWidth = 1.5;
+  ctx.fill();
+  ctx.stroke();
+
+  // Dome
+  ctx.beginPath();
+  ctx.ellipse(0, -8, 14, 9, 0, Math.PI, 0);
+  ctx.fillStyle = isTarget ? col + '88' : '#0d0d1d';
+  ctx.strokeStyle = col;
+  ctx.lineWidth = 1;
+  ctx.fill();
+  ctx.stroke();
+
+  // Underside lights
+  for (let i = -2; i <= 2; i++) {
+    ctx.beginPath();
+    ctx.arc(i * 9, 5, 2.5, 0, Math.PI * 2);
+    ctx.fillStyle = isTarget ? col : col + '55';
+    ctx.fill();
+  }
+
+  ctx.shadowBlur = 0;
+  ctx.restore();
+
+  // Word text
+  const typed = e.typed || '';
+  const remaining = e.word.slice(typed.length);
+  const fullText = e.word;
+  ctx.font = `bold 14px "Courier New", monospace`;
+  const tw = ctx.measureText(fullText).width;
+  const tx = e.x - tw / 2;
+  const ty = e.y + 28;
+
+  // Background pill
+  ctx.fillStyle = 'rgba(0,0,0,0.7)';
+  ctx.beginPath();
+  ctx.roundRect(tx - 5, ty - 14, tw + 10, 18, 4);
+  ctx.fill();
+
+  // Typed part (green/yellow)
+  if (typed) {
+    ctx.fillStyle = '#ffcc00';
+    ctx.fillText(typed, tx, ty);
+  }
+  // Remaining part
+  ctx.fillStyle = isTarget ? '#ffffff' : col;
+  ctx.fillText(remaining, tx + ctx.measureText(typed).width, ty);
+}
+
+// ── Laser beam effect ─────────────────────────────────────────────────────────
+let lasers = [];
+function spawnLaser(targetX, targetY) {
+  lasers.push({ x: targetX, y: targetY, life: 1 });
+}
+function drawLasers() {
+  for (let i = lasers.length - 1; i >= 0; i--) {
+    const l = lasers[i];
+    ctx.beginPath();
+    ctx.moveTo(W / 2, H - 20);
+    ctx.lineTo(l.x, l.y);
+    ctx.strokeStyle = `rgba(0,255,200,${l.life * 0.8})`;
+    ctx.lineWidth = l.life * 3;
+    ctx.stroke();
+    l.life -= 0.15;
+    if (l.life <= 0) lasers.splice(i, 1);
+  }
+}
+
+// ── Player ship (bottom) ───────────────────────────────────────────────────────
+function drawPlayer() {
+  const px = W / 2, py = H - 20;
+  ctx.save();
+  ctx.translate(px, py);
+
+  ctx.shadowBlur = 15;
+  ctx.shadowColor = '#00ffcc';
+
+  // Main body
+  ctx.beginPath();
+  ctx.moveTo(0, -18);
+  ctx.lineTo(14, 8);
+  ctx.lineTo(6, 4);
+  ctx.lineTo(0, 12);
+  ctx.lineTo(-6, 4);
+  ctx.lineTo(-14, 8);
+  ctx.closePath();
+  ctx.fillStyle = '#003322';
+  ctx.strokeStyle = '#00ffcc';
+  ctx.lineWidth = 2;
+  ctx.fill();
+  ctx.stroke();
+
+  // Engine glow
+  ctx.beginPath();
+  ctx.arc(0, 10, 5, 0, Math.PI * 2);
+  ctx.fillStyle = '#00ffcc88';
+  ctx.fill();
+
+  ctx.shadowBlur = 0;
+  ctx.restore();
+}
+
+// ── Combo floaters ────────────────────────────────────────────────────────────
+let floaters = [];
+function spawnFloater(x, y, text, color) {
+  floaters.push({ x, y, text, color, life: 1 });
+}
+function drawFloaters() {
+  for (let i = floaters.length - 1; i >= 0; i--) {
+    const f = floaters[i];
+    ctx.globalAlpha = f.life;
+    ctx.font = `bold 16px "Courier New", monospace`;
+    ctx.fillStyle = f.color;
+    ctx.textAlign = 'center';
+    ctx.fillText(f.text, f.x, f.y);
+    ctx.textAlign = 'left';
+    ctx.globalAlpha = 1;
+    f.y -= 1.5;
+    f.life -= 0.025;
+    if (f.life <= 0) floaters.splice(i, 1);
+  }
+}
+
+// ── Screen flash ───────────────────────────────────────────────────────────────
+let flashAlpha = 0, flashColor = '#ff4466';
+function triggerFlash(color = '#ff4466', alpha = 0.4) {
+  flashColor = color;
+  flashAlpha = alpha;
+}
+
+// ── Main game loop ────────────────────────────────────────────────────────────
+function gameLoop() {
+  if (state !== 'playing') return;
+
+  const level = getLevelFromScore(score);
+  frame++;
+
+  // Spawn
+  const activeCount = enemies.filter(e => e.alive).length;
+  if (shouldSpawn(frame, level, activeCount)) {
+    const usedWords = new Set(enemies.filter(e => e.alive).map(e => e.word));
+    const word = getRandomWord(level, usedWords);
+    const speed = getEnemySpeed(level);
+    // Spread enemies across width avoiding edges
+    const margin = 60;
+    const x = margin + Math.random() * (W - margin * 2);
+    enemies.push(createEnemy(word, x, W, speed));
+  }
+
+  // Update enemies
+  const escaped = updateEnemies(enemies, H - 60);
+  for (const esc of escaped) {
+    lives--;
+    combo = 0;
+    triggerFlash('#ff4466', 0.5);
+    updateHUD();
+    if (lives <= 0) {
+      endGame();
+      return;
+    }
+  }
+
+  // Clean up dead enemies (not exploding)
+  const toRemove = enemies.filter(e => !e.alive && !e.exploding);
+  for (const e of toRemove) {
+    const idx = enemies.indexOf(e);
+    if (idx !== -1) {
+      enemies.splice(idx, 1);
+      if (targetIdx === idx) { targetIdx = -1; typedBuffer = ''; }
+      else if (targetIdx > idx) targetIdx--;
+    }
+  }
+
+  // Update particles
+  updateParticles();
+
+  // ── Draw ──────────────────────────────────────────────────────────────────
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = '#050510';
+  ctx.fillRect(0, 0, W, H);
+
+  // Flash overlay
+  if (flashAlpha > 0) {
+    ctx.fillStyle = flashColor + Math.floor(flashAlpha * 255).toString(16).padStart(2,'0');
+    ctx.fillRect(0, 0, W, H);
+    flashAlpha = Math.max(0, flashAlpha - 0.04);
+  }
+
+  drawStars();
+  drawLasers();
+  drawParticles();
+
+  for (const e of enemies) drawEnemy(e, level);
+
+  drawPlayer();
+  drawFloaters();
+
+  // Level indicator flash
+  const prevLevel = getLevelFromScore(score > 0 ? score - 1 : 0);
+  if (getLevelFromScore(score) > prevLevel && frame % 120 < 60) {
+    ctx.fillStyle = 'rgba(170,136,255,0.15)';
+    ctx.fillRect(0, 0, W, H);
+  }
+
+  updateTypeDisplay();
+  requestAnimationFrame(gameLoop);
+}
+
+// ── Keyboard input ────────────────────────────────────────────────────────────
+function handleKey(char) {
+  if (state !== 'playing') return;
+  if (!/^[a-zA-Z]$/.test(char)) return;
+
+  const level = getLevelFromScore(score);
+  const prevTarget = targetIdx;
+
+  // Build trial buffer for target finding
+  const trialBuffer = typedBuffer + char.toUpperCase();
+
+  // Find target based on buffer
+  let newTarget = findTarget(enemies.filter(e => e.alive), trialBuffer, targetIdx);
+
+  // Map back to real index (filter may shift indices)
+  if (newTarget >= 0) {
+    const aliveEnemies = enemies.filter(e => e.alive);
+    const targetEnemy = aliveEnemies[newTarget];
+    newTarget = enemies.indexOf(targetEnemy);
+  }
+
+  if (newTarget >= 0) {
+    targetIdx = newTarget;
+
+    // If switching target, reset its typed
+    if (targetIdx !== prevTarget && prevTarget >= 0 && enemies[prevTarget]) {
+      enemies[prevTarget].typed = '';
+    }
+
+    const result = processTypedChar(enemies, targetIdx, char);
+    if (result.hit) {
+      typedBuffer = enemies[targetIdx]?.typed || '';
+      if (result.destroyed) {
+        const pts = getPointsForKill(level);
+        combo++;
+        maxCombo = Math.max(maxCombo, combo);
+        wordsTyped++;
+
+        const ex = enemies[targetIdx].x;
+        const ey = enemies[targetIdx].y;
+        spawnExplosion(ex, ey, LEVEL_COLORS[Math.min(level, 3)]);
+        spawnLaser(ex, ey);
+
+        let bonusPts = pts;
+        if (combo >= 3) {
+          bonusPts = pts + Math.floor(combo / 3);
+          spawnFloater(ex, ey - 20, `${combo}x COMBO! +${bonusPts}`, '#ffcc00');
+        } else {
+          spawnFloater(ex, ey - 20, `+${bonusPts}`, '#00ffcc');
+        }
+
+        score += bonusPts;
+        typedBuffer = '';
+        targetIdx = -1;
+        updateHUD();
+      }
+    } else if (result.miss) {
+      combo = 0;
+      typedBuffer = '';
+      targetIdx = -1;
+      updateHUD();
+    }
+  } else {
+    // No target found — visual feedback
+    triggerFlash('#ff446622', 0.15);
+    typedBuffer = '';
+  }
+}
+
+document.addEventListener('keydown', (e) => {
+  if (state === 'start' || state === 'gameover') return;
+  if (e.key === 'Escape') { typedBuffer = ''; targetIdx = -1; updateTypeDisplay(); return; }
+  if (e.key.length === 1) handleKey(e.key);
+});
+
+// Mobile: hidden input trick
+const hiddenInput = document.getElementById('hidden-input');
+canvas.addEventListener('click', () => { if (state === 'playing') hiddenInput.focus(); });
+hiddenInput.addEventListener('input', (e) => {
+  const val = hiddenInput.value;
+  hiddenInput.value = '';
+  for (const ch of val) handleKey(ch);
+});
+
+// ── Start / End ───────────────────────────────────────────────────────────────
+function startGame() {
+  document.getElementById('screen-start').style.display = 'none';
+  document.getElementById('screen-gameover').style.display = 'none';
+  initGame();
+  state = 'playing';
+  hiddenInput.focus();
+  gameLoop();
+}
+
+function endGame() {
+  state = 'gameover';
+  const best = parseInt(localStorage.getItem('typeblitz-best') || '0');
+  const isNew = score > best;
+  if (isNew) localStorage.setItem('typeblitz-best', score);
+
+  document.getElementById('final-score').textContent = score;
+  document.getElementById('stat-words').textContent = wordsTyped;
+  document.getElementById('stat-combo').textContent = maxCombo;
+  document.getElementById('stat-level').textContent = getLevelFromScore(score) + 1;
+  document.getElementById('new-best-badge').style.display = isNew ? 'block' : 'none';
+  document.getElementById('best-score-display').textContent =
+    isNew ? '' : `Best: ${best}`;
+
+  document.getElementById('screen-gameover').style.display = 'flex';
+}
+
+document.getElementById('btn-start').addEventListener('click', startGame);
+document.getElementById('btn-restart').addEventListener('click', startGame);
+
+// Init idle draw loop (stars animation on start screen)
+state = 'start';
+(function idleLoop() {
+  if (state !== 'start' && state !== 'gameover') return;
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = '#050510';
+  ctx.fillRect(0, 0, W, H);
+  drawStars();
+  drawPlayer();
+  requestAnimationFrame(idleLoop);
+})();
+</script>
+</body>
+</html>
