@@ -9,6 +9,7 @@ function createApp() {
   const store = require('./store');
 
   const gamesDir = path.join(__dirname, '..', 'games');
+  const sharedDir = path.join(__dirname, '..', 'shared');
   const publicDir = path.join(__dirname, 'public');
 
   const MIME = {
@@ -71,6 +72,12 @@ function createApp() {
         res.end(JSON.stringify({ error: e.message }));
       }
       return;
+    }
+
+    // Serve shared files under /shared/
+    if (pathname.startsWith('/shared/')) {
+      const sharedPath = pathname.slice(8);
+      if (serveStatic(sharedDir, sharedPath, res)) return;
     }
 
     // Serve game files under /games/
