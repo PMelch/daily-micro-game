@@ -7,6 +7,7 @@
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0f0f23; color: #ccc; min-height: 100vh; }
+  .back-bar { width: 100%; background: #0f0f23; padding: 0.4rem 1rem; border-bottom: 1px solid #222; }
   .header { background: linear-gradient(135deg, #1a1a3e, #2d1b69); padding: 2rem; text-align: center; border-bottom: 2px solid #333; }
   .header h1 { color: #ffcc00; font-size: 2rem; margin-bottom: 0.3rem; }
   .header p { color: #aaa; font-size: 0.95rem; }
@@ -51,22 +52,98 @@
 </style>
 </head>
 <body>
+<div class="back-bar"></div>
 <div class="header">
   <h1>🎮 Daily Micro Games</h1>
-  <p>A new game every day — play, rate, enjoy</p>
+  <p data-i18n="subtitle">A new game every day — play, rate, enjoy</p>
   <div class="stats">
-    <div class="stat"><div class="stat-num" id="total-games">0</div><div class="stat-label">Games</div></div>
-    <div class="stat"><div class="stat-num" id="total-ratings">0</div><div class="stat-label">Ratings</div></div>
+    <div class="stat"><div class="stat-num" id="total-games">0</div><div class="stat-label" data-i18n="statGames">Games</div></div>
+    <div class="stat"><div class="stat-num" id="total-ratings">0</div><div class="stat-label" data-i18n="statRatings">Ratings</div></div>
   </div>
 </div>
 <div class="container">
   <div class="filter-bar" id="filter-bar" style="display:none">
-    <span class="filter-label">Filter:</span>
+    <span class="filter-label" data-i18n="filterLabel">Filter:</span>
   </div>
   <div id="games-list" class="games-grid">
-    <div class="empty"><h2>No games yet</h2><p>The first game drops tomorrow morning! 🌅</p></div>
+    <div class="empty"><h2 data-i18n="noGamesYet">No games yet</h2><p data-i18n="firstGameSoon">The first game drops tomorrow morning! 🌅</p></div>
   </div>
 </div>
+
+<script src="/shared/i18n.js"></script>
+<script>
+const TRANSLATIONS = {
+  de: {
+    subtitle: 'Jeden Tag ein neues Spiel — spielen, bewerten, genießen',
+    statGames: 'Spiele',
+    statRatings: 'Bewertungen',
+    filterLabel: 'Filter:',
+    noGamesYet: 'Noch keine Spiele',
+    firstGameSoon: 'Das erste Spiel erscheint morgen früh! 🌅',
+    noGamesMatch: 'Keine Spiele mit diesen Tags',
+    play: '▶ Spielen',
+    notRatedYet: 'Noch nicht bewertet',
+    ratingCount: '{n} Bewertung',
+    ratingCountPlural: '{n} Bewertungen',
+  },
+  en: {
+    subtitle: 'A new game every day — play, rate, enjoy',
+    statGames: 'Games',
+    statRatings: 'Ratings',
+    filterLabel: 'Filter:',
+    noGamesYet: 'No games yet',
+    firstGameSoon: 'The first game drops tomorrow morning! 🌅',
+    noGamesMatch: 'No games match these tags',
+    play: '▶ Play',
+    notRatedYet: 'Not rated yet',
+    ratingCount: '{n} rating',
+    ratingCountPlural: '{n} ratings',
+  },
+  it: {
+    subtitle: 'Un nuovo gioco ogni giorno — gioca, vota, goditi',
+    statGames: 'Giochi',
+    statRatings: 'Valutazioni',
+    filterLabel: 'Filtro:',
+    noGamesYet: 'Ancora nessun gioco',
+    firstGameSoon: 'Il primo gioco arriva domani mattina! 🌅',
+    noGamesMatch: 'Nessun gioco corrisponde a questi tag',
+    play: '▶ Gioca',
+    notRatedYet: 'Non ancora valutato',
+    ratingCount: '{n} valutazione',
+    ratingCountPlural: '{n} valutazioni',
+  },
+  es: {
+    subtitle: 'Un nuevo juego cada día — juega, valora, disfruta',
+    statGames: 'Juegos',
+    statRatings: 'Valoraciones',
+    filterLabel: 'Filtro:',
+    noGamesYet: 'Aún no hay juegos',
+    firstGameSoon: '¡El primer juego llega mañana por la mañana! 🌅',
+    noGamesMatch: 'Ningún juego coincide con estas etiquetas',
+    play: '▶ Jugar',
+    notRatedYet: 'Sin valorar aún',
+    ratingCount: '{n} valoración',
+    ratingCountPlural: '{n} valoraciones',
+  },
+  fr: {
+    subtitle: 'Un nouveau jeu chaque jour — jouer, noter, profiter',
+    statGames: 'Jeux',
+    statRatings: 'Évaluations',
+    filterLabel: 'Filtre :',
+    noGamesYet: 'Pas encore de jeux',
+    firstGameSoon: 'Le premier jeu arrive demain matin ! 🌅',
+    noGamesMatch: 'Aucun jeu ne correspond à ces tags',
+    play: '▶ Jouer',
+    notRatedYet: 'Pas encore évalué',
+    ratingCount: '{n} évaluation',
+    ratingCountPlural: '{n} évaluations',
+  },
+};
+const { t, lang, onLangChange, translatePage } = initI18n(TRANSLATIONS);
+window.t = t;
+window.onLangChange = onLangChange;
+</script>
+
 <script>
 let allGames = [];
 let activeTags = new Set();
@@ -95,11 +172,19 @@ function buildFilters() {
   });
 }
 
+function ratingText(ratings) {
+  if (!ratings?.length) return window.t('notRatedYet');
+  const n = ratings.length;
+  return n === 1
+    ? window.t('ratingCount').replace('{n}', n)
+    : window.t('ratingCountPlural').replace('{n}', n);
+}
+
 function render() {
   const container = document.getElementById('games-list');
   let games = allGames;
   if (activeTags.size > 0) {
-    games = games.filter(g => (g.tags || []).some(t => activeTags.has(t)));
+    games = games.filter(g => (g.tags || []).some(tag => activeTags.has(tag)));
   }
   games.sort((a, b) => {
     const dayA = parseInt(a.id.match(/day-(\d+)/)?.[1] || '0');
@@ -108,11 +193,11 @@ function render() {
   });
 
   if (games.length === 0 && allGames.length === 0) {
-    container.innerHTML = '<div class="empty"><h2>No games yet</h2><p>The first game drops tomorrow morning! 🌅</p></div>';
+    container.innerHTML = `<div class="empty"><h2>${window.t('noGamesYet')}</h2><p>${window.t('firstGameSoon')}</p></div>`;
     return;
   }
   if (games.length === 0) {
-    container.innerHTML = '<div class="empty"><h2>No games match these tags</h2></div>';
+    container.innerHTML = `<div class="empty"><h2>${window.t('noGamesMatch')}</h2></div>`;
     return;
   }
 
@@ -123,13 +208,13 @@ function render() {
         <h2>${esc(g.name)}</h2>
         <div class="meta">Day ${g.id.match(/day-(\d+)/)?.[1] || '?'} · ${g.date}${g.averageRating ? ` · ⭐ ${g.averageRating.toFixed(1)} (${g.ratings.length})` : ''}</div>
         <div class="desc">${esc(g.description)}</div>
-        ${(g.tags||[]).length ? `<div class="tags">${g.tags.map(t => `<span class="game-tag">${esc(t)}</span>`).join('')}</div>` : ''}
+        ${(g.tags||[]).length ? `<div class="tags">${g.tags.map(tag => `<span class="game-tag">${esc(tag)}</span>`).join('')}</div>` : ''}
         <div class="actions">
-          <a class="play-btn" href="/games/${g.id}/">▶ Play</a>
+          <a class="play-btn" href="/games/${g.id}/">${window.t('play')}</a>
           <div class="stars" data-game="${g.id}">
             ${[1,2,3,4,5].map(n => `<span class="star${g.averageRating && n <= Math.round(g.averageRating) ? ' active' : ''}" data-rating="${n}">★</span>`).join('')}
           </div>
-          <span class="rating-info">${g.ratings?.length ? g.ratings.length + ' rating' + (g.ratings.length > 1 ? 's' : '') : 'Not rated yet'}</span>
+          <span class="rating-info">${ratingText(g.ratings)}</span>
         </div>
       </div>
     </div>
@@ -156,6 +241,10 @@ function render() {
 }
 
 function esc(s) { if (!s) return ''; const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+// Re-render on language change so dynamic text updates
+window.onLangChange(render);
+
 load();
 </script>
 </body>

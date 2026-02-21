@@ -62,14 +62,68 @@
 </style>
 </head>
 <body>
-<div class="back-bar"><a href="/">← Back to Games</a></div>
+<div class="back-bar"><a href="/" data-i18n="back">← Back to Games</a></div>
 <h1>🎯 Ricochet</h1>
 <div id="info">
-  Level <span id="lvl">1</span> &nbsp;|&nbsp; Shots: <span id="shots">0</span>
+  <span data-i18n="level">Level</span> <span id="lvl">1</span> &nbsp;|&nbsp; <span data-i18n="shots">Shots:</span> <span id="shots">0</span>
 </div>
 <canvas id="c" width="800" height="600"></canvas>
 <div id="message"></div>
-<button id="restart">Next Level →</button>
+<button id="restart" data-i18n="nextLevel">Next Level →</button>
+
+<script src="/shared/i18n.js"></script>
+<script>
+const TRANSLATIONS = {
+  de: {
+    back: '← Zurück zu den Spielen',
+    level: 'Level',
+    shots: 'Schüsse:',
+    levelClearedMsg: '✨ Level geschafft! ({n} Schüsse)',
+    allComplete: '🏆 Alle Level abgeschlossen! Schüsse gesamt: {n}',
+    playAgain: 'Nochmal spielen',
+    nextLevel: 'Nächstes Level →',
+  },
+  en: {
+    back: '← Back to Games',
+    level: 'Level',
+    shots: 'Shots:',
+    levelClearedMsg: '✨ Level cleared! ({n} shots)',
+    allComplete: '🏆 All levels complete! Total shots: {n}',
+    playAgain: 'Play Again',
+    nextLevel: 'Next Level →',
+  },
+  it: {
+    back: '← Torna ai giochi',
+    level: 'Livello',
+    shots: 'Tiri:',
+    levelClearedMsg: '✨ Livello completato! ({n} tiri)',
+    allComplete: '🏆 Tutti i livelli completati! Tiri totali: {n}',
+    playAgain: 'Gioca ancora',
+    nextLevel: 'Livello seguente →',
+  },
+  es: {
+    back: '← Volver a los juegos',
+    level: 'Nivel',
+    shots: 'Disparos:',
+    levelClearedMsg: '✨ ¡Nivel superado! ({n} disparos)',
+    allComplete: '🏆 ¡Todos los niveles completados! Disparos totales: {n}',
+    playAgain: 'Jugar de nuevo',
+    nextLevel: 'Siguiente nivel →',
+  },
+  fr: {
+    back: '← Retour aux jeux',
+    level: 'Niveau',
+    shots: 'Tirs :',
+    levelClearedMsg: '✨ Niveau réussi ! ({n} tirs)',
+    allComplete: '🏆 Tous les niveaux terminés ! Tirs au total : {n}',
+    playAgain: 'Rejouer',
+    nextLevel: 'Niveau suivant →',
+  },
+};
+const { t, lang, onLangChange, translatePage } = initI18n(TRANSLATIONS);
+window.t = t;
+window.onLangChange = onLangChange;
+</script>
 
 <script type="module">
 import { createBallState, stepBall, simulateTrajectory, LEVELS } from './game.js';
@@ -164,9 +218,14 @@ restartBtn.addEventListener('click', () => {
     currentLevel++;
     loadLevel(currentLevel);
   } else {
-    msgEl.textContent = `🏆 All levels complete! Total shots: ${totalShots}`;
-    restartBtn.textContent = 'Play Again';
-    restartBtn.onclick = () => { currentLevel = 0; totalShots = 0; restartBtn.textContent = 'Next Level →'; loadLevel(0); };
+    msgEl.textContent = window.t('allComplete').replace('{n}', totalShots);
+    restartBtn.textContent = window.t('playAgain');
+    restartBtn.onclick = () => {
+      currentLevel = 0; totalShots = 0;
+      restartBtn.textContent = window.t('nextLevel');
+      restartBtn.onclick = null;
+      loadLevel(0);
+    };
   }
 });
 
@@ -179,13 +238,18 @@ function animate() {
   if (targets.every(t => t.hit)) {
     animating = false;
     if (currentLevel < LEVELS.length - 1) {
-      msgEl.textContent = `✨ Level cleared in ${shots} shot${shots !== 1 ? 's' : ''}!`;
+      msgEl.textContent = window.t('levelClearedMsg').replace('{n}', shots);
       restartBtn.style.display = 'inline-block';
     } else {
-      msgEl.textContent = `🏆 All levels complete! Total shots: ${totalShots}`;
-      restartBtn.textContent = 'Play Again';
+      msgEl.textContent = window.t('allComplete').replace('{n}', totalShots);
+      restartBtn.textContent = window.t('playAgain');
       restartBtn.style.display = 'inline-block';
-      restartBtn.onclick = () => { currentLevel = 0; totalShots = 0; restartBtn.textContent = 'Next Level →'; loadLevel(0); };
+      restartBtn.onclick = () => {
+        currentLevel = 0; totalShots = 0;
+        restartBtn.textContent = window.t('nextLevel');
+        restartBtn.onclick = null;
+        loadLevel(0);
+      };
     }
     return;
   }

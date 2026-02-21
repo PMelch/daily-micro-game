@@ -314,45 +314,45 @@
   </style>
 </head>
 <body>
-<div class="back-bar"><a href="/">← Back to Games</a></div>
+<div class="back-bar"><a href="/" data-i18n="back">← Back to Games</a></div>
 
 <!-- ── SCREEN: Landing ── -->
 <div class="screen active" id="screen-landing">
   <div class="gap-lg"></div>
   <h1 class="logo">⚡ Blitz Buzz</h1>
-  <p class="logo-sub">Echtzeit-Quiz Buzzer · Wer drückt zuerst?</p>
+  <p class="logo-sub" data-i18n="logoSub">Real-time quiz buzzer · Who buzzes first?</p>
 
-  <div class="status-bar" id="ws-status">Verbinde…</div>
+  <div class="status-bar" id="ws-status" data-i18n="wsConnecting">Connecting…</div>
 
   <div class="card">
-    <h2>Spiel erstellen</h2>
+    <h2 data-i18n="createGame">Create game</h2>
     <div class="field">
-      <label>Dein Name</label>
-      <input type="text" id="create-name" placeholder="Dein Name" maxlength="16">
+      <label data-i18n="yourName">Your name</label>
+      <input type="text" id="create-name" data-i18n-placeholder="namePlaceholder" placeholder="Your name" maxlength="16">
     </div>
-    <button class="btn btn-gold" id="btn-create">Raum erstellen 🎯</button>
+    <button class="btn btn-gold" id="btn-create" data-i18n="btnCreate">Create room 🎯</button>
   </div>
 
   <div class="card">
-    <h2>Beitreten</h2>
+    <h2 data-i18n="joinGame">Join</h2>
     <div class="field">
-      <label>Dein Name</label>
-      <input type="text" id="join-name" placeholder="Dein Name" maxlength="16">
+      <label data-i18n="yourName">Your name</label>
+      <input type="text" id="join-name" data-i18n-placeholder="namePlaceholder" placeholder="Your name" maxlength="16">
     </div>
     <div class="field">
-      <label>Raumcode</label>
-      <input type="text" id="join-code" placeholder="z.B. ABCD" maxlength="4" style="text-transform:uppercase;letter-spacing:4px;font-weight:700;font-size:1.2rem;">
+      <label data-i18n="roomCode">Room code</label>
+      <input type="text" id="join-code" data-i18n-placeholder="codePlaceholder" placeholder="e.g. ABCD" maxlength="4" style="text-transform:uppercase;letter-spacing:4px;font-weight:700;font-size:1.2rem;">
     </div>
-    <button class="btn btn-primary" id="btn-join">Beitreten →</button>
+    <button class="btn btn-primary" id="btn-join" data-i18n="btnJoin">Join →</button>
   </div>
 
   <div class="card">
-    <h2>🎮 Wie wird gespielt?</h2>
-    <p style="color:var(--muted);font-size:0.88rem;line-height:1.7">
-      Jeder spielt auf seinem eigenen Gerät. Eine Frage erscheint <b>gleichzeitig</b> auf allen Bildschirmen.
-      Wer zuerst <b>BUZZ!</b> drückt, darf antworten.<br><br>
-      ✅ Richtig → <b>+3 Punkte</b> &nbsp; ❌ Falsch → <b>−1 Punkt</b><br><br>
-      10 Fragen. Höchste Punktzahl gewinnt. Los!
+    <h2 data-i18n="howToPlay">🎮 How to play?</h2>
+    <p data-i18n-html="instructions" style="color:var(--muted);font-size:0.88rem;line-height:1.7">
+      Everyone plays on their own device. A question appears <b>simultaneously</b> on all screens.
+      Whoever presses <b>BUZZ!</b> first gets to answer.<br><br>
+      ✅ Correct → <b>+3 points</b> &nbsp; ❌ Wrong → <b>−1 point</b><br><br>
+      10 questions. Highest score wins. Go!
     </p>
   </div>
 </div>
@@ -360,34 +360,34 @@
 <!-- ── SCREEN: Lobby ── -->
 <div class="screen" id="screen-lobby">
   <div class="gap"></div>
-  <div style="color:var(--muted);font-size:0.8rem;text-align:center;margin-bottom:0.25rem">RAUMCODE — teile ihn mit deinen Freunden!</div>
+  <div style="color:var(--muted);font-size:0.8rem;text-align:center;margin-bottom:0.25rem" data-i18n="lobbyCodeLabel">ROOM CODE — share it with your friends!</div>
   <div class="room-code" id="lobby-code">????</div>
   <div class="code-hint" id="lobby-hint"></div>
 
   <div style="width:100%;max-width:480px">
-    <div class="section-label" id="players-label">Spieler (1/6)</div>
+    <div class="section-label" id="players-label">Players (1/6)</div>
     <div class="player-list" id="lobby-players"></div>
   </div>
 
   <div id="host-controls" style="display:none;width:100%;max-width:480px">
-    <button class="btn btn-gold" id="btn-start-game">Spiel starten ▶</button>
-    <p style="color:var(--muted);font-size:0.8rem;text-align:center">Mindestens 2 Spieler nötig</p>
+    <button class="btn btn-gold" id="btn-start-game" data-i18n="btnStartGame">Start game ▶</button>
+    <p style="color:var(--muted);font-size:0.8rem;text-align:center" data-i18n="minPlayers">At least 2 players needed</p>
   </div>
   <div id="guest-waiting" style="display:none;width:100%;max-width:480px">
-    <div class="buzz-status waiting">⏳ Warte auf den Host…</div>
+    <div class="buzz-status waiting" data-i18n="waitingForHost">⏳ Waiting for the host…</div>
   </div>
 </div>
 
 <!-- ── SCREEN: Game ── -->
 <div class="screen" id="screen-game">
   <div class="q-header">
-    <div class="q-counter" id="q-counter">Frage 1/10</div>
+    <div class="q-counter" id="q-counter">Question 1/10</div>
     <div class="q-dots" id="q-dots"></div>
   </div>
 
   <div class="question-card">
     <div class="q-category">QUIZ</div>
-    <div class="q-text" id="q-text">Laden…</div>
+    <div class="q-text" id="q-text" data-i18n="loading">Loading…</div>
   </div>
 
   <!-- Timer bar -->
@@ -397,29 +397,29 @@
 
   <!-- For spectators: buzz button or waiting message -->
   <div id="buzz-zone">
-    <button class="btn btn-buzz" id="btn-buzz">⚡ BUZZ!</button>
+    <button class="btn btn-buzz" id="btn-buzz" data-i18n="buzzBtn">⚡ BUZZ!</button>
   </div>
 
   <!-- For the answerer: choice buttons -->
   <div id="choice-zone" style="display:none">
-    <div class="buzz-status my-turn">🎯 Du bist dran — wähle die Antwort!</div>
+    <div class="buzz-status my-turn" data-i18n="myTurnMsg">🎯 Your turn — choose the answer!</div>
     <div class="choices" id="choices"></div>
   </div>
 
   <!-- While waiting for someone else to answer -->
   <div id="waiting-zone" style="display:none">
-    <div class="buzz-status other" id="who-buzzed">⚡ jemand tippt…</div>
-    <div class="spectator-msg">Zuschauermodus — warte auf die Antwort</div>
+    <div class="buzz-status other" id="who-buzzed">⚡ someone is typing…</div>
+    <div class="spectator-msg" data-i18n="spectatorMsg">Spectator mode — wait for the answer</div>
   </div>
 
   <!-- Reveal -->
   <div id="reveal-zone" style="display:none">
     <div class="score-reveal" id="reveal-banner">
       <div class="big" id="reveal-emoji">✅</div>
-      <div id="reveal-text">Richtig! +3 Punkte</div>
+      <div id="reveal-text"></div>
       <div class="detail" id="reveal-detail"></div>
     </div>
-    <div class="section-label">Punktestand</div>
+    <div class="section-label" data-i18n="scoreLabel">Scoreboard</div>
     <div class="scoreboard" id="game-scoreboard"></div>
   </div>
 
@@ -434,14 +434,268 @@
   <div class="winner-sub" id="final-sub"></div>
 
   <div style="width:100%;max-width:480px;margin:1rem 0">
-    <div class="section-label">Endergebnis</div>
+    <div class="section-label" data-i18n="finalResult">Final results</div>
     <div class="scoreboard" id="final-scoreboard"></div>
   </div>
 
-  <button class="btn btn-primary" id="btn-play-again">Nochmal spielen 🔄</button>
+  <button class="btn btn-primary" id="btn-play-again" data-i18n="btnPlayAgain">Play again 🔄</button>
   <div class="gap"></div>
-  <a href="/" style="color:var(--muted);font-size:0.9rem;text-decoration:none">← Zur Spieleübersicht</a>
+  <a href="/" style="color:var(--muted);font-size:0.9rem;text-decoration:none" data-i18n="backToGames">← Back to games</a>
 </div>
+
+<script src="/shared/i18n.js"></script>
+<script>
+const TRANSLATIONS = {
+  de: {
+    back: '← Zurück zu den Spielen',
+    logoSub: 'Echtzeit-Quiz Buzzer · Wer drückt zuerst?',
+    wsConnecting: 'Verbinde…',
+    wsConnected: '✅ Verbunden',
+    wsError: '❌ Verbindungsfehler — Seite neu laden',
+    wsDisconnected: '⚠️ Verbindung getrennt',
+    createGame: 'Spiel erstellen',
+    yourName: 'Dein Name',
+    namePlaceholder: 'Dein Name',
+    btnCreate: 'Raum erstellen 🎯',
+    joinGame: 'Beitreten',
+    roomCode: 'Raumcode',
+    codePlaceholder: 'z.B. ABCD',
+    btnJoin: 'Beitreten →',
+    howToPlay: '🎮 Wie wird gespielt?',
+    instructions: 'Jeder spielt auf seinem eigenen Gerät. Eine Frage erscheint <b>gleichzeitig</b> auf allen Bildschirmen. Wer zuerst <b>BUZZ!</b> drückt, darf antworten.<br><br>✅ Richtig → <b>+3 Punkte</b> &nbsp; ❌ Falsch → <b>−1 Punkt</b><br><br>10 Fragen. Höchste Punktzahl gewinnt. Los!',
+    lobbyCodeLabel: 'RAUMCODE — teile ihn mit deinen Freunden!',
+    playersCount: 'Spieler ({n}/6)',
+    lobbyHintNeed1: 'Noch mindestens 1 Spieler nötig…',
+    lobbyHintFull: 'Raum voll — bereit!',
+    lobbyHintReady: '{n} Spieler bereit — {slots} Plätze frei',
+    btnStartGame: 'Spiel starten ▶',
+    minPlayers: 'Mindestens 2 Spieler nötig',
+    waitingForHost: '⏳ Warte auf den Host…',
+    loading: 'Laden…',
+    buzzBtn: '⚡ BUZZ!',
+    buzzedBtn: '⚡ GEDRÜCKT!',
+    myTurnMsg: '🎯 Du bist dran — wähle die Antwort!',
+    spectatorMsg: 'Zuschauermodus — warte auf die Antwort',
+    whoTyping: '⚡ {name} tippt…',
+    scoreLabel: 'Punktestand',
+    correct3pts: 'Richtig! +3 Punkte',
+    wrong1pt: 'Falsch! −1 Punkt',
+    otherCorrect: '{name} hat richtig geantwortet! (+3)',
+    otherWrong: '{name} lag daneben! (−1)',
+    correctAnswer: 'Richtige Antwort: {answer}',
+    myCorrectAnswer: 'Die richtige Antwort: {answer}',
+    qCounter: 'Frage {n}/{total}',
+    you: '(Du)',
+    finalResult: 'Endergebnis',
+    btnPlayAgain: 'Nochmal spielen 🔄',
+    backToGames: '← Zur Spieleübersicht',
+    draw: 'Unentschieden!',
+    tiedWith: '{names} mit je {score} Punkten',
+    champion: '{score} Punkte — Blitz Buzz Champion!',
+    errorPrefix: 'Fehler: ',
+    hostBadge: 'Host',
+  },
+  en: {
+    back: '← Back to Games',
+    logoSub: 'Real-time quiz buzzer · Who buzzes first?',
+    wsConnecting: 'Connecting…',
+    wsConnected: '✅ Connected',
+    wsError: '❌ Connection error — reload the page',
+    wsDisconnected: '⚠️ Connection lost',
+    createGame: 'Create game',
+    yourName: 'Your name',
+    namePlaceholder: 'Your name',
+    btnCreate: 'Create room 🎯',
+    joinGame: 'Join',
+    roomCode: 'Room code',
+    codePlaceholder: 'e.g. ABCD',
+    btnJoin: 'Join →',
+    howToPlay: '🎮 How to play?',
+    instructions: 'Everyone plays on their own device. A question appears <b>simultaneously</b> on all screens. Whoever presses <b>BUZZ!</b> first gets to answer.<br><br>✅ Correct → <b>+3 points</b> &nbsp; ❌ Wrong → <b>−1 point</b><br><br>10 questions. Highest score wins. Go!',
+    lobbyCodeLabel: 'ROOM CODE — share it with your friends!',
+    playersCount: 'Players ({n}/6)',
+    lobbyHintNeed1: 'At least 1 more player needed…',
+    lobbyHintFull: 'Room full — ready!',
+    lobbyHintReady: '{n} players ready — {slots} slots open',
+    btnStartGame: 'Start game ▶',
+    minPlayers: 'At least 2 players needed',
+    waitingForHost: '⏳ Waiting for the host…',
+    loading: 'Loading…',
+    buzzBtn: '⚡ BUZZ!',
+    buzzedBtn: '⚡ BUZZED!',
+    myTurnMsg: '🎯 Your turn — choose the answer!',
+    spectatorMsg: 'Spectator mode — wait for the answer',
+    whoTyping: '⚡ {name} is typing…',
+    scoreLabel: 'Scoreboard',
+    correct3pts: 'Correct! +3 points',
+    wrong1pt: 'Wrong! −1 point',
+    otherCorrect: '{name} answered correctly! (+3)',
+    otherWrong: '{name} was wrong! (−1)',
+    correctAnswer: 'Correct answer: {answer}',
+    myCorrectAnswer: 'The correct answer: {answer}',
+    qCounter: 'Question {n}/{total}',
+    you: '(You)',
+    finalResult: 'Final results',
+    btnPlayAgain: 'Play again 🔄',
+    backToGames: '← Back to games',
+    draw: 'Draw!',
+    tiedWith: '{names} tied with {score} points each',
+    champion: '{score} points — Blitz Buzz Champion!',
+    errorPrefix: 'Error: ',
+    hostBadge: 'Host',
+  },
+  it: {
+    back: '← Torna ai giochi',
+    logoSub: 'Quiz buzzer in tempo reale · Chi preme prima?',
+    wsConnecting: 'Connessione…',
+    wsConnected: '✅ Connesso',
+    wsError: '❌ Errore di connessione — ricaricare la pagina',
+    wsDisconnected: '⚠️ Connessione persa',
+    createGame: 'Crea partita',
+    yourName: 'Il tuo nome',
+    namePlaceholder: 'Il tuo nome',
+    btnCreate: 'Crea stanza 🎯',
+    joinGame: 'Unirsi',
+    roomCode: 'Codice stanza',
+    codePlaceholder: 'es. ABCD',
+    btnJoin: 'Unirsi →',
+    howToPlay: '🎮 Come si gioca?',
+    instructions: 'Ognuno gioca sul proprio dispositivo. Una domanda appare <b>simultaneamente</b> su tutti gli schermi. Chi preme <b>BUZZ!</b> per primo può rispondere.<br><br>✅ Corretto → <b>+3 punti</b> &nbsp; ❌ Sbagliato → <b>−1 punto</b><br><br>10 domande. Il punteggio più alto vince. Via!',
+    lobbyCodeLabel: 'CODICE STANZA — condividilo con i tuoi amici!',
+    playersCount: 'Giocatori ({n}/6)',
+    lobbyHintNeed1: 'Almeno 1 altro giocatore necessario…',
+    lobbyHintFull: 'Stanza piena — pronti!',
+    lobbyHintReady: '{n} giocatori pronti — {slots} posti liberi',
+    btnStartGame: 'Inizia partita ▶',
+    minPlayers: 'Almeno 2 giocatori necessari',
+    waitingForHost: '⏳ In attesa dell\'host…',
+    loading: 'Caricamento…',
+    buzzBtn: '⚡ BUZZ!',
+    buzzedBtn: '⚡ PREMUTO!',
+    myTurnMsg: '🎯 Tocca a te — scegli la risposta!',
+    spectatorMsg: 'Modalità spettatore — attendi la risposta',
+    whoTyping: '⚡ {name} sta scrivendo…',
+    scoreLabel: 'Punteggio',
+    correct3pts: 'Corretto! +3 punti',
+    wrong1pt: 'Sbagliato! −1 punto',
+    otherCorrect: '{name} ha risposto correttamente! (+3)',
+    otherWrong: '{name} ha sbagliato! (−1)',
+    correctAnswer: 'Risposta corretta: {answer}',
+    myCorrectAnswer: 'La risposta corretta: {answer}',
+    qCounter: 'Domanda {n}/{total}',
+    you: '(Tu)',
+    finalResult: 'Risultato finale',
+    btnPlayAgain: 'Gioca ancora 🔄',
+    backToGames: '← Torna ai giochi',
+    draw: 'Pareggio!',
+    tiedWith: '{names} in pareggio con {score} punti',
+    champion: '{score} punti — Blitz Buzz Champion!',
+    errorPrefix: 'Errore: ',
+    hostBadge: 'Host',
+  },
+  es: {
+    back: '← Volver a los juegos',
+    logoSub: 'Buzzer de quiz en tiempo real · ¿Quién pulsa primero?',
+    wsConnecting: 'Conectando…',
+    wsConnected: '✅ Conectado',
+    wsError: '❌ Error de conexión — recarga la página',
+    wsDisconnected: '⚠️ Conexión perdida',
+    createGame: 'Crear partida',
+    yourName: 'Tu nombre',
+    namePlaceholder: 'Tu nombre',
+    btnCreate: 'Crear sala 🎯',
+    joinGame: 'Unirse',
+    roomCode: 'Código de sala',
+    codePlaceholder: 'p.ej. ABCD',
+    btnJoin: 'Unirse →',
+    howToPlay: '🎮 ¿Cómo se juega?',
+    instructions: 'Cada uno juega en su propio dispositivo. Una pregunta aparece <b>simultáneamente</b> en todas las pantallas. Quien pulsa <b>BUZZ!</b> primero puede responder.<br><br>✅ Correcto → <b>+3 puntos</b> &nbsp; ❌ Incorrecto → <b>−1 punto</b><br><br>10 preguntas. La puntuación más alta gana. ¡Vamos!',
+    lobbyCodeLabel: 'CÓDIGO DE SALA — ¡compártelo con tus amigos!',
+    playersCount: 'Jugadores ({n}/6)',
+    lobbyHintNeed1: 'Se necesita al menos 1 jugador más…',
+    lobbyHintFull: 'Sala llena — ¡listos!',
+    lobbyHintReady: '{n} jugadores listos — {slots} plazas libres',
+    btnStartGame: 'Iniciar partida ▶',
+    minPlayers: 'Se necesitan al menos 2 jugadores',
+    waitingForHost: '⏳ Esperando al anfitrión…',
+    loading: 'Cargando…',
+    buzzBtn: '⚡ BUZZ!',
+    buzzedBtn: '⚡ ¡PULSADO!',
+    myTurnMsg: '🎯 ¡Tu turno — elige la respuesta!',
+    spectatorMsg: 'Modo espectador — espera la respuesta',
+    whoTyping: '⚡ {name} está escribiendo…',
+    scoreLabel: 'Marcador',
+    correct3pts: '¡Correcto! +3 puntos',
+    wrong1pt: '¡Incorrecto! −1 punto',
+    otherCorrect: '¡{name} respondió correctamente! (+3)',
+    otherWrong: '¡{name} se equivocó! (−1)',
+    correctAnswer: 'Respuesta correcta: {answer}',
+    myCorrectAnswer: 'La respuesta correcta: {answer}',
+    qCounter: 'Pregunta {n}/{total}',
+    you: '(Tú)',
+    finalResult: 'Resultado final',
+    btnPlayAgain: 'Jugar de nuevo 🔄',
+    backToGames: '← Volver a los juegos',
+    draw: '¡Empate!',
+    tiedWith: '{names} empatados con {score} puntos',
+    champion: '{score} puntos — ¡Campeón de Blitz Buzz!',
+    errorPrefix: 'Error: ',
+    hostBadge: 'Host',
+  },
+  fr: {
+    back: '← Retour aux jeux',
+    logoSub: 'Buzzer de quiz en temps réel · Qui appuie en premier ?',
+    wsConnecting: 'Connexion…',
+    wsConnected: '✅ Connecté',
+    wsError: '❌ Erreur de connexion — recharger la page',
+    wsDisconnected: '⚠️ Connexion perdue',
+    createGame: 'Créer une partie',
+    yourName: 'Ton nom',
+    namePlaceholder: 'Ton nom',
+    btnCreate: 'Créer une salle 🎯',
+    joinGame: 'Rejoindre',
+    roomCode: 'Code de salle',
+    codePlaceholder: 'ex. ABCD',
+    btnJoin: 'Rejoindre →',
+    howToPlay: '🎮 Comment jouer ?',
+    instructions: 'Chacun joue sur son propre appareil. Une question apparaît <b>simultanément</b> sur tous les écrans. Celui qui appuie sur <b>BUZZ!</b> en premier peut répondre.<br><br>✅ Correct → <b>+3 points</b> &nbsp; ❌ Faux → <b>−1 point</b><br><br>10 questions. Le score le plus élevé gagne. Allez !',
+    lobbyCodeLabel: 'CODE DE SALLE — partage-le avec tes amis !',
+    playersCount: 'Joueurs ({n}/6)',
+    lobbyHintNeed1: 'Au moins 1 joueur supplémentaire nécessaire…',
+    lobbyHintFull: 'Salle pleine — prêts !',
+    lobbyHintReady: '{n} joueurs prêts — {slots} places libres',
+    btnStartGame: 'Lancer la partie ▶',
+    minPlayers: 'Au moins 2 joueurs nécessaires',
+    waitingForHost: '⏳ En attente de l\'hôte…',
+    loading: 'Chargement…',
+    buzzBtn: '⚡ BUZZ !',
+    buzzedBtn: '⚡ APPUYÉ !',
+    myTurnMsg: '🎯 À toi — choisis la réponse !',
+    spectatorMsg: 'Mode spectateur — attends la réponse',
+    whoTyping: '⚡ {name} écrit…',
+    scoreLabel: 'Tableau des scores',
+    correct3pts: 'Correct ! +3 points',
+    wrong1pt: 'Faux ! −1 point',
+    otherCorrect: '{name} a répondu correctement ! (+3)',
+    otherWrong: '{name} s\'est trompé ! (−1)',
+    correctAnswer: 'Bonne réponse : {answer}',
+    myCorrectAnswer: 'La bonne réponse : {answer}',
+    qCounter: 'Question {n}/{total}',
+    you: '(Toi)',
+    finalResult: 'Résultat final',
+    btnPlayAgain: 'Rejouer 🔄',
+    backToGames: '← Retour aux jeux',
+    draw: 'Égalité !',
+    tiedWith: '{names} à égalité avec {score} points',
+    champion: '{score} points — Champion Blitz Buzz !',
+    errorPrefix: 'Erreur : ',
+    hostBadge: 'Host',
+  },
+};
+const { t, lang, onLangChange, translatePage } = initI18n(TRANSLATIONS);
+window.t = t;
+window.onLangChange = onLangChange;
+</script>
 
 <script>
 // ─── WebSocket connection ─────────────────────────────────────────────────
@@ -475,17 +729,17 @@ function connect() {
   ws = new WebSocket(WS_URL);
 
   ws.onopen = () => {
-    wsStatus.textContent = '✅ Verbunden';
+    wsStatus.textContent = window.t('wsConnected');
     wsStatus.className = 'status-bar connected';
   };
 
   ws.onerror = () => {
-    wsStatus.textContent = '❌ Verbindungsfehler — Seite neu laden';
+    wsStatus.textContent = window.t('wsError');
     wsStatus.className = 'status-bar error';
   };
 
   ws.onclose = () => {
-    wsStatus.textContent = '⚠️ Verbindung getrennt';
+    wsStatus.textContent = window.t('wsDisconnected');
     wsStatus.className = 'status-bar error';
     setTimeout(connect, 3000);
   };
@@ -534,7 +788,7 @@ function handleMessage(msg) {
       break;
 
     case 'error':
-      alert('Fehler: ' + msg.message);
+      alert(window.t('errorPrefix') + msg.message);
       break;
   }
 }
@@ -555,11 +809,17 @@ function updateLobby(state) {
   myCode = myCode || state.code;
 
   const count = state.players.length;
-  document.getElementById('players-label').textContent = `Spieler (${count}/6)`;
-  document.getElementById('lobby-hint').textContent =
-    count < 2 ? 'Noch mindestens 1 Spieler nötig…' :
-    count === 6 ? 'Raum voll — bereit!' :
-    `${count} Spieler bereit — ${6 - count} Plätze frei`;
+  document.getElementById('players-label').textContent = window.t('playersCount').replace('{n}', count);
+
+  let hint;
+  if (count < 2) {
+    hint = window.t('lobbyHintNeed1');
+  } else if (count === 6) {
+    hint = window.t('lobbyHintFull');
+  } else {
+    hint = window.t('lobbyHintReady').replace('{n}', count).replace('{slots}', 6 - count);
+  }
+  document.getElementById('lobby-hint').textContent = hint;
 
   const listEl = document.getElementById('lobby-players');
   const COLORS = ['#a78bfa','#60a5fa','#34d399','#f87171','#fbbf24','#f97316'];
@@ -570,8 +830,8 @@ function updateLobby(state) {
     row.innerHTML = `
       <div class="player-dot" style="background:${COLORS[i]}"></div>
       <div class="player-name">${escHtml(p.name)}</div>
-      ${p.isHost ? '<div class="player-badge">Host</div>' : ''}
-      ${p.name === myName ? '<div class="player-badge" style="border-color:var(--accent2);color:var(--accent2)">Du</div>' : ''}
+      ${p.isHost ? `<div class="player-badge">${window.t('hostBadge')}</div>` : ''}
+      ${p.name === myName ? `<div class="player-badge" style="border-color:var(--accent2);color:var(--accent2)">${window.t('you')}</div>` : ''}
     `;
     listEl.appendChild(row);
   });
@@ -589,7 +849,9 @@ function updateLobby(state) {
 // ─── Game Screen ──────────────────────────────────────────────────────
 function updateGameScreen(state) {
   // Question counter + dots
-  document.getElementById('q-counter').textContent = `Frage ${state.questionIndex + 1} / ${state.totalQuestions}`;
+  document.getElementById('q-counter').textContent = window.t('qCounter')
+    .replace('{n}', state.questionIndex + 1)
+    .replace('{total}', state.totalQuestions);
   renderDots(state.questionIndex, state.totalQuestions);
 
   // Question text
@@ -617,7 +879,7 @@ function updateGameScreen(state) {
     const buzzBtn = document.getElementById('btn-buzz');
     buzzBtn.disabled = false;
     buzzBtn.className = 'btn btn-buzz';
-    buzzBtn.textContent = '⚡ BUZZ!';
+    buzzBtn.textContent = window.t('buzzBtn');
 
   } else if (state.phase === 'answering') {
     if (state.buzzedBy === myName) {
@@ -629,7 +891,7 @@ function updateGameScreen(state) {
     } else {
       // Someone else buzzed
       waitingZone.style.display = 'block';
-      document.getElementById('who-buzzed').textContent = `⚡ ${escHtml(state.buzzedBy)} tippt…`;
+      document.getElementById('who-buzzed').textContent = window.t('whoTyping').replace('{name}', escHtml(state.buzzedBy));
     }
 
   } else if (state.phase === 'reveal') {
@@ -639,21 +901,23 @@ function updateGameScreen(state) {
     const la = state.lastAnswer;
     if (la) {
       const banner = document.getElementById('reveal-banner');
-      const me = state.players.find(p => p.name === myName);
 
       if (la.player === myName) {
         banner.className = `score-reveal ${la.correct ? 'correct' : 'wrong'}`;
         document.getElementById('reveal-emoji').textContent = la.correct ? '✅' : '❌';
-        document.getElementById('reveal-text').textContent = la.correct ? 'Richtig! +3 Punkte' : 'Falsch! −1 Punkt';
-        document.getElementById('reveal-detail').textContent =
-          la.correct ? '' : `Die richtige Antwort: ${state.currentQuestion?.options?.[la.correctIndex] ?? ''}`;
+        document.getElementById('reveal-text').textContent = la.correct
+          ? window.t('correct3pts')
+          : window.t('wrong1pt');
+        document.getElementById('reveal-detail').textContent = la.correct
+          ? ''
+          : window.t('myCorrectAnswer').replace('{answer}', state.currentQuestion?.options?.[la.correctIndex] ?? '');
       } else {
         banner.className = 'score-reveal ' + (la.correct ? 'correct' : 'wrong');
         document.getElementById('reveal-emoji').textContent = la.correct ? '🎉' : '😬';
         document.getElementById('reveal-text').textContent = la.correct
-          ? `${escHtml(la.player)} hat richtig geantwortet! (+3)`
-          : `${escHtml(la.player)} lag daneben! (−1)`;
-        document.getElementById('reveal-detail').textContent = `Richtige Antwort: ${state.currentQuestion?.options?.[la.correctIndex] ?? ''}`;
+          ? window.t('otherCorrect').replace('{name}', escHtml(la.player))
+          : window.t('otherWrong').replace('{name}', escHtml(la.player));
+        document.getElementById('reveal-detail').textContent = window.t('correctAnswer').replace('{answer}', state.currentQuestion?.options?.[la.correctIndex] ?? '');
       }
 
       // Also show correct in choice view if I was the answerer
@@ -715,7 +979,7 @@ function renderScoreboard(containerId, players) {
     row.className = 'score-row';
     row.innerHTML = `
       <div class="score-rank">${MEDALS[i] || (i + 1)}</div>
-      <div class="score-name">${escHtml(p.name)}${p.name === myName ? ' <span style="color:var(--accent2);font-size:0.75rem">(Du)</span>' : ''}</div>
+      <div class="score-name">${escHtml(p.name)}${p.name === myName ? ` <span style="color:var(--accent2);font-size:0.75rem">${window.t('you')}</span>` : ''}</div>
       <div class="score-bar-wrap"><div class="score-bar" style="width:${pct}%"></div></div>
       <div class="score-pts">${p.score}</div>
     `;
@@ -755,11 +1019,13 @@ function showEndScreen(scores) {
   const tied = scores.filter(s => s.score === winner.score);
 
   if (tied.length > 1) {
-    document.getElementById('final-winner').textContent = 'Unentschieden!';
-    document.getElementById('final-sub').textContent = tied.map(p => p.name).join(' & ') + ` mit je ${winner.score} Punkten`;
+    document.getElementById('final-winner').textContent = window.t('draw');
+    document.getElementById('final-sub').textContent = window.t('tiedWith')
+      .replace('{names}', tied.map(p => p.name).join(' & '))
+      .replace('{score}', winner.score);
   } else {
     document.getElementById('final-winner').textContent = `🏆 ${winner.name}`;
-    document.getElementById('final-sub').textContent = `${winner.score} Punkte — Blitz Buzz Champion!`;
+    document.getElementById('final-sub').textContent = window.t('champion').replace('{score}', winner.score);
   }
   renderScoreboard('final-scoreboard', scores);
 }
@@ -791,7 +1057,7 @@ document.getElementById('btn-buzz').addEventListener('click', () => {
   const btn = document.getElementById('btn-buzz');
   btn.disabled = true;
   btn.className = 'btn btn-buzz buzzed';
-  btn.textContent = '⚡ GEDRÜCKT!';
+  btn.textContent = window.t('buzzedBtn');
   send({ type: 'buzz' });
 });
 

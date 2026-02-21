@@ -63,14 +63,14 @@
 </style>
 </head>
 <body>
-<div class="back-bar"><a href="/">← Back to Games</a></div>
+<div class="back-bar"><a href="/" data-i18n="back">← Back to Games</a></div>
 
 <h1>⚡ Stroop Sprint</h1>
 <div class="hud">
-  <span>Score: <span class="val" id="score">0</span></span>
-  <span class="lives">Lives: <span class="val" id="lives">❤❤❤</span></span>
+  <span data-i18n="scorelabel">Score:</span> <span class="val" id="score">0</span>
+  <span class="lives"><span data-i18n="liveslabel">Lives:</span> <span class="val" id="lives">❤❤❤</span></span>
 </div>
-<div id="word-display">TAP START</div>
+<div id="word-display" data-i18n="tapStart">TAP START</div>
 <div class="timer-bar"><div class="timer-bar-inner" id="timer-bar" style="width:100%"></div></div>
 <div class="buttons" id="buttons"></div>
 
@@ -78,8 +78,112 @@
   <h2 id="overlay-title">Stroop Sprint</h2>
   <p class="final-score" id="final-score"></p>
   <p class="high-score" id="high-score"></p>
-  <button id="start-btn">START</button>
+  <button id="start-btn" data-i18n="start">START</button>
 </div>
+
+<script src="/shared/i18n.js"></script>
+<script>
+const TRANSLATIONS = {
+  de: {
+    back: '← Zurück zu den Spielen',
+    scorelabel: 'Punkte:',
+    liveslabel: 'Leben:',
+    tapStart: 'START TIPPEN',
+    start: 'START',
+    playAgain: 'NOCHMAL',
+    gameOver: 'Game Over',
+    gameTitle: 'Stroop Sprint',
+    scorePrefix: 'Punkte: ',
+    bestPrefix: 'Bestleistung: ',
+    newBest: '🏆 NEUE BESTLEISTUNG!',
+    RED: 'ROT',
+    BLUE: 'BLAU',
+    GREEN: 'GRÜN',
+    YELLOW: 'GELB',
+    PURPLE: 'LILA',
+    ORANGE: 'ORANGE',
+  },
+  en: {
+    back: '← Back to Games',
+    scorelabel: 'Score:',
+    liveslabel: 'Lives:',
+    tapStart: 'TAP START',
+    start: 'START',
+    playAgain: 'PLAY AGAIN',
+    gameOver: 'Game Over',
+    gameTitle: 'Stroop Sprint',
+    scorePrefix: 'Score: ',
+    bestPrefix: 'Best: ',
+    newBest: '🏆 NEW BEST!',
+    RED: 'RED',
+    BLUE: 'BLUE',
+    GREEN: 'GREEN',
+    YELLOW: 'YELLOW',
+    PURPLE: 'PURPLE',
+    ORANGE: 'ORANGE',
+  },
+  it: {
+    back: '← Torna ai giochi',
+    scorelabel: 'Punteggio:',
+    liveslabel: 'Vite:',
+    tapStart: 'TOCCA START',
+    start: 'START',
+    playAgain: 'GIOCA ANCORA',
+    gameOver: 'Game Over',
+    gameTitle: 'Stroop Sprint',
+    scorePrefix: 'Punteggio: ',
+    bestPrefix: 'Record: ',
+    newBest: '🏆 NUOVO RECORD!',
+    RED: 'ROSSO',
+    BLUE: 'BLU',
+    GREEN: 'VERDE',
+    YELLOW: 'GIALLO',
+    PURPLE: 'VIOLA',
+    ORANGE: 'ARANCIONE',
+  },
+  es: {
+    back: '← Volver a los juegos',
+    scorelabel: 'Puntos:',
+    liveslabel: 'Vidas:',
+    tapStart: 'TOCA INICIO',
+    start: 'INICIAR',
+    playAgain: 'JUGAR DE NUEVO',
+    gameOver: 'Game Over',
+    gameTitle: 'Stroop Sprint',
+    scorePrefix: 'Puntos: ',
+    bestPrefix: 'Mejor: ',
+    newBest: '🏆 ¡NUEVO RÉCORD!',
+    RED: 'ROJO',
+    BLUE: 'AZUL',
+    GREEN: 'VERDE',
+    YELLOW: 'AMARILLO',
+    PURPLE: 'MORADO',
+    ORANGE: 'NARANJA',
+  },
+  fr: {
+    back: '← Retour aux jeux',
+    scorelabel: 'Score :',
+    liveslabel: 'Vies :',
+    tapStart: 'APPUYER DÉMARRER',
+    start: 'DÉMARRER',
+    playAgain: 'REJOUER',
+    gameOver: 'Game Over',
+    gameTitle: 'Stroop Sprint',
+    scorePrefix: 'Score : ',
+    bestPrefix: 'Meilleur : ',
+    newBest: '🏆 NOUVEAU RECORD !',
+    RED: 'ROUGE',
+    BLUE: 'BLEU',
+    GREEN: 'VERT',
+    YELLOW: 'JAUNE',
+    PURPLE: 'VIOLET',
+    ORANGE: 'ORANGE',
+  },
+};
+const { t, lang, onLangChange, translatePage } = initI18n(TRANSLATIONS);
+window.t = t;
+window.onLangChange = onLangChange;
+</script>
 
 <script type="module">
 import { COLORS, generateRound, handleAnswer, createGameState, getTimeLimit } from './game.js';
@@ -97,26 +201,34 @@ const btnContainer = $('buttons');
 COLORS.forEach(c => {
   const b = document.createElement('button');
   b.className = 'btn';
-  b.textContent = c.name;
+  b.textContent = window.t(c.name);
   b.style.color = c.hex;
   b.dataset.color = c.name;
   b.addEventListener('click', () => onAnswer(c.name));
   btnContainer.appendChild(b);
 });
 
-function showOverlay(title, score, isNew) {
+// Update button labels on language change
+function updateColorButtons() {
+  btnContainer.querySelectorAll('.btn').forEach(b => {
+    b.textContent = window.t(b.dataset.color);
+  });
+}
+window.onLangChange(updateColorButtons);
+
+function showOverlay(titleKey, score, isNew) {
   $('overlay').classList.remove('hidden');
-  $('overlay-title').textContent = title;
+  $('overlay-title').textContent = window.t(titleKey);
   if (score !== null) {
-    $('final-score').textContent = `Score: ${score}`;
+    $('final-score').textContent = window.t('scorePrefix') + score;
     $('final-score').classList.remove('hidden');
   } else {
     $('final-score').classList.add('hidden');
   }
   const hs = getHighScore();
-  $('high-score').textContent = isNew ? `🏆 NEW BEST!` : `Best: ${hs}`;
+  $('high-score').textContent = isNew ? window.t('newBest') : window.t('bestPrefix') + hs;
   $('high-score').classList.toggle('new-best', isNew);
-  $('start-btn').textContent = score !== null ? 'PLAY AGAIN' : 'START';
+  $('start-btn').textContent = score !== null ? window.t('playAgain') : window.t('start');
 }
 
 function startGame() {
@@ -134,7 +246,7 @@ function updateHUD() {
 function nextRound() {
   currentRound = generateRound();
   const display = $('word-display');
-  display.textContent = currentRound.word;
+  display.textContent = window.t(currentRound.word);
   display.style.color = currentRound.inkHex;
   display.style.opacity = '1';
   // Clear button feedback
@@ -180,7 +292,7 @@ function onAnswer(colorName) {
     const hs = getHighScore();
     const isNew = state.score > hs;
     if (isNew) setHighScore(state.score);
-    setTimeout(() => showOverlay('Game Over', state.score, isNew), 600);
+    setTimeout(() => showOverlay('gameOver', state.score, isNew), 600);
     return;
   }
 
@@ -189,7 +301,7 @@ function onAnswer(colorName) {
 
 // Init
 $('start-btn').addEventListener('click', startGame);
-showOverlay('Stroop Sprint', null, false);
+showOverlay('gameTitle', null, false);
 </script>
 </body>
 </html>

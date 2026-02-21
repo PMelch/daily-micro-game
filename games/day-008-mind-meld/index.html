@@ -452,15 +452,15 @@
 </head>
 <body>
 
-<div class="back-bar"><a href="/">← Back to Games</a></div>
+<div class="back-bar"><a href="/" data-i18n="back">← Back to Games</a></div>
 
 <!-- SETUP SCREEN -->
 <div id="setup-screen" class="screen active">
   <h1>🧠 Mind Meld</h1>
-  <p class="subtitle">Denkt ihr gleich? Findet dasselbe Wort!</p>
+  <p class="subtitle" data-i18n="subtitle">Do you think alike? Find the same word!</p>
 
   <div style="display:flex;gap:1rem;align-items:center;margin-bottom:1rem;">
-    <span style="color:var(--muted);font-size:0.9rem;">Spieler:</span>
+    <span style="color:var(--muted);font-size:0.9rem;" data-i18n="playersLabel">Players:</span>
     <div class="player-count">
       <button class="count-btn" data-n="2">2</button>
       <button class="count-btn" data-n="3">3</button>
@@ -471,24 +471,24 @@
   <div class="player-inputs" id="player-inputs">
     <div class="player-row" data-player="0">
       <div class="player-dot" style="background:#a78bfa"></div>
-      <input class="player-input" type="text" placeholder="Name" value="Spieler 1">
+      <input class="player-input" type="text" placeholder="Name" data-default-idx="0">
     </div>
     <div class="player-row" data-player="1">
       <div class="player-dot" style="background:#60a5fa"></div>
-      <input class="player-input" type="text" placeholder="Name" value="Spieler 2">
+      <input class="player-input" type="text" placeholder="Name" data-default-idx="1">
     </div>
     <div class="player-row hidden" data-player="2">
       <div class="player-dot" style="background:#34d399"></div>
-      <input class="player-input" type="text" placeholder="Name" value="Spieler 3">
+      <input class="player-input" type="text" placeholder="Name" data-default-idx="2">
     </div>
     <div class="player-row hidden" data-player="3">
       <div class="player-dot" style="background:#f87171"></div>
-      <input class="player-input" type="text" placeholder="Name" value="Spieler 4">
+      <input class="player-input" type="text" placeholder="Name" data-default-idx="3">
     </div>
   </div>
 
   <div class="rounds-row">
-    <label>Runden:</label>
+    <label data-i18n="roundsLabel">Rounds:</label>
     <select class="rounds-select" id="rounds-select">
       <option value="5">5</option>
       <option value="7" selected>7</option>
@@ -496,65 +496,219 @@
     </select>
   </div>
 
-  <button class="btn btn-primary" id="start-btn" style="margin-top:0.5rem;min-width:200px;">
-    Spiel starten ▶
+  <button class="btn btn-primary" id="start-btn" style="margin-top:0.5rem;min-width:200px;" data-i18n="startGame">
+    Start game ▶
   </button>
 
-  <p style="color:var(--muted);font-size:0.8rem;margin-top:1.5rem;max-width:300px;line-height:1.5;">
-    Alle Spieler sehen dasselbe Stichwort und schreiben ein assoziiertes Wort. Schreibt ihr dasselbe? Punkt! 🎯
+  <p style="color:var(--muted);font-size:0.8rem;margin-top:1.5rem;max-width:300px;line-height:1.5;" data-i18n="description">
+    All players see the same prompt and write an associated word. Do you write the same? Point! 🎯
   </p>
 </div>
 
 <!-- PASS SCREEN -->
 <div id="pass-screen" class="screen">
   <div class="pass-emoji">📲</div>
-  <div class="pass-title">Gib das Gerät an</div>
-  <div class="pass-name" id="pass-name">Spieler 1</div>
-  <div class="pass-subtitle" id="pass-subtitle">und tippe auf Bereit!</div>
-  <button class="btn btn-primary" id="pass-ready-btn" style="min-width:180px;">Ich bin bereit ✓</button>
+  <div class="pass-title" data-i18n="passTitle">Pass the device to</div>
+  <div class="pass-name" id="pass-name">Player 1</div>
+  <div class="pass-subtitle" id="pass-subtitle" data-i18n="passReady">and tap Ready!</div>
+  <button class="btn btn-primary" id="pass-ready-btn" style="min-width:180px;" data-i18n="readyBtn">I'm ready ✓</button>
 </div>
 
 <!-- INPUT SCREEN -->
 <div id="input-screen" class="screen">
   <div class="turn-header" id="turn-header">
     <div class="turn-dot" id="turn-dot" style="background:#a78bfa"></div>
-    <span class="turn-name" id="turn-name">Spieler 1</span>
-    <span class="turn-info" id="turn-info">Runde 1 · Versuch 1</span>
+    <span class="turn-name" id="turn-name">Player 1</span>
+    <span class="turn-info" id="turn-info">Round 1 · Attempt 1</span>
   </div>
 
   <div class="input-main">
     <div class="round-dots" id="round-dots"></div>
-    <div class="prompt-label">Stichwort</div>
-    <div class="prompt-word" id="prompt-word">SOMMER</div>
-    <div class="prompt-hint">Welches Wort fällt dir als erstes ein?</div>
-    <input class="word-input" id="word-input" type="text" placeholder="Dein Wort..." autocomplete="off" autocorrect="off" spellcheck="false">
-    <button class="btn btn-primary" id="confirm-btn" style="min-width:200px;">Bestätigen ✓</button>
+    <div class="prompt-label" data-i18n="promptLabel">PROMPT</div>
+    <div class="prompt-word" id="prompt-word">SUMMER</div>
+    <div class="prompt-hint" data-i18n="promptHint">What's the first word that comes to mind?</div>
+    <input class="word-input" id="word-input" type="text" data-i18n-placeholder="inputPlaceholder" placeholder="Your word…" autocomplete="off" autocorrect="off" spellcheck="false">
+    <button class="btn btn-primary" id="confirm-btn" style="min-width:200px;" data-i18n="confirmBtn">Confirm ✓</button>
     <div class="attempt-dots" id="attempt-dots"></div>
   </div>
 </div>
 
 <!-- REVEAL SCREEN -->
 <div id="reveal-screen" class="screen">
-  <h2>Antworten enthüllt!</h2>
+  <h2 data-i18n="answersRevealed">Answers revealed!</h2>
   <div class="reveal-prompt" id="reveal-prompt-word"></div>
   <div class="answers-grid" id="answers-grid"></div>
   <div class="result-banner" id="result-banner"></div>
   <div class="scores-bar" id="scores-bar"></div>
-  <button class="btn btn-primary" id="next-btn" style="min-width:180px;margin-top:0.5rem;">Weiter →</button>
+  <button class="btn btn-primary" id="next-btn" style="min-width:180px;margin-top:0.5rem;" data-i18n="nextBtn">Next →</button>
 </div>
 
 <!-- FINAL SCREEN -->
 <div id="final-screen" class="screen">
-  <h1 id="final-title">🏆 Ergebnis</h1>
+  <h1 id="final-title">🏆 Results</h1>
   <p id="final-subtitle" style="color:var(--muted);margin-bottom:0.5rem;"></p>
   <div class="final-podium" id="final-podium"></div>
   <div style="display:flex;gap:0.75rem;flex-wrap:wrap;justify-content:center;margin-top:1rem;">
-    <button class="btn btn-gold" id="play-again-btn">Nochmal spielen 🔄</button>
-    <button class="btn btn-ghost" id="change-players-btn">Spieler ändern</button>
+    <button class="btn btn-gold" id="play-again-btn" data-i18n="playAgain">Play again 🔄</button>
+    <button class="btn btn-ghost" id="change-players-btn" data-i18n="changePlayers">Change players</button>
   </div>
 </div>
 
 <div class="confetti" id="confetti" style="display:none;"></div>
+
+<script src="/shared/i18n.js"></script>
+<script>
+const TRANSLATIONS = {
+  de: {
+    back: '← Zurück zu den Spielen',
+    subtitle: 'Denkt ihr gleich? Findet dasselbe Wort!',
+    playersLabel: 'Spieler:',
+    roundsLabel: 'Runden:',
+    startGame: 'Spiel starten ▶',
+    description: 'Alle Spieler sehen dasselbe Stichwort und schreiben ein assoziiertes Wort. Schreibt ihr dasselbe? Punkt! 🎯',
+    passTitle: 'Gib das Gerät an',
+    passReady: 'und tippe auf Bereit!',
+    readyBtn: 'Ich bin bereit ✓',
+    promptLabel: 'STICHWORT',
+    promptHint: 'Welches Wort fällt dir als erstes ein?',
+    inputPlaceholder: 'Dein Wort…',
+    confirmBtn: 'Bestätigen ✓',
+    answersRevealed: 'Antworten enthüllt!',
+    nextBtn: 'Weiter →',
+    seeResults: 'Ergebnis sehen 🏆',
+    roundInfo: 'Runde {r} / {max} · Versuch {a}',
+    mindMeld: '🧠 MIND MELD!',
+    noMatchFinal: '💭 Kein Match — nächste Runde!',
+    noMatchAttempt: '💭 Kein Match — Versuch {a}/{max}!',
+    wins: '🏆 {name} gewinnt!',
+    draw: '🤝 Unentschieden!',
+    roundsPlayed: '{n} Runden gespielt',
+    pts: 'Pkt',
+    playAgain: 'Nochmal spielen 🔄',
+    changePlayers: 'Spieler ändern',
+    player: 'Spieler',
+  },
+  en: {
+    back: '← Back to Games',
+    subtitle: 'Do you think alike? Find the same word!',
+    playersLabel: 'Players:',
+    roundsLabel: 'Rounds:',
+    startGame: 'Start game ▶',
+    description: 'All players see the same prompt and write an associated word. Do you write the same? Point! 🎯',
+    passTitle: 'Pass the device to',
+    passReady: 'and tap Ready!',
+    readyBtn: 'I\'m ready ✓',
+    promptLabel: 'PROMPT',
+    promptHint: 'What\'s the first word that comes to mind?',
+    inputPlaceholder: 'Your word…',
+    confirmBtn: 'Confirm ✓',
+    answersRevealed: 'Answers revealed!',
+    nextBtn: 'Next →',
+    seeResults: 'See results 🏆',
+    roundInfo: 'Round {r} / {max} · Attempt {a}',
+    mindMeld: '🧠 MIND MELD!',
+    noMatchFinal: '💭 No match — next round!',
+    noMatchAttempt: '💭 No match — attempt {a}/{max}!',
+    wins: '🏆 {name} wins!',
+    draw: '🤝 Tie!',
+    roundsPlayed: '{n} rounds played',
+    pts: 'pts',
+    playAgain: 'Play again 🔄',
+    changePlayers: 'Change players',
+    player: 'Player',
+  },
+  it: {
+    back: '← Torna ai giochi',
+    subtitle: 'Pensate allo stesso modo? Trovate la stessa parola!',
+    playersLabel: 'Giocatori:',
+    roundsLabel: 'Round:',
+    startGame: 'Inizia il gioco ▶',
+    description: 'Tutti i giocatori vedono lo stesso spunto e scrivono una parola associata. Scrivete la stessa? Punto! 🎯',
+    passTitle: 'Passa il dispositivo a',
+    passReady: 'e tocca Pronto!',
+    readyBtn: 'Sono pronto ✓',
+    promptLabel: 'SPUNTO',
+    promptHint: 'Qual è la prima parola che ti viene in mente?',
+    inputPlaceholder: 'La tua parola…',
+    confirmBtn: 'Conferma ✓',
+    answersRevealed: 'Risposte rivelate!',
+    nextBtn: 'Avanti →',
+    seeResults: 'Vedi risultati 🏆',
+    roundInfo: 'Round {r} / {max} · Tentativo {a}',
+    mindMeld: '🧠 MIND MELD!',
+    noMatchFinal: '💭 Nessuna corrispondenza — prossimo round!',
+    noMatchAttempt: '💭 Nessuna corrispondenza — tentativo {a}/{max}!',
+    wins: '🏆 {name} vince!',
+    draw: '🤝 Pareggio!',
+    roundsPlayed: '{n} round giocati',
+    pts: 'pti',
+    playAgain: 'Gioca ancora 🔄',
+    changePlayers: 'Cambia giocatori',
+    player: 'Giocatore',
+  },
+  es: {
+    back: '← Volver a los juegos',
+    subtitle: '¿Pensáis igual? ¡Encontrad la misma palabra!',
+    playersLabel: 'Jugadores:',
+    roundsLabel: 'Rondas:',
+    startGame: 'Comenzar ▶',
+    description: 'Todos los jugadores ven el mismo indicador y escriben una palabra asociada. ¿Escribís lo mismo? ¡Punto! 🎯',
+    passTitle: 'Pasa el dispositivo a',
+    passReady: '¡y toca Listo!',
+    readyBtn: 'Estoy listo ✓',
+    promptLabel: 'INDICADOR',
+    promptHint: '¿Cuál es la primera palabra que se te ocurre?',
+    inputPlaceholder: 'Tu palabra…',
+    confirmBtn: 'Confirmar ✓',
+    answersRevealed: '¡Respuestas reveladas!',
+    nextBtn: 'Siguiente →',
+    seeResults: 'Ver resultados 🏆',
+    roundInfo: 'Ronda {r} / {max} · Intento {a}',
+    mindMeld: '🧠 MIND MELD!',
+    noMatchFinal: '💭 Sin coincidencia — ¡próxima ronda!',
+    noMatchAttempt: '💭 Sin coincidencia — intento {a}/{max}!',
+    wins: '🏆 ¡{name} gana!',
+    draw: '🤝 ¡Empate!',
+    roundsPlayed: '{n} rondas jugadas',
+    pts: 'pts',
+    playAgain: 'Jugar de nuevo 🔄',
+    changePlayers: 'Cambiar jugadores',
+    player: 'Jugador',
+  },
+  fr: {
+    back: '← Retour aux jeux',
+    subtitle: 'Pensez-vous pareil ? Trouvez le même mot !',
+    playersLabel: 'Joueurs :',
+    roundsLabel: 'Manches :',
+    startGame: 'Lancer le jeu ▶',
+    description: 'Tous les joueurs voient le même mot-clé et écrivent un mot associé. Écrivez-vous le même ? Point ! 🎯',
+    passTitle: 'Passe l\'appareil à',
+    passReady: 'et appuie sur Prêt !',
+    readyBtn: 'Je suis prêt ✓',
+    promptLabel: 'MOT-CLÉ',
+    promptHint: 'Quel est le premier mot qui te vient à l\'esprit ?',
+    inputPlaceholder: 'Ton mot…',
+    confirmBtn: 'Confirmer ✓',
+    answersRevealed: 'Réponses révélées !',
+    nextBtn: 'Suivant →',
+    seeResults: 'Voir les résultats 🏆',
+    roundInfo: 'Manche {r} / {max} · Tentative {a}',
+    mindMeld: '🧠 MIND MELD !',
+    noMatchFinal: '💭 Pas de correspondance — manche suivante !',
+    noMatchAttempt: '💭 Pas de correspondance — tentative {a}/{max} !',
+    wins: '🏆 {name} gagne !',
+    draw: '🤝 Égalité !',
+    roundsPlayed: '{n} manches jouées',
+    pts: 'pts',
+    playAgain: 'Rejouer 🔄',
+    changePlayers: 'Changer les joueurs',
+    player: 'Joueur',
+  },
+};
+const { t, lang, onLangChange, translatePage } = initI18n(TRANSLATIONS);
+window.t = t;
+window.onLangChange = onLangChange;
+</script>
 
 <script type="module">
 import {
@@ -600,11 +754,21 @@ function updatePlayerRows() {
   });
 }
 
+// Update default values in player inputs when language changes
+function updatePlayerInputDefaults() {
+  document.querySelectorAll('.player-input').forEach((input, i) => {
+    const idx = parseInt(input.dataset.defaultIdx ?? i);
+    input.value = `${window.t('player')} ${idx + 1}`;
+  });
+}
+updatePlayerInputDefaults();
+window.onLangChange(updatePlayerInputDefaults);
+
 $('start-btn').addEventListener('click', () => {
   const names = [];
   for (let i = 0; i < playerCount; i++) {
     const val = document.querySelectorAll('.player-input')[i].value.trim();
-    names.push(val || `Spieler ${i+1}`);
+    names.push(val || `${window.t('player')} ${i+1}`);
   }
   totalRounds = parseInt($('rounds-select').value);
   game = createGame(names);
@@ -618,7 +782,7 @@ $('start-btn').addEventListener('click', () => {
 function startPassPhase() {
   const name = game.players[currentPlayerIdx].name;
   $('pass-name').textContent = name;
-  $('pass-subtitle').textContent = 'und tippe auf Bereit!';
+  $('pass-subtitle').textContent = window.t('passReady');
   showScreen('pass-screen');
 }
 
@@ -632,7 +796,10 @@ function showInputScreen() {
   const dot = $('turn-dot');
   dot.style.background = playerColor(currentPlayerIdx);
   $('turn-name').textContent = player.name;
-  $('turn-info').textContent = `Runde ${game.round} / ${game.maxRounds} · Versuch ${game.attempt}`;
+  $('turn-info').textContent = window.t('roundInfo')
+    .replace('{r}', game.round)
+    .replace('{max}', game.maxRounds)
+    .replace('{a}', game.attempt);
   $('prompt-word').textContent = game.prompt;
 
   // Round dots
@@ -711,15 +878,17 @@ function showReveal() {
   if (result.matched) {
     const winnerNames = result.winners.map(i => game.players[i].name).join(' & ');
     banner.className = 'result-banner success';
-    banner.textContent = `🧠 MIND MELD! ${winnerNames}!`;
+    banner.textContent = `${window.t('mindMeld')} ${winnerNames}!`;
     spawnConfetti();
   } else {
     if (game.attempt >= game.maxAttempts) {
       banner.className = 'result-banner fail';
-      banner.textContent = '💭 Kein Match — nächste Runde!';
+      banner.textContent = window.t('noMatchFinal');
     } else {
       banner.className = 'result-banner fail';
-      banner.textContent = `💭 Kein Match — Versuch ${game.attempt + 1}/${game.maxAttempts}!`;
+      banner.textContent = window.t('noMatchAttempt')
+        .replace('{a}', game.attempt + 1)
+        .replace('{max}', game.maxAttempts);
     }
   }
 
@@ -728,7 +897,7 @@ function showReveal() {
 
   // Next button label
   const isLast = game.round >= game.maxRounds && (result.matched || game.attempt >= game.maxAttempts);
-  $('next-btn').textContent = isLast ? 'Ergebnis sehen 🏆' : 'Weiter →';
+  $('next-btn').textContent = isLast ? window.t('seeResults') : window.t('nextBtn');
 
   showScreen('reveal-screen');
 }
@@ -772,11 +941,11 @@ function showFinal() {
   const winners = sorted.filter(p => p.score === maxScore);
 
   if (winners.length === 1) {
-    $('final-title').textContent = `🏆 ${winners[0].name} gewinnt!`;
+    $('final-title').textContent = window.t('wins').replace('{name}', winners[0].name);
   } else {
-    $('final-title').textContent = `🤝 Unentschieden!`;
+    $('final-title').textContent = window.t('draw');
   }
-  $('final-subtitle').textContent = `${game.maxRounds} Runden gespielt`;
+  $('final-subtitle').textContent = window.t('roundsPlayed').replace('{n}', game.maxRounds);
 
   const podium = $('final-podium');
   podium.innerHTML = '';
@@ -788,7 +957,7 @@ function showFinal() {
       <span class="podium-rank">${medals[rank]}</span>
       <div class="podium-dot" style="background:${playerColor(p.idx)}"></div>
       <span class="podium-name">${p.name}</span>
-      <span class="podium-pts">${p.score}<span> Pkt</span></span>
+      <span class="podium-pts">${p.score}<span> ${window.t('pts')}</span></span>
     `;
     podium.appendChild(row);
   });

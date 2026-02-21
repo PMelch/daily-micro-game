@@ -117,17 +117,86 @@
 </style>
 </head>
 <body>
-<div class="back-bar"><a href="/">← Back to Games</a></div>
+<div class="back-bar"><a href="/" data-i18n="back">← Back to Games</a></div>
 <h1>🧠 MEMORY PULSE</h1>
-<div id="info">Round: <span id="round">0</span> · Best: <span id="best">0</span></div>
+<div id="info"><span data-i18n="round">Round:</span> <span id="round">0</span> · <span data-i18n="best">Best:</span> <span id="best">0</span></div>
 <div id="tiles-wrap"></div>
-<div id="status">Tap Start to play</div>
-<button id="start-btn">Start</button>
+<div id="status" data-i18n="tapStart">Tap Start to play</div>
+<button id="start-btn" data-i18n="startBtn">Start</button>
 <div id="gameover-panel">
-  <div class="label">You reached</div>
+  <div class="label" data-i18n="youReached">You reached</div>
   <div class="score">Round <span id="final-round">0</span></div>
-  <button id="retry-btn">Play Again</button>
+  <button id="retry-btn" data-i18n="playAgain">Play Again</button>
 </div>
+
+<script src="/shared/i18n.js"></script>
+<script>
+const TRANSLATIONS = {
+  de: {
+    back: '← Zurück zu den Spielen',
+    round: 'Runde:',
+    best: 'Bestleistung:',
+    tapStart: 'Start drücken zum Spielen',
+    startBtn: 'Start',
+    youReached: 'Du hast erreicht',
+    playAgain: 'Nochmal spielen',
+    watch: 'Schau zu...',
+    yourTurn: 'Dein Zug!',
+    nice: 'Super! 🎉',
+  },
+  en: {
+    back: '← Back to Games',
+    round: 'Round:',
+    best: 'Best:',
+    tapStart: 'Tap Start to play',
+    startBtn: 'Start',
+    youReached: 'You reached',
+    playAgain: 'Play Again',
+    watch: 'Watch...',
+    yourTurn: 'Your turn!',
+    nice: 'Nice! 🎉',
+  },
+  it: {
+    back: '← Torna ai giochi',
+    round: 'Turno:',
+    best: 'Record:',
+    tapStart: 'Tocca Start per giocare',
+    startBtn: 'Start',
+    youReached: 'Hai raggiunto',
+    playAgain: 'Gioca ancora',
+    watch: 'Guarda...',
+    yourTurn: 'Tocca a te!',
+    nice: 'Bravo! 🎉',
+  },
+  es: {
+    back: '← Volver a los juegos',
+    round: 'Ronda:',
+    best: 'Mejor:',
+    tapStart: 'Toca Inicio para jugar',
+    startBtn: 'Iniciar',
+    youReached: 'Llegaste a',
+    playAgain: 'Jugar de nuevo',
+    watch: 'Mira...',
+    yourTurn: '¡Tu turno!',
+    nice: '¡Bien! 🎉',
+  },
+  fr: {
+    back: '← Retour aux jeux',
+    round: 'Manche :',
+    best: 'Meilleur :',
+    tapStart: 'Appuyer sur Démarrer',
+    startBtn: 'Démarrer',
+    youReached: 'Vous avez atteint',
+    playAgain: 'Rejouer',
+    watch: 'Regardez...',
+    yourTurn: 'À vous !',
+    nice: 'Bien ! 🎉',
+  },
+};
+const { t, lang, onLangChange, translatePage } = initI18n(TRANSLATIONS);
+window.t = t;
+window.onLangChange = onLangChange;
+</script>
 
 <script type="module">
 import { createGame, addToSequence, getFlashDuration, handleInput, markInputReady, getTileColors } from './game.js';
@@ -172,14 +241,14 @@ function flashTile(index, duration) {
 }
 
 async function playSequence() {
-  statusEl.textContent = 'Watch...';
+  statusEl.textContent = window.t('watch');
   const dur = getFlashDuration(game.round);
   await new Promise(r => setTimeout(r, 400));
   for (const idx of game.sequence) {
     await flashTile(idx, dur);
   }
   game = markInputReady(game);
-  statusEl.textContent = 'Your turn!';
+  statusEl.textContent = window.t('yourTurn');
 }
 
 async function nextRound() {
@@ -216,7 +285,7 @@ function onTileClick(e) {
   setTimeout(() => el.classList.remove('correct'), 200);
 
   if (game.state === 'roundcomplete') {
-    statusEl.textContent = 'Nice! 🎉';
+    statusEl.textContent = window.t('nice');
     setTimeout(() => nextRound(), 800);
   }
 }

@@ -72,20 +72,79 @@
 </style>
 </head>
 <body>
-<div class="back-bar"><a href="/">← Back to Games</a></div>
+<div class="back-bar"><a href="/" data-i18n="back">← Back to Games</a></div>
 <h1>⬡ HEX FLIP</h1>
-<div id="info">Moves: <span id="moves">0</span></div>
+<div id="info"><span data-i18n="moves">Moves:</span> <span id="moves">0</span></div>
 <canvas id="game"></canvas>
 <div id="difficulty">
-  <button data-r="1" data-m="2">Easy</button>
-  <button data-r="2" data-m="4" class="active">Medium</button>
-  <button data-r="3" data-m="6">Hard</button>
+  <button data-r="1" data-m="2" data-i18n="easy">Easy</button>
+  <button data-r="2" data-m="4" class="active" data-i18n="medium">Medium</button>
+  <button data-r="3" data-m="6" data-i18n="hard">Hard</button>
 </div>
 <div id="controls">
-  <button id="reset">New Puzzle</button>
-  <button id="undo">Undo</button>
+  <button id="reset" data-i18n="newPuzzle">New Puzzle</button>
+  <button id="undo" data-i18n="undo">Undo</button>
 </div>
-<div id="win-msg">🎉 Solved!</div>
+<div id="win-msg" data-i18n="solved">🎉 Solved!</div>
+
+<script src="/shared/i18n.js"></script>
+<script>
+const TRANSLATIONS = {
+  de: {
+    back: '← Zurück zu den Spielen',
+    moves: 'Züge:',
+    easy: 'Leicht',
+    medium: 'Mittel',
+    hard: 'Schwer',
+    newPuzzle: 'Neues Rätsel',
+    undo: 'Rückgängig',
+    solved: '🎉 Gelöst!',
+  },
+  en: {
+    back: '← Back to Games',
+    moves: 'Moves:',
+    easy: 'Easy',
+    medium: 'Medium',
+    hard: 'Hard',
+    newPuzzle: 'New Puzzle',
+    undo: 'Undo',
+    solved: '🎉 Solved!',
+  },
+  it: {
+    back: '← Torna ai giochi',
+    moves: 'Mosse:',
+    easy: 'Facile',
+    medium: 'Medio',
+    hard: 'Difficile',
+    newPuzzle: 'Nuovo puzzle',
+    undo: 'Annulla',
+    solved: '🎉 Risolto!',
+  },
+  es: {
+    back: '← Volver a los juegos',
+    moves: 'Movimientos:',
+    easy: 'Fácil',
+    medium: 'Medio',
+    hard: 'Difícil',
+    newPuzzle: 'Nuevo puzzle',
+    undo: 'Deshacer',
+    solved: '🎉 ¡Resuelto!',
+  },
+  fr: {
+    back: '← Retour aux jeux',
+    moves: 'Coups :',
+    easy: 'Facile',
+    medium: 'Moyen',
+    hard: 'Difficile',
+    newPuzzle: 'Nouveau puzzle',
+    undo: 'Annuler',
+    solved: '🎉 Résolu !',
+  },
+};
+const { t, lang, onLangChange, translatePage } = initI18n(TRANSLATIONS);
+window.t = t;
+window.onLangChange = onLangChange;
+</script>
 
 <script type="module">
 import { createGrid, getNeighbors, toggle, isWin, generatePuzzle } from './game.js';

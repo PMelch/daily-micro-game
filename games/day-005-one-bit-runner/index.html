@@ -51,14 +51,74 @@ canvas {
 </style>
 </head>
 <body>
-<div class="back-bar"><a href="/">← Back to Games</a></div>
+<div class="back-bar"><a href="/" data-i18n="back">← Back to Games</a></div>
 <h1>ONE-BIT RUNNER</h1>
 <div id="hud">
-  Score: <span id="score">0</span>
-  Best: <span id="best">0</span>
+  <span><span data-i18n="scorelabel">Score:</span> <span id="score">0</span></span>
+  <span><span data-i18n="bestlabel">Best:</span> <span id="best">0</span></span>
 </div>
 <canvas id="c" width="800" height="400"></canvas>
-<div id="msg">Tap or press Space to start</div>
+<div id="msg" data-i18n="tapStart">Tap or press Space to start</div>
+
+<script src="/shared/i18n.js"></script>
+<script>
+const TRANSLATIONS = {
+  de: {
+    back: '← Zurück zu den Spielen',
+    scorelabel: 'Punkte:',
+    bestlabel: 'Bestleistung:',
+    tapStart: 'Tippen oder Leertaste zum Starten',
+    gameOver: 'GAME OVER',
+    scoreCanvas: 'Punkte: ',
+    tapRetry: 'Tippen oder Leertaste zum Neustart',
+    newHighScore: '🏆 Neue Bestleistung!',
+  },
+  en: {
+    back: '← Back to Games',
+    scorelabel: 'Score:',
+    bestlabel: 'Best:',
+    tapStart: 'Tap or press Space to start',
+    gameOver: 'GAME OVER',
+    scoreCanvas: 'Score: ',
+    tapRetry: 'Tap or Space to retry',
+    newHighScore: '🏆 New high score!',
+  },
+  it: {
+    back: '← Torna ai giochi',
+    scorelabel: 'Punteggio:',
+    bestlabel: 'Record:',
+    tapStart: 'Tocca o premi Spazio per iniziare',
+    gameOver: 'GAME OVER',
+    scoreCanvas: 'Punteggio: ',
+    tapRetry: 'Tocca o Spazio per riprovare',
+    newHighScore: '🏆 Nuovo record!',
+  },
+  es: {
+    back: '← Volver a los juegos',
+    scorelabel: 'Puntos:',
+    bestlabel: 'Mejor:',
+    tapStart: 'Toca o pulsa Espacio para empezar',
+    gameOver: 'GAME OVER',
+    scoreCanvas: 'Puntos: ',
+    tapRetry: 'Toca o Espacio para reintentar',
+    newHighScore: '🏆 ¡Nueva puntuación máxima!',
+  },
+  fr: {
+    back: '← Retour aux jeux',
+    scorelabel: 'Score :',
+    bestlabel: 'Meilleur :',
+    tapStart: 'Appuyer ou Espace pour commencer',
+    gameOver: 'GAME OVER',
+    scoreCanvas: 'Score : ',
+    tapRetry: 'Appuyer ou Espace pour réessayer',
+    newHighScore: '🏆 Nouveau record !',
+  },
+};
+const { t, lang, onLangChange, translatePage } = initI18n(TRANSLATIONS);
+window.t = t;
+window.onLangChange = onLangChange;
+</script>
+
 <script type="module">
 import {
   createGameState, jump, update, checkCollision, generateObstacle,
@@ -179,13 +239,13 @@ function draw() {
     ctx.fillStyle = '#ff4466';
     ctx.font = 'bold 36px monospace';
     ctx.textAlign = 'center';
-    ctx.fillText('GAME OVER', 400, 180);
+    ctx.fillText(window.t('gameOver'), 400, 180);
     ctx.fillStyle = ACCENT;
     ctx.font = '20px monospace';
-    ctx.fillText('Score: ' + getScore(state.distance), 400, 220);
+    ctx.fillText(window.t('scoreCanvas') + getScore(state.distance), 400, 220);
     ctx.fillStyle = '#aaa';
     ctx.font = '16px monospace';
-    ctx.fillText('Tap or Space to retry', 400, 260);
+    ctx.fillText(window.t('tapRetry'), 400, 260);
     ctx.textAlign = 'left';
   }
 }
@@ -203,9 +263,9 @@ function loop(ts) {
         highScore = s;
         localStorage.setItem('oneBitRunner_hi', String(highScore));
         bestEl.textContent = highScore;
-        msgEl.textContent = '🏆 New high score!';
+        msgEl.textContent = window.t('newHighScore');
       } else {
-        msgEl.textContent = 'Tap or Space to retry';
+        msgEl.textContent = window.t('tapRetry');
       }
     }
   }

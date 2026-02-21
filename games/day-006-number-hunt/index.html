@@ -112,14 +112,14 @@
 </style>
 </head>
 <body>
-<div class="back-bar"><a href="/">← Back to Games</a></div>
+<div class="back-bar"><a href="/" data-i18n="back">← Back to Games</a></div>
 
 <div class="header">
   <h1>🔢 Number Hunt</h1>
   <div class="stats">
-    <span>Next: <span class="val" id="next-num">1</span></span>
-    <span>Time: <span class="val" id="timer">0.00s</span></span>
-    <span>Errors: <span class="val" id="errors">0</span></span>
+    <span><span data-i18n="nextlabel">Next:</span> <span class="val" id="next-num">1</span></span>
+    <span><span data-i18n="timelabel">Time:</span> <span class="val" id="timer">0.00s</span></span>
+    <span><span data-i18n="errorslabel">Errors:</span> <span class="val" id="errors">0</span></span>
   </div>
   <div class="size-picker">
     <button class="size-btn" data-size="3">3×3</button>
@@ -137,22 +137,106 @@
 <div class="overlay" id="start-overlay">
   <div class="modal">
     <h2>🔢 Number Hunt</h2>
-    <p>Tap numbers in order: 1, 2, 3...</p>
-    <p>As fast as you can!</p>
-    <button class="btn" id="start-btn">Start!</button>
+    <p data-i18n="tapInstructions">Tap numbers in order: 1, 2, 3…</p>
+    <p data-i18n="asFastAsCan">As fast as you can!</p>
+    <button class="btn" id="start-btn" data-i18n="startBtn">Start!</button>
   </div>
 </div>
 
 <!-- Finish overlay -->
 <div class="overlay hidden" id="finish-overlay">
   <div class="modal">
-    <h2>🏆 Complete!</h2>
+    <h2 data-i18n="complete">🏆 Complete!</h2>
     <div class="time-big" id="final-time">0.00s</div>
-    <p>Mistakes: <span id="final-errors">0</span></p>
+    <p><span data-i18n="mistakes">Mistakes:</span> <span id="final-errors">0</span></p>
     <p class="best" id="best-msg"></p>
-    <button class="btn" id="again-btn">Play Again</button>
+    <button class="btn" id="again-btn" data-i18n="playAgain">Play Again</button>
   </div>
 </div>
+
+<script src="/shared/i18n.js"></script>
+<script>
+const TRANSLATIONS = {
+  de: {
+    back: '← Zurück zu den Spielen',
+    nextlabel: 'Nächste:',
+    timelabel: 'Zeit:',
+    errorslabel: 'Fehler:',
+    tapInstructions: 'Tippe die Zahlen der Reihe nach: 1, 2, 3…',
+    asFastAsCan: 'So schnell wie möglich!',
+    startBtn: 'Los!',
+    complete: '🏆 Geschafft!',
+    mistakes: 'Fehler:',
+    playAgain: 'Nochmal spielen',
+    newRecord: '🎉 Neuer Rekord! (vorher {old})',
+    firstRecord: '🎉 Erster Rekord gesetzt!',
+    bestTime: 'Bestzeit: {t}',
+  },
+  en: {
+    back: '← Back to Games',
+    nextlabel: 'Next:',
+    timelabel: 'Time:',
+    errorslabel: 'Errors:',
+    tapInstructions: 'Tap numbers in order: 1, 2, 3…',
+    asFastAsCan: 'As fast as you can!',
+    startBtn: 'Start!',
+    complete: '🏆 Complete!',
+    mistakes: 'Mistakes:',
+    playAgain: 'Play Again',
+    newRecord: '🎉 New record! (was {old})',
+    firstRecord: '🎉 First record set!',
+    bestTime: 'Best: {t}',
+  },
+  it: {
+    back: '← Torna ai giochi',
+    nextlabel: 'Prossimo:',
+    timelabel: 'Tempo:',
+    errorslabel: 'Errori:',
+    tapInstructions: 'Tocca i numeri in ordine: 1, 2, 3…',
+    asFastAsCan: 'Il più veloce possibile!',
+    startBtn: 'Vai!',
+    complete: '🏆 Completato!',
+    mistakes: 'Errori:',
+    playAgain: 'Gioca ancora',
+    newRecord: '🎉 Nuovo record! (era {old})',
+    firstRecord: '🎉 Primo record registrato!',
+    bestTime: 'Record: {t}',
+  },
+  es: {
+    back: '← Volver a los juegos',
+    nextlabel: 'Siguiente:',
+    timelabel: 'Tiempo:',
+    errorslabel: 'Errores:',
+    tapInstructions: 'Toca los números en orden: 1, 2, 3…',
+    asFastAsCan: '¡Lo más rápido posible!',
+    startBtn: '¡Comenzar!',
+    complete: '🏆 ¡Completado!',
+    mistakes: 'Errores:',
+    playAgain: 'Jugar de nuevo',
+    newRecord: '🎉 ¡Nuevo récord! (antes {old})',
+    firstRecord: '🎉 ¡Primer récord establecido!',
+    bestTime: 'Mejor: {t}',
+  },
+  fr: {
+    back: '← Retour aux jeux',
+    nextlabel: 'Suivant :',
+    timelabel: 'Temps :',
+    errorslabel: 'Erreurs :',
+    tapInstructions: 'Appuie sur les chiffres dans l\'ordre : 1, 2, 3…',
+    asFastAsCan: 'Le plus vite possible !',
+    startBtn: 'Démarrer !',
+    complete: '🏆 Terminé !',
+    mistakes: 'Erreurs :',
+    playAgain: 'Rejouer',
+    newRecord: '🎉 Nouveau record ! (était {old})',
+    firstRecord: '🎉 Premier record établi !',
+    bestTime: 'Meilleur : {t}',
+  },
+};
+const { t, lang, onLangChange, translatePage } = initI18n(TRANSLATIONS);
+window.t = t;
+window.onLangChange = onLangChange;
+</script>
 
 <script>
 (function() {
@@ -176,7 +260,7 @@
     const v = localStorage.getItem(bestKey());
     return v ? parseFloat(v) : null;
   }
-  function setBest(t) { localStorage.setItem(bestKey(), t); }
+  function setBest(val) { localStorage.setItem(bestKey(), val); }
 
   function createGame() {
     const total = gridSize * gridSize;
@@ -250,15 +334,17 @@
   }
 
   function showFinish() {
-    const t = ((game.endTime - game.startTime) / 1000);
-    finalTimeEl.textContent = t.toFixed(2) + 's';
+    const elapsed = ((game.endTime - game.startTime) / 1000);
+    finalTimeEl.textContent = elapsed.toFixed(2) + 's';
     finalErrorsEl.textContent = game.mistakes;
     const best = getBest();
-    if (!best || t < best) {
-      setBest(t.toFixed(2));
-      bestMsgEl.textContent = best ? `🎉 New record! (was ${best.toFixed(2)}s)` : '🎉 First record set!';
+    if (!best || elapsed < best) {
+      setBest(elapsed.toFixed(2));
+      bestMsgEl.textContent = best
+        ? window.t('newRecord').replace('{old}', best.toFixed(2) + 's')
+        : window.t('firstRecord');
     } else {
-      bestMsgEl.textContent = `Best: ${best.toFixed(2)}s`;
+      bestMsgEl.textContent = window.t('bestTime').replace('{t}', best.toFixed(2) + 's');
     }
     finishOverlay.classList.remove('hidden');
   }

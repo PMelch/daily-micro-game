@@ -67,20 +67,20 @@ canvas{border-radius:8px;cursor:pointer;max-width:100%;touch-action:none;}
 </style>
 </head>
 <body>
-<div class="back-bar"><a href="/">← Back to Games</a></div>
+<div class="back-bar"><a href="/" data-i18n="back">← Back to Games</a></div>
 
 <!-- Setup Screen -->
 <div id="setup" class="screen active">
   <h1>⚔️ Turf War</h1>
-  <p class="subtitle">Erobere das Spielfeld – Feld für Feld!</p>
-  <p style="color:#aaa;margin-bottom:0.75rem;font-size:0.9rem;">Anzahl Spieler:</p>
+  <p class="subtitle" data-i18n="subtitle">Conquer the board – cell by cell!</p>
+  <p style="color:#aaa;margin-bottom:0.75rem;font-size:0.9rem;" data-i18n="playerCountLabel">Number of players:</p>
   <div class="player-count">
     <button data-count="2" class="active">2</button>
     <button data-count="3">3</button>
     <button data-count="4">4</button>
   </div>
   <div class="name-inputs" id="nameInputs"></div>
-  <button id="startBtn">Spiel starten!</button>
+  <button id="startBtn" data-i18n="startGame">Start game!</button>
 </div>
 
 <!-- Game Screen -->
@@ -98,15 +98,119 @@ canvas{border-radius:8px;cursor:pointer;max-width:100%;touch-action:none;}
 <div id="transition" class="screen">
   <h2 id="transNextPlayer"></h2>
   <p class="pass-msg" id="transMsg"></p>
-  <p class="tap-msg">Tippen zum Weiterspielen</p>
+  <p class="tap-msg" data-i18n="tapToContinue">Tap to continue</p>
 </div>
 
 <!-- Game Over Screen -->
 <div id="gameover" class="screen">
   <h2 id="winnerText"></h2>
   <div class="final-scores" id="finalScores"></div>
-  <button id="playAgainBtn">Nochmal spielen!</button>
+  <button id="playAgainBtn" data-i18n="playAgain">Play again!</button>
 </div>
+
+<script src="/shared/i18n.js"></script>
+<script>
+const TRANSLATIONS = {
+  de: {
+    back: '← Zurück zu den Spielen',
+    subtitle: 'Erobere das Spielfeld – Feld für Feld!',
+    playerCountLabel: 'Anzahl Spieler:',
+    startGame: 'Spiel starten!',
+    player: 'Spieler',
+    turnsLeft: '{n} Felder übrig',
+    legendStar: '★ = 3 Pkt',
+    legendX2: '×2 = 2 Pkt',
+    legendNormal: 'Normal = 1 Pkt',
+    neighborBonus: '+ Nachbarbonus',
+    itsTurn: 'ist dran!',
+    passDevice: 'Gib das Gerät an {name} weiter!',
+    tapToContinue: 'Tippen zum Weiterspielen',
+    wins: 'gewinnt!',
+    draw: '🤝 Unentschieden!',
+    pts: 'Pkt',
+    playAgain: 'Nochmal spielen!',
+  },
+  en: {
+    back: '← Back to Games',
+    subtitle: 'Conquer the board – cell by cell!',
+    playerCountLabel: 'Number of players:',
+    startGame: 'Start game!',
+    player: 'Player',
+    turnsLeft: '{n} cells left',
+    legendStar: '★ = 3 pts',
+    legendX2: '×2 = 2 pts',
+    legendNormal: 'Normal = 1 pt',
+    neighborBonus: '+ neighbor bonus',
+    itsTurn: 'is up!',
+    passDevice: 'Pass the device to {name}!',
+    tapToContinue: 'Tap to continue',
+    wins: 'wins!',
+    draw: '🤝 Draw!',
+    pts: 'pts',
+    playAgain: 'Play again!',
+  },
+  it: {
+    back: '← Torna ai giochi',
+    subtitle: 'Conquista il campo – casella per casella!',
+    playerCountLabel: 'Numero di giocatori:',
+    startGame: 'Inizia il gioco!',
+    player: 'Giocatore',
+    turnsLeft: '{n} caselle rimaste',
+    legendStar: '★ = 3 pti',
+    legendX2: '×2 = 2 pti',
+    legendNormal: 'Normale = 1 pto',
+    neighborBonus: '+ bonus vicini',
+    itsTurn: 'è il tuo turno!',
+    passDevice: 'Passa il dispositivo a {name}!',
+    tapToContinue: 'Tocca per continuare',
+    wins: 'vince!',
+    draw: '🤝 Pareggio!',
+    pts: 'pti',
+    playAgain: 'Gioca ancora!',
+  },
+  es: {
+    back: '← Volver a los juegos',
+    subtitle: '¡Conquista el tablero – celda por celda!',
+    playerCountLabel: 'Número de jugadores:',
+    startGame: '¡Empezar el juego!',
+    player: 'Jugador',
+    turnsLeft: '{n} casillas restantes',
+    legendStar: '★ = 3 pts',
+    legendX2: '×2 = 2 pts',
+    legendNormal: 'Normal = 1 pt',
+    neighborBonus: '+ bono vecino',
+    itsTurn: '¡es tu turno!',
+    passDevice: '¡Pasa el dispositivo a {name}!',
+    tapToContinue: 'Toca para continuar',
+    wins: '¡gana!',
+    draw: '🤝 ¡Empate!',
+    pts: 'pts',
+    playAgain: '¡Jugar de nuevo!',
+  },
+  fr: {
+    back: '← Retour aux jeux',
+    subtitle: 'Conquiers le plateau – case par case !',
+    playerCountLabel: 'Nombre de joueurs :',
+    startGame: 'Lancer le jeu !',
+    player: 'Joueur',
+    turnsLeft: '{n} cases restantes',
+    legendStar: '★ = 3 pts',
+    legendX2: '×2 = 2 pts',
+    legendNormal: 'Normal = 1 pt',
+    neighborBonus: '+ bonus voisin',
+    itsTurn: 'c\'est ton tour !',
+    passDevice: 'Passe l\'appareil à {name} !',
+    tapToContinue: 'Appuyer pour continuer',
+    wins: 'gagne !',
+    draw: '🤝 Égalité !',
+    pts: 'pts',
+    playAgain: 'Rejouer !',
+  },
+};
+const { t, lang, onLangChange, translatePage } = initI18n(TRANSLATIONS);
+window.t = t;
+window.onLangChange = onLangChange;
+</script>
 
 <script type="module">
 import { TurfWarGame } from './game.js';
@@ -134,11 +238,14 @@ function renderNameInputs() {
     const row = document.createElement('div');
     row.className = 'name-input-row';
     row.innerHTML = `<span class="dot" style="background:${COLORS[i]}"></span>
-      <input type="text" placeholder="Spieler ${i+1}" maxlength="16" data-idx="${i}">`;
+      <input type="text" placeholder="${window.t('player')} ${i+1}" maxlength="16" data-idx="${i}">`;
     container.appendChild(row);
   }
 }
 renderNameInputs();
+
+// Re-render name inputs on language change so placeholders update
+window.onLangChange(() => renderNameInputs());
 
 $('startBtn').addEventListener('click', startGame);
 
@@ -149,7 +256,7 @@ function showScreen(id) {
 
 function startGame() {
   const inputs = document.querySelectorAll('#nameInputs input');
-  const names = Array.from(inputs).map((inp, i) => inp.value.trim() || `Spieler ${i+1}`);
+  const names = Array.from(inputs).map((inp, i) => inp.value.trim() || `${window.t('player')} ${i+1}`);
   game = new TurfWarGame(names);
   initCanvas();
   updateUI();
@@ -247,7 +354,6 @@ function processInput(px, py) {
   const cell = getCellFromPos(px, py);
   if (!cell) return;
   const [r, c] = cell;
-  const prevPlayer = game.currentPlayerIndex;
   const result = game.claimCell(r, c);
   if (!result.success) return;
 
@@ -277,7 +383,7 @@ function showPointPopup(x, y, pts, color) {
 function updateUI() {
   const p = game.currentPlayer;
   $('turnIndicator').innerHTML = `<span class="turn-dot" style="background:${p.color}"></span> ${p.name}`;
-  $('turnsLeft').textContent = `${game.turnsLeft} Felder übrig`;
+  $('turnsLeft').textContent = window.t('turnsLeft').replace('{n}', game.turnsLeft);
 
   let sb = '';
   game.getScores().forEach((s, i) => {
@@ -288,17 +394,17 @@ function updateUI() {
   });
   $('scoreboard').innerHTML = sb;
 
-  $('legend').innerHTML = `<span><span class="legend-box" style="background:#ffcc0059"></span>★ = 3 Pkt</span>
-    <span><span class="legend-box" style="background:#aabbcc33"></span>×2 = 2 Pkt</span>
-    <span><span class="legend-box" style="background:#44556614"></span>Normal = 1 Pkt</span>
-    <span>+ Nachbarbonus</span>`;
+  $('legend').innerHTML = `<span><span class="legend-box" style="background:#ffcc0059"></span>${window.t('legendStar')}</span>
+    <span><span class="legend-box" style="background:#aabbcc33"></span>${window.t('legendX2')}</span>
+    <span><span class="legend-box" style="background:#44556614"></span>${window.t('legendNormal')}</span>
+    <span>${window.t('neighborBonus')}</span>`;
 }
 
 // --- Transition ---
 function showTransition() {
   const p = game.currentPlayer;
-  $('transNextPlayer').innerHTML = `<span style="color:${p.color}">${p.name}</span> ist dran!`;
-  $('transMsg').textContent = `Gib das Gerät an ${p.name} weiter!`;
+  $('transNextPlayer').innerHTML = `<span style="color:${p.color}">${p.name}</span> ${window.t('itsTurn')}`;
+  $('transMsg').textContent = window.t('passDevice').replace('{name}', p.name);
   showScreen('transition');
   $('transition').onclick = () => {
     $('transition').onclick = null;
@@ -313,8 +419,8 @@ function showGameOver() {
   const scores = game.getScores().sort((a, b) => b.score - a.score);
   const winner = game.getWinner();
   $('winnerText').innerHTML = winner
-    ? `🏆 <span style="color:${winner.color}">${winner.name}</span> gewinnt!`
-    : '🤝 Unentschieden!';
+    ? `🏆 <span style="color:${winner.color}">${winner.name}</span> ${window.t('wins')}`
+    : window.t('draw');
 
   let html = '';
   scores.forEach((s, i) => {
@@ -323,7 +429,7 @@ function showGameOver() {
       <span class="rank">${medal || (i+1)+'.'}</span>
       <span class="fdot" style="background:${s.color}"></span>
       <span>${s.name}</span>
-      <span style="margin-left:auto;font-weight:700;color:${s.color}">${s.score} Pkt</span>
+      <span style="margin-left:auto;font-weight:700;color:${s.color}">${s.score} ${window.t('pts')}</span>
     </div>`;
   });
   $('finalScores').innerHTML = html;
