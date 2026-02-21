@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Write(*)",
+      "Edit(*)",
+      "Bash(sed:*)",
+      "Bash(cp:*)",
+      "Bash(cat:*)",
+      "Bash(git:*)",
+      "Bash(openclaw:*)"
+    ]
+  }
+}
