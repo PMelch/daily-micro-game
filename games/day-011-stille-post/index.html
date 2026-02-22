@@ -1,0 +1,1115 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Stille Post – Telephone Pictionary</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0a0a1a;
+      --surface: #12122a;
+      --surface2: #1a1a38;
+      --accent: #ffcc00;
+      --accent2: #ff6b6b;
+      --accent3: #6bffb8;
+      --text: #e8e8ff;
+      --muted: #8888aa;
+      --border: #2a2a50;
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: system-ui, -apple-system, sans-serif;
+      overflow: hidden;
+    }
+
+    /* ── Back Bar ── */
+    .back-bar {
+      width: 100%;
+      background: #0a0a1a;
+      padding: 0.5rem 1rem;
+      border-bottom: 1px solid #333;
+      flex-shrink: 0;
+    }
+    .back-bar a {
+      color: #ffcc00;
+      text-decoration: none;
+      font-size: 0.9rem;
+      font-family: system-ui, sans-serif;
+    }
+    .back-bar a:hover { text-decoration: underline; }
+
+    /* ── Layout ── */
+    #app {
+      display: flex;
+      flex-direction: column;
+      height: calc(100vh - 36px); /* minus back-bar */
+      overflow: hidden;
+    }
+
+    .screen {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      flex: 1;
+      padding: 1.5rem 1rem;
+      overflow-y: auto;
+      gap: 1rem;
+    }
+    .screen.active { display: flex; }
+
+    /* ── Typography ── */
+    h1 {
+      font-size: 2.2rem;
+      font-weight: 900;
+      color: var(--accent);
+      text-shadow: 0 0 20px rgba(255,204,0,0.4);
+      text-align: center;
+      letter-spacing: -0.02em;
+    }
+    h2 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--text);
+      text-align: center;
+    }
+    h3 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--muted);
+      text-align: center;
+    }
+    p {
+      font-size: 1rem;
+      color: var(--muted);
+      text-align: center;
+      line-height: 1.5;
+    }
+
+    /* ── Cards ── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem;
+      width: 100%;
+      max-width: 480px;
+    }
+
+    /* ── Buttons ── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      padding: 0.85rem 2rem;
+      border: none;
+      border-radius: 10px;
+      font-size: 1.05rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.1s, opacity 0.2s;
+      width: 100%;
+      max-width: 320px;
+    }
+    .btn:active { transform: scale(0.97); }
+    .btn-primary {
+      background: var(--accent);
+      color: #0a0a1a;
+    }
+    .btn-secondary {
+      background: var(--surface2);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .btn-success {
+      background: var(--accent3);
+      color: #0a0a1a;
+    }
+    .btn-danger {
+      background: var(--accent2);
+      color: #fff;
+    }
+    .btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    /* ── Setup Screen ── */
+    .player-count-row {
+      display: flex;
+      gap: 0.5rem;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .count-btn {
+      width: 56px; height: 56px;
+      border-radius: 12px;
+      border: 2px solid var(--border);
+      background: var(--surface2);
+      color: var(--text);
+      font-size: 1.4rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .count-btn.selected {
+      border-color: var(--accent);
+      background: rgba(255,204,0,0.15);
+      color: var(--accent);
+    }
+    .name-inputs {
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+      width: 100%;
+    }
+    .name-input-row {
+      display: flex;
+      align-items: center;
+      gap: 0.7rem;
+    }
+    .player-badge {
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.85rem;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+    .name-input {
+      flex: 1;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.6rem 0.9rem;
+      color: var(--text);
+      font-size: 1rem;
+    }
+    .name-input:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+
+    /* ── Handoff Screen ── */
+    #screen-handoff {
+      background: var(--bg);
+      justify-content: center;
+      cursor: pointer;
+    }
+    .handoff-emoji {
+      font-size: 5rem;
+      animation: bounce 1s infinite;
+    }
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+    .handoff-name {
+      font-size: 2rem;
+      font-weight: 900;
+      color: var(--accent);
+    }
+    .handoff-hint {
+      font-size: 0.95rem;
+      color: var(--muted);
+      margin-top: 1.5rem;
+    }
+
+    /* ── Word Reveal Screen ── */
+    #screen-word-reveal {
+      justify-content: center;
+    }
+    .word-box {
+      background: var(--surface);
+      border: 2px solid var(--accent);
+      border-radius: 16px;
+      padding: 2rem 3rem;
+      text-align: center;
+      box-shadow: 0 0 30px rgba(255,204,0,0.2);
+    }
+    .secret-word {
+      font-size: 2.8rem;
+      font-weight: 900;
+      color: var(--accent);
+      letter-spacing: 0.05em;
+    }
+    .word-countdown {
+      font-size: 1.2rem;
+      color: var(--muted);
+      margin-top: 0.8rem;
+    }
+    .word-counter {
+      display: inline-block;
+      min-width: 1.5em;
+      text-align: center;
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    /* ── Draw Screen ── */
+    #screen-draw {
+      padding: 0.5rem 0 0;
+    }
+    .draw-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 0.8rem;
+      width: 100%;
+      max-width: 520px;
+    }
+    .draw-prompt {
+      font-size: 0.9rem;
+      color: var(--muted);
+    }
+    .draw-prompt span {
+      color: var(--accent);
+      font-weight: 700;
+    }
+    .timer-ring {
+      width: 48px; height: 48px;
+      flex-shrink: 0;
+    }
+    .timer-ring circle {
+      fill: none;
+      stroke-width: 4;
+    }
+    .timer-bg { stroke: var(--border); }
+    .timer-fg {
+      stroke: var(--accent);
+      stroke-linecap: round;
+      transform: rotate(-90deg);
+      transform-origin: 50% 50%;
+      transition: stroke-dashoffset 1s linear, stroke 0.3s;
+    }
+    .timer-text {
+      font-size: 0.85rem;
+      font-weight: 700;
+      fill: var(--text);
+      text-anchor: middle;
+      dominant-baseline: central;
+    }
+
+    #draw-canvas {
+      border-radius: 8px;
+      border: 2px solid var(--border);
+      background: #fff;
+      touch-action: none;
+      cursor: crosshair;
+      display: block;
+      max-width: 100%;
+    }
+
+    .draw-toolbar {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      justify-content: center;
+      max-width: 520px;
+      width: 100%;
+      padding: 0 0.5rem;
+    }
+    .color-swatch {
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      border: 3px solid transparent;
+      cursor: pointer;
+      transition: transform 0.1s, border-color 0.1s;
+      flex-shrink: 0;
+    }
+    .color-swatch.selected {
+      border-color: white;
+      transform: scale(1.2);
+    }
+    .tool-btn {
+      padding: 0.4rem 0.8rem;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--surface2);
+      color: var(--text);
+      font-size: 1.1rem;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .tool-btn:hover { background: var(--surface); }
+    .size-btn {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      border: 1px solid var(--border);
+      background: var(--surface2);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: border-color 0.15s;
+    }
+    .size-btn.selected { border-color: var(--accent); }
+    .size-dot {
+      background: white;
+      border-radius: 50%;
+    }
+    .draw-actions {
+      display: flex;
+      gap: 0.5rem;
+      max-width: 480px;
+      width: 100%;
+      padding: 0 0.5rem;
+    }
+
+    /* ── Guess Screen ── */
+    #screen-guess {
+      gap: 0.8rem;
+    }
+    .guess-drawing {
+      border-radius: 10px;
+      border: 2px solid var(--border);
+      max-width: 100%;
+      width: auto;
+      max-height: 42vh;
+      object-fit: contain;
+      display: block;
+      background: #fff;
+    }
+    .guess-input {
+      width: 100%;
+      max-width: 400px;
+      padding: 0.9rem 1.2rem;
+      font-size: 1.3rem;
+      font-weight: 700;
+      text-align: center;
+      background: var(--surface2);
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      letter-spacing: 0.05em;
+    }
+    .guess-input:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+
+    /* ── Reveal Screen ── */
+    #screen-reveal {
+      justify-content: flex-start;
+      padding: 1rem;
+    }
+    .reveal-chain {
+      display: flex;
+      flex-direction: column;
+      gap: 0.8rem;
+      width: 100%;
+      max-width: 480px;
+    }
+    .reveal-item {
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      opacity: 0;
+      transform: translateY(20px);
+      transition: opacity 0.4s, transform 0.4s;
+    }
+    .reveal-item.shown {
+      opacity: 1;
+      transform: none;
+    }
+    .reveal-label {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 0.8rem;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--muted);
+    }
+    .reveal-label .author { color: var(--text); }
+    .reveal-type-word {
+      background: rgba(255,204,0,0.08);
+      border-color: rgba(255,204,0,0.3);
+    }
+    .reveal-type-word .reveal-label { background: rgba(255,204,0,0.12); }
+    .reveal-type-draw {
+      background: rgba(107,255,184,0.05);
+      border-color: rgba(107,255,184,0.2);
+    }
+    .reveal-type-draw .reveal-label { background: rgba(107,255,184,0.08); }
+    .reveal-type-guess {
+      background: rgba(255,107,107,0.05);
+      border-color: rgba(255,107,107,0.2);
+    }
+    .reveal-type-guess .reveal-label { background: rgba(255,107,107,0.08); }
+    .reveal-value-word {
+      padding: 1rem;
+      font-size: 2rem;
+      font-weight: 900;
+      color: var(--accent);
+      text-align: center;
+    }
+    .reveal-value-guess {
+      padding: 1rem;
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--text);
+      text-align: center;
+    }
+    .reveal-value-draw img {
+      width: 100%;
+      display: block;
+      max-height: 260px;
+      object-fit: contain;
+      background: #fff;
+    }
+
+    /* ── Player colors ── */
+    .pc-0 { background: #ff6b6b; }
+    .pc-1 { background: #6b9fff; }
+    .pc-2 { background: #6bff9e; }
+    .pc-3 { background: #ffb86b; }
+
+    .pc-text-0 { color: #ff6b6b; }
+    .pc-text-1 { color: #6b9fff; }
+    .pc-text-2 { color: #6bff9e; }
+    .pc-text-3 { color: #ffb86b; }
+
+    /* ── Progress dots ── */
+    .progress-dots {
+      display: flex;
+      gap: 0.4rem;
+      justify-content: center;
+    }
+    .dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--border);
+    }
+    .dot.done { background: var(--accent); }
+    .dot.active { background: var(--accent3); }
+
+    /* ── Fade in ── */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: none; }
+    }
+    .fade-in {
+      animation: fadeIn 0.35s ease forwards;
+    }
+
+    /* ── Emoji row ── */
+    .emoji-row {
+      font-size: 2rem;
+      text-align: center;
+    }
+
+    label.small {
+      font-size: 0.85rem;
+      color: var(--muted);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .gap-small { gap: 0.5rem; }
+    .w-full { width: 100%; max-width: 480px; }
+  </style>
+</head>
+<body>
+<div class="back-bar"><a href="/">← Back to Games</a></div>
+<div id="app">
+
+  <!-- ── SETUP SCREEN ── -->
+  <div id="screen-setup" class="screen active fade-in">
+    <h1>🤫 Stille Post</h1>
+    <p>Zeichne es. Rate es. Lache darüber.<br>Telephone Pictionary für die Couch!</p>
+
+    <div class="card w-full">
+      <div style="display:flex;flex-direction:column;gap:1rem;">
+        <div>
+          <label class="small">Anzahl Spieler</label>
+          <div class="player-count-row" style="margin-top:0.6rem;">
+            <button class="count-btn" data-n="2">2</button>
+            <button class="count-btn selected" data-n="3">3</button>
+            <button class="count-btn" data-n="4">4</button>
+          </div>
+        </div>
+        <div>
+          <label class="small">Spielernamen</label>
+          <div class="name-inputs" id="name-inputs" style="margin-top:0.6rem;"></div>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn btn-primary" id="btn-start-game">🎮 Spiel starten!</button>
+
+    <div class="card w-full" style="font-size:0.9rem;color:var(--muted);line-height:1.6;">
+      <strong style="color:var(--text);">So geht's:</strong><br>
+      Spieler 1 sieht ein geheimes Wort und zeichnet es.<br>
+      Spieler 2 sieht die Zeichnung und tippt ein Wort.<br>
+      Das geht reihum – am Ende wird alles enthüllt! 😂
+    </div>
+  </div>
+
+  <!-- ── HANDOFF SCREEN ── -->
+  <div id="screen-handoff" class="screen" onclick="handleHandoffTap()">
+    <div class="handoff-emoji" id="handoff-emoji">📱</div>
+    <div id="handoff-text" style="text-align:center;">
+      <div style="font-size:1.1rem;color:var(--muted);margin-bottom:0.3rem;">Gib das Gerät an</div>
+      <div class="handoff-name" id="handoff-name">Spieler 1</div>
+    </div>
+    <div class="handoff-hint">Tippe irgendwo, wenn du bereit bist ✋</div>
+    <div class="progress-dots" id="handoff-dots" style="margin-top:1rem;"></div>
+  </div>
+
+  <!-- ── WORD REVEAL SCREEN ── -->
+  <div id="screen-word-reveal" class="screen">
+    <div style="text-align:center;font-size:1rem;color:var(--muted);">Dein geheimes Wort — nur du siehst das!</div>
+    <div class="word-box">
+      <div style="font-size:0.9rem;color:var(--muted);margin-bottom:0.5rem;">ZEICHNE:</div>
+      <div class="secret-word" id="secret-word-display">Katze</div>
+    </div>
+    <div class="word-countdown">
+      Beginne zu zeichnen… verschwindet in <span class="word-counter" id="word-timer-countdown">5</span>s
+    </div>
+    <p style="font-size:0.85rem;margin-top:0.5rem;">Zeig das Wort niemandem! 🙈</p>
+  </div>
+
+  <!-- ── DRAW SCREEN ── -->
+  <div id="screen-draw" class="screen" style="gap:0.5rem;">
+    <div class="draw-header">
+      <div class="draw-prompt">
+        <span id="draw-player-name">Anna</span> zeichnet
+        <span id="draw-step-hint"></span>
+      </div>
+      <svg class="timer-ring" viewBox="0 0 48 48">
+        <circle class="timer-bg" cx="24" cy="24" r="20" />
+        <circle class="timer-fg" id="timer-circle" cx="24" cy="24" r="20"
+          stroke-dasharray="125.66" stroke-dashoffset="0"/>
+        <text class="timer-text" id="timer-text" x="24" y="24">90</text>
+      </svg>
+    </div>
+
+    <canvas id="draw-canvas" width="460" height="340"></canvas>
+
+    <div class="draw-toolbar">
+      <!-- Colors -->
+      <div class="color-swatch selected" data-color="#111111" style="background:#111111;"></div>
+      <div class="color-swatch" data-color="#e53e3e" style="background:#e53e3e;"></div>
+      <div class="color-swatch" data-color="#2b6cb0" style="background:#2b6cb0;"></div>
+      <div class="color-swatch" data-color="#38a169" style="background:#38a169;"></div>
+      <div class="color-swatch" data-color="#d69e2e" style="background:#d69e2e;"></div>
+      <div class="color-swatch" data-color="#805ad5" style="background:#805ad5;"></div>
+      <div class="color-swatch" data-color="#dd6b20" style="background:#dd6b20;"></div>
+      <div class="color-swatch" data-color="#ffffff" style="background:#ffffff;border:2px solid #555;"></div>
+      <!-- Sizes -->
+      <div class="size-btn selected" data-size="3"><div class="size-dot" style="width:6px;height:6px;"></div></div>
+      <div class="size-btn" data-size="8"><div class="size-dot" style="width:12px;height:12px;"></div></div>
+      <div class="size-btn" data-size="18"><div class="size-dot" style="width:20px;height:20px;"></div></div>
+      <!-- Eraser -->
+      <button class="tool-btn" id="btn-eraser" title="Radiergummi">🔲</button>
+      <!-- Undo -->
+      <button class="tool-btn" id="btn-undo" title="Rückgängig">↩</button>
+      <!-- Clear -->
+      <button class="tool-btn" id="btn-clear" title="Alles löschen">🗑️</button>
+    </div>
+
+    <div class="draw-actions" style="padding:0 0.5rem;">
+      <button class="btn btn-success" id="btn-done-drawing">Fertig ✓</button>
+    </div>
+  </div>
+
+  <!-- ── GUESS SCREEN ── -->
+  <div id="screen-guess" class="screen">
+    <h2 id="guess-player-name" style="font-size:1.1rem;"></h2>
+    <p>Was wurde hier gezeichnet?</p>
+    <img id="guess-drawing" class="guess-drawing" src="" alt="Zeichnung">
+    <input type="text" id="guess-input" class="guess-input"
+      placeholder="Dein Tipp…"
+      maxlength="40"
+      autocomplete="off"
+      autocorrect="off"
+      spellcheck="false">
+    <button class="btn btn-primary" id="btn-submit-guess" disabled>Absenden ✓</button>
+  </div>
+
+  <!-- ── REVEAL SCREEN ── -->
+  <div id="screen-reveal" class="screen">
+    <div style="text-align:center;width:100%;max-width:480px;">
+      <h1 style="font-size:1.8rem;">🎉 Enthüllung!</h1>
+      <p>So hat sich das Wort verändert…</p>
+    </div>
+    <div class="reveal-chain" id="reveal-chain"></div>
+    <button class="btn btn-primary" id="btn-play-again" style="margin-top:0.5rem;">Nochmal spielen! 🔁</button>
+  </div>
+
+</div>
+
+<script type="module">
+import {
+  getPlayerForStep,
+  getStepType,
+  isLastStep,
+  getTotalSteps,
+  selectRandomWord,
+  createInitialChain,
+  buildRevealChain,
+  canSubmitGuess,
+  WORD_POOL,
+} from './game-logic.js';
+
+// ── State ──────────────────────────────────────────────────────────────────
+const state = {
+  players: ['Spieler 1', 'Spieler 2', 'Spieler 3'],
+  numPlayers: 3,
+  secretWord: '',
+  chain: [],
+  currentStep: 0,
+  // Drawing
+  drawingColor: '#111111',
+  drawingSize: 3,
+  isEraser: false,
+  undoStack: [],
+  drawTimer: null,
+  drawTimeLeft: 90,
+  // Word reveal timer
+  wordTimer: null,
+};
+
+// ── Helpers ────────────────────────────────────────────────────────────────
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function playerColor(i) {
+  return ['#ff6b6b','#6b9fff','#6bff9e','#ffb86b'][i % 4];
+}
+
+function updateProgressDots(containerId, total, current) {
+  const el = document.getElementById(containerId);
+  el.innerHTML = '';
+  for (let i = 0; i < total; i++) {
+    const d = document.createElement('div');
+    d.className = 'dot' + (i < current ? ' done' : '') + (i === current ? ' active' : '');
+    el.appendChild(d);
+  }
+}
+
+// ── Setup Screen ───────────────────────────────────────────────────────────
+function renderNameInputs(n) {
+  const defaults = ['Spieler 1','Spieler 2','Spieler 3','Spieler 4'];
+  const container = document.getElementById('name-inputs');
+  // Preserve existing values
+  const existing = [...container.querySelectorAll('.name-input')].map(i => i.value);
+  container.innerHTML = '';
+  for (let i = 0; i < n; i++) {
+    const row = document.createElement('div');
+    row.className = 'name-input-row';
+    const badge = document.createElement('div');
+    badge.className = `player-badge pc-${i}`;
+    badge.style.color = '#0a0a1a';
+    badge.style.fontWeight = '900';
+    badge.textContent = i + 1;
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'name-input';
+    input.placeholder = defaults[i];
+    input.maxLength = 16;
+    input.value = existing[i] || '';
+    row.appendChild(badge);
+    row.appendChild(input);
+    container.appendChild(row);
+  }
+}
+
+// Count buttons
+document.querySelectorAll('.count-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.count-btn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    state.numPlayers = parseInt(btn.dataset.n);
+    renderNameInputs(state.numPlayers);
+  });
+});
+
+// Init name inputs
+renderNameInputs(3);
+
+document.getElementById('btn-start-game').addEventListener('click', () => {
+  const defaults = ['Spieler 1','Spieler 2','Spieler 3','Spieler 4'];
+  state.players = [...document.querySelectorAll('.name-input')]
+    .map((inp, i) => inp.value.trim() || defaults[i]);
+  // Pick secret word using current timestamp as seed
+  state.secretWord = selectRandomWord(WORD_POOL, Date.now() % 997);
+  state.chain = createInitialChain(state.secretWord);
+  state.currentStep = 0;
+  showHandoff(0);
+});
+
+// ── Handoff Screen ─────────────────────────────────────────────────────────
+function showHandoff(step) {
+  const playerIdx = getPlayerForStep(step, state.numPlayers);
+  const playerName = state.players[playerIdx];
+  const type = getStepType(step);
+  const total = getTotalSteps(state.numPlayers);
+
+  document.getElementById('handoff-name').textContent = playerName;
+  document.getElementById('handoff-name').style.color = playerColor(playerIdx);
+  document.getElementById('handoff-emoji').textContent =
+    type === 'draw' ? '🎨' : '🔍';
+
+  updateProgressDots('handoff-dots', total, step);
+  showScreen('screen-handoff');
+}
+
+window.handleHandoffTap = function() {
+  const step = state.currentStep;
+  const type = getStepType(step);
+  if (type === 'draw') {
+    if (step === 0) {
+      showWordReveal();
+    } else {
+      startDrawing();
+    }
+  } else {
+    showGuessScreen();
+  }
+};
+
+// ── Word Reveal Screen ─────────────────────────────────────────────────────
+function showWordReveal() {
+  document.getElementById('secret-word-display').textContent = state.secretWord;
+  document.getElementById('word-timer-countdown').textContent = '5';
+  showScreen('screen-word-reveal');
+
+  let t = 5;
+  state.wordTimer = setInterval(() => {
+    t--;
+    document.getElementById('word-timer-countdown').textContent = t;
+    if (t <= 0) {
+      clearInterval(state.wordTimer);
+      startDrawing();
+    }
+  }, 1000);
+}
+
+// ── Draw Screen ────────────────────────────────────────────────────────────
+const canvas = document.getElementById('draw-canvas');
+const ctx = canvas.getContext('2d');
+
+function resizeCanvas() {
+  // Save current drawing
+  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  const maxW = Math.min(window.innerWidth - 20, 520);
+  const aspect = 460 / 340;
+  canvas.style.width = maxW + 'px';
+  canvas.style.height = Math.round(maxW / aspect) + 'px';
+  // Restore
+  ctx.putImageData(imageData, 0, 0);
+}
+
+resizeCanvas();
+
+function startDrawing() {
+  const step = state.currentStep;
+  const playerIdx = getPlayerForStep(step, state.numPlayers);
+  const playerName = state.players[playerIdx];
+
+  // Show hint about what to draw
+  const hintEl = document.getElementById('draw-step-hint');
+  if (step === 0) {
+    hintEl.textContent = `das Wort`;
+  } else {
+    hintEl.textContent = `das Tipp`;
+  }
+  document.getElementById('draw-player-name').textContent = playerName;
+  document.getElementById('draw-player-name').style.color = playerColor(playerIdx);
+
+  // Reset canvas
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  state.undoStack = [];
+
+  // Reset tools
+  state.drawingColor = '#111111';
+  state.drawingSize = 3;
+  state.isEraser = false;
+  document.querySelectorAll('.color-swatch').forEach(s => {
+    s.classList.toggle('selected', s.dataset.color === '#111111');
+  });
+  document.querySelectorAll('.size-btn').forEach(b => {
+    b.classList.toggle('selected', parseInt(b.dataset.size) === 3);
+  });
+  document.getElementById('btn-eraser').classList.remove('active');
+
+  // Timer
+  state.drawTimeLeft = 90;
+  updateTimerUI(90);
+  clearInterval(state.drawTimer);
+  state.drawTimer = setInterval(() => {
+    state.drawTimeLeft--;
+    updateTimerUI(state.drawTimeLeft);
+    if (state.drawTimeLeft <= 0) {
+      clearInterval(state.drawTimer);
+      finishDrawing();
+    }
+  }, 1000);
+
+  showScreen('screen-draw');
+}
+
+function updateTimerUI(t) {
+  const max = 90;
+  const circumference = 125.66;
+  const offset = circumference * (1 - t / max);
+  const circle = document.getElementById('timer-circle');
+  circle.style.strokeDashoffset = offset;
+  document.getElementById('timer-text').textContent = t;
+  // Color warning
+  if (t <= 10) {
+    circle.style.stroke = '#ff6b6b';
+    document.getElementById('timer-text').style.fill = '#ff6b6b';
+  } else if (t <= 30) {
+    circle.style.stroke = '#ffb86b';
+    document.getElementById('timer-text').style.fill = '#ffb86b';
+  } else {
+    circle.style.stroke = 'var(--accent)';
+    document.getElementById('timer-text').style.fill = 'var(--text)';
+  }
+}
+
+// ── Canvas Drawing ─────────────────────────────────────────────────────────
+let isDrawing = false;
+let lastX = 0, lastY = 0;
+
+function getCanvasPos(e) {
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = canvas.width / rect.width;
+  const scaleY = canvas.height / rect.height;
+  if (e.touches) {
+    return {
+      x: (e.touches[0].clientX - rect.left) * scaleX,
+      y: (e.touches[0].clientY - rect.top) * scaleY,
+    };
+  }
+  return {
+    x: (e.clientX - rect.left) * scaleX,
+    y: (e.clientY - rect.top) * scaleY,
+  };
+}
+
+function saveUndo() {
+  if (state.undoStack.length >= 25) state.undoStack.shift();
+  state.undoStack.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
+}
+
+canvas.addEventListener('mousedown', e => {
+  isDrawing = true;
+  const pos = getCanvasPos(e);
+  lastX = pos.x; lastY = pos.y;
+  saveUndo();
+});
+canvas.addEventListener('mousemove', e => {
+  if (!isDrawing) return;
+  const pos = getCanvasPos(e);
+  drawLine(lastX, lastY, pos.x, pos.y);
+  lastX = pos.x; lastY = pos.y;
+});
+canvas.addEventListener('mouseup', () => { isDrawing = false; });
+canvas.addEventListener('mouseleave', () => { isDrawing = false; });
+
+canvas.addEventListener('touchstart', e => {
+  e.preventDefault();
+  isDrawing = true;
+  const pos = getCanvasPos(e);
+  lastX = pos.x; lastY = pos.y;
+  saveUndo();
+}, { passive: false });
+canvas.addEventListener('touchmove', e => {
+  e.preventDefault();
+  if (!isDrawing) return;
+  const pos = getCanvasPos(e);
+  drawLine(lastX, lastY, pos.x, pos.y);
+  lastX = pos.x; lastY = pos.y;
+}, { passive: false });
+canvas.addEventListener('touchend', () => { isDrawing = false; });
+
+function drawLine(x1, y1, x2, y2) {
+  ctx.beginPath();
+  ctx.moveTo(x1, y1);
+  ctx.lineTo(x2, y2);
+  ctx.strokeStyle = state.isEraser ? '#ffffff' : state.drawingColor;
+  ctx.lineWidth = state.isEraser ? state.drawingSize * 3 : state.drawingSize;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.stroke();
+}
+
+// ── Toolbar events ─────────────────────────────────────────────────────────
+document.querySelectorAll('.color-swatch').forEach(swatch => {
+  swatch.addEventListener('click', () => {
+    state.drawingColor = swatch.dataset.color;
+    state.isEraser = false;
+    document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('selected'));
+    swatch.classList.add('selected');
+    document.getElementById('btn-eraser').textContent = '🔲';
+  });
+});
+
+document.querySelectorAll('.size-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    state.drawingSize = parseInt(btn.dataset.size);
+    document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+  });
+});
+
+document.getElementById('btn-eraser').addEventListener('click', () => {
+  state.isEraser = !state.isEraser;
+  document.getElementById('btn-eraser').textContent = state.isEraser ? '✏️' : '🔲';
+});
+
+document.getElementById('btn-undo').addEventListener('click', () => {
+  if (state.undoStack.length > 0) {
+    ctx.putImageData(state.undoStack.pop(), 0, 0);
+  }
+});
+
+document.getElementById('btn-clear').addEventListener('click', () => {
+  saveUndo();
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+});
+
+document.getElementById('btn-done-drawing').addEventListener('click', finishDrawing);
+
+function finishDrawing() {
+  clearInterval(state.drawTimer);
+  const dataUrl = canvas.toDataURL('image/png');
+  const playerIdx = getPlayerForStep(state.currentStep, state.numPlayers);
+  state.chain.push({
+    type: 'draw',
+    value: dataUrl,
+    author: state.players[playerIdx],
+  });
+
+  const total = getTotalSteps(state.numPlayers);
+  if (isLastStep(state.currentStep, state.numPlayers)) {
+    showReveal();
+  } else {
+    state.currentStep++;
+    showHandoff(state.currentStep);
+  }
+}
+
+// ── Guess Screen ───────────────────────────────────────────────────────────
+function showGuessScreen() {
+  const step = state.currentStep;
+  const playerIdx = getPlayerForStep(step, state.numPlayers);
+  const playerName = state.players[playerIdx];
+
+  const nameEl = document.getElementById('guess-player-name');
+  nameEl.textContent = `🔍 ${playerName} — was ist das?`;
+  nameEl.style.color = playerColor(playerIdx);
+
+  // Show the last drawing in the chain
+  const lastDrawing = [...state.chain].reverse().find(e => e.type === 'draw');
+  document.getElementById('guess-drawing').src = lastDrawing ? lastDrawing.value : '';
+  document.getElementById('guess-input').value = '';
+  document.getElementById('btn-submit-guess').disabled = true;
+
+  showScreen('screen-guess');
+  setTimeout(() => document.getElementById('guess-input').focus(), 300);
+}
+
+document.getElementById('guess-input').addEventListener('input', e => {
+  document.getElementById('btn-submit-guess').disabled = !canSubmitGuess(e.target.value);
+});
+
+document.getElementById('btn-submit-guess').addEventListener('click', () => {
+  const text = document.getElementById('guess-input').value.trim();
+  if (!canSubmitGuess(text)) return;
+
+  const playerIdx = getPlayerForStep(state.currentStep, state.numPlayers);
+  state.chain.push({
+    type: 'guess',
+    value: text,
+    author: state.players[playerIdx],
+  });
+
+  if (isLastStep(state.currentStep, state.numPlayers)) {
+    showReveal();
+  } else {
+    state.currentStep++;
+    showHandoff(state.currentStep);
+  }
+});
+
+// ── Reveal Screen ──────────────────────────────────────────────────────────
+function showReveal() {
+  const revealData = buildRevealChain(state.secretWord, state.chain);
+  const container = document.getElementById('reveal-chain');
+  container.innerHTML = '';
+
+  revealData.forEach((item, i) => {
+    const div = document.createElement('div');
+    div.className = `reveal-item reveal-type-${item.type}`;
+
+    const labelDiv = document.createElement('div');
+    labelDiv.className = 'reveal-label';
+
+    if (item.type === 'word') {
+      labelDiv.innerHTML = `🔑 <span>Geheimwort</span>`;
+      const val = document.createElement('div');
+      val.className = 'reveal-value-word';
+      val.textContent = item.value;
+      div.appendChild(labelDiv);
+      div.appendChild(val);
+    } else if (item.type === 'draw') {
+      const pIdx = state.players.indexOf(item.author);
+      labelDiv.innerHTML = `🎨 <span class="author" style="color:${playerColor(pIdx)}">${item.author}</span> hat gezeichnet`;
+      const valDiv = document.createElement('div');
+      valDiv.className = 'reveal-value-draw';
+      const img = document.createElement('img');
+      img.src = item.value;
+      img.alt = 'Zeichnung';
+      valDiv.appendChild(img);
+      div.appendChild(labelDiv);
+      div.appendChild(valDiv);
+    } else {
+      const pIdx = state.players.indexOf(item.author);
+      labelDiv.innerHTML = `💬 <span class="author" style="color:${playerColor(pIdx)}">${item.author}</span> hat geraten`;
+      const val = document.createElement('div');
+      val.className = 'reveal-value-guess';
+      val.textContent = `"${item.value}"`;
+      div.appendChild(labelDiv);
+      div.appendChild(val);
+    }
+
+    container.appendChild(div);
+
+    // Staggered reveal animation
+    setTimeout(() => div.classList.add('shown'), 150 + i * 350);
+  });
+
+  showScreen('screen-reveal');
+}
+
+document.getElementById('btn-play-again').addEventListener('click', () => {
+  state.chain = [];
+  state.currentStep = 0;
+  state.secretWord = selectRandomWord(WORD_POOL, Date.now() % 997);
+  showHandoff(0);
+});
+
+// ── Init ───────────────────────────────────────────────────────────────────
+window.addEventListener('resize', resizeCanvas);
+</script>
+</body>
+</html>
