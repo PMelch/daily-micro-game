@@ -7,148 +7,231 @@
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0f0f23; color: #ccc; min-height: 100vh; }
-  .header { background: linear-gradient(135deg, #1a1a3e, #2d1b69); padding: 2rem; text-align: center; border-bottom: 2px solid #333; position: relative; }
+  .back-bar { width: 100%; background: #0f0f23; padding: 0.4rem 1rem; border-bottom: 1px solid #222; }
+  .header { background: linear-gradient(135deg, #1a1a3e, #2d1b69); padding: 2rem; text-align: center; border-bottom: 2px solid #333; }
   .header h1 { color: #ffcc00; font-size: 2rem; margin-bottom: 0.3rem; }
   .header p { color: #aaa; font-size: 0.95rem; }
   .stats { display: flex; gap: 2rem; justify-content: center; margin-top: 1rem; }
   .stat { text-align: center; }
   .stat-num { font-size: 1.8rem; font-weight: bold; color: #ffcc00; }
   .stat-label { font-size: 0.8rem; color: #888; }
-  .container { max-width: 900px; margin: 2rem auto; padding: 0 1rem; }
+  .container { max-width: 1200px; margin: 2rem auto; padding: 0 1rem; }
   .empty { text-align: center; padding: 4rem 1rem; color: #666; }
   .empty h2 { color: #888; margin-bottom: 0.5rem; }
-  .game-card { background: #1a1a2e; border: 1px solid #333; border-radius: 12px; padding: 1.5rem; margin-bottom: 1rem; transition: border-color 0.2s; }
-  .game-card:hover { border-color: #ffcc00; }
-  .game-card h2 { color: #fff; font-size: 1.2rem; margin-bottom: 0.3rem; }
-  .game-card .meta { color: #888; font-size: 0.85rem; margin-bottom: 0.5rem; }
-  .game-card .desc { color: #aaa; margin-bottom: 1rem; }
-  .game-card .actions { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
-  .play-btn { background: #ffcc00; color: #000; text-decoration: none; padding: 0.5rem 1.2rem; border-radius: 6px; font-weight: bold; font-size: 0.9rem; }
+
+  /* Tag filter bar */
+  .filter-bar { margin-bottom: 1.5rem; display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+  .filter-label { color: #888; font-size: 0.85rem; margin-right: 0.25rem; }
+  .tag-btn { background: #1a1a2e; border: 1px solid #444; color: #aaa; padding: 0.35rem 0.8rem; border-radius: 20px; cursor: pointer; font-size: 0.8rem; transition: all 0.15s; }
+  .tag-btn:hover { border-color: #ffcc00; color: #ffcc00; }
+  .tag-btn.active { background: #ffcc00; color: #000; border-color: #ffcc00; font-weight: 600; }
+
+  /* Grid layout — row-first ordering */
+  .games-grid { display: grid; grid-template-columns: 1fr; gap: 1rem; }
+  @media (min-width: 640px) { .games-grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (min-width: 960px) { .games-grid { grid-template-columns: repeat(3, 1fr); } }
+
+  /* Game cards */
+  .game-card { background: #1a1a2e; border: 1px solid #333; border-radius: 12px; overflow: hidden; transition: border-color 0.2s, transform 0.2s; }
+  .game-card:hover { border-color: #ffcc00; transform: translateY(-2px); }
+  .game-screenshot { width: 100%; object-fit: contain; display: block; border-bottom: 1px solid #333; background: #12122a; }
+  .game-screenshot.missing { display: flex; align-items: center; justify-content: center; color: #444; font-size: 3rem; }
+  .game-body { padding: 1rem 1.2rem 1.2rem; }
+  .game-card h2 { color: #fff; font-size: 1.1rem; margin-bottom: 0.25rem; }
+  .game-card .meta { color: #888; font-size: 0.8rem; margin-bottom: 0.5rem; }
+  .game-card .desc { color: #aaa; font-size: 0.9rem; margin-bottom: 0.75rem; line-height: 1.5; }
+  .game-card .tags { display: flex; flex-wrap: wrap; gap: 0.3rem; margin-bottom: 0.75rem; }
+  .game-tag { background: #2a2a4a; color: #aaa; padding: 0.15rem 0.5rem; border-radius: 12px; font-size: 0.7rem; }
+  .game-card .actions { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+  .play-btn { background: #ffcc00; color: #000; text-decoration: none; padding: 0.45rem 1rem; border-radius: 6px; font-weight: bold; font-size: 0.85rem; }
   .play-btn:hover { background: #ffd633; }
   .stars { display: flex; gap: 2px; }
-  .star { cursor: pointer; font-size: 1.4rem; color: #444; transition: color 0.15s; }
-  .star.active, .star:hover, .star:hover ~ .star { color: #ffcc00; }
-  .rating-info { color: #888; font-size: 0.85rem; }
-  .stars:hover .star { color: #444; }
-  .stars:hover .star:hover, .stars:hover .star:hover ~ .star-before { color: #ffcc00; }
-  .lang-selector { position: absolute; top: 1rem; left: 1rem; display: flex; gap: 4px; }
-  .lang-btn { background: none; border: 1px solid transparent; border-radius: 4px; cursor: pointer; font-size: 1.2rem; padding: 3px 6px; opacity: 0.5; transition: opacity 0.15s; }
-  .lang-btn.active { opacity: 1; border-color: #ffcc00; }
-  .lang-btn:hover { opacity: 0.8; }
+  .star { cursor: pointer; font-size: 1.3rem; color: #444; transition: color 0.15s; user-select: none; }
+  .star.active { color: #ffcc00; }
+  .rating-info { color: #888; font-size: 0.8rem; }
 </style>
 </head>
 <body>
+<div class="back-bar"></div>
 <div class="header">
-  <div class="lang-selector" id="lang-selector"></div>
   <h1>🎮 Daily Micro Games</h1>
-  <p id="header-sub">A new game every day — play, rate, enjoy</p>
+  <p data-i18n="subtitle">A new game every day — play, rate, enjoy</p>
   <div class="stats">
-    <div class="stat"><div class="stat-num" id="total-games">0</div><div class="stat-label" id="label-games">Games</div></div>
-    <div class="stat"><div class="stat-num" id="total-ratings">0</div><div class="stat-label" id="label-ratings">Ratings</div></div>
+    <div class="stat"><div class="stat-num" id="total-games">0</div><div class="stat-label" data-i18n="statGames">Games</div></div>
+    <div class="stat"><div class="stat-num" id="total-ratings">0</div><div class="stat-label" data-i18n="statRatings">Ratings</div></div>
   </div>
 </div>
-<div class="container" id="games-list">
-  <div class="empty"><h2>No games yet</h2><p>The first game drops tomorrow morning! 🌅</p></div>
+<div class="container">
+  <div class="filter-bar" id="filter-bar" style="display:none">
+    <span class="filter-label" data-i18n="filterLabel">Filter:</span>
+  </div>
+  <div id="games-list" class="games-grid">
+    <div class="empty"><h2 data-i18n="noGamesYet">No games yet</h2><p data-i18n="firstGameSoon">The first game drops tomorrow morning! 🌅</p></div>
+  </div>
 </div>
+
+<script src="/shared/i18n.js"></script>
 <script>
-const LANGS = ['de','en','fr','it','es'];
-const LANG_FLAGS = { de:'🇩🇪', en:'🇬🇧', fr:'🇫🇷', it:'🇮🇹', es:'🇪🇸' };
-const UI = {
-  de: { sub:'Jeden Tag ein neues Spiel — spielen, bewerten, genießen', games:'Spiele', ratings:'Bewertungen', play:'▶ Spielen', notRated:'Noch nicht bewertet', noGames:'Noch keine Spiele', noGamesSub:'Das erste Spiel kommt morgen früh! 🌅', rating:'Bewertung', ratingPlural:'Bewertungen' },
-  en: { sub:'A new game every day — play, rate, enjoy', games:'Games', ratings:'Ratings', play:'▶ Play', notRated:'Not rated yet', noGames:'No games yet', noGamesSub:'The first game drops tomorrow morning! 🌅', rating:'rating', ratingPlural:'ratings' },
-  fr: { sub:'Un nouveau jeu chaque jour — joue, note, profite', games:'Jeux', ratings:'Notes', play:'▶ Jouer', notRated:'Pas encore noté', noGames:'Pas encore de jeux', noGamesSub:'Le premier jeu arrive demain matin ! 🌅', rating:'note', ratingPlural:'notes' },
-  it: { sub:'Un nuovo gioco ogni giorno — gioca, vota, divertiti', games:'Giochi', ratings:'Voti', play:'▶ Gioca', notRated:'Non ancora votato', noGames:'Nessun gioco ancora', noGamesSub:'Il primo gioco arriva domani mattina! 🌅', rating:'voto', ratingPlural:'voti' },
-  es: { sub:'Un juego nuevo cada día — juega, califica, disfruta', games:'Juegos', ratings:'Calificaciones', play:'▶ Jugar', notRated:'Sin calificar', noGames:'Aún no hay juegos', noGamesSub:'¡El primer juego llega mañana! 🌅', rating:'calificación', ratingPlural:'calificaciones' },
+const TRANSLATIONS = {
+  de: {
+    subtitle: 'Jeden Tag ein neues Spiel — spielen, bewerten, genießen',
+    statGames: 'Spiele',
+    statRatings: 'Bewertungen',
+    filterLabel: 'Filter:',
+    noGamesYet: 'Noch keine Spiele',
+    firstGameSoon: 'Das erste Spiel erscheint morgen früh! 🌅',
+    noGamesMatch: 'Keine Spiele mit diesen Tags',
+    play: '▶ Spielen',
+    notRatedYet: 'Noch nicht bewertet',
+    ratingCount: '{n} Bewertung',
+    ratingCountPlural: '{n} Bewertungen',
+  },
+  en: {
+    subtitle: 'A new game every day — play, rate, enjoy',
+    statGames: 'Games',
+    statRatings: 'Ratings',
+    filterLabel: 'Filter:',
+    noGamesYet: 'No games yet',
+    firstGameSoon: 'The first game drops tomorrow morning! 🌅',
+    noGamesMatch: 'No games match these tags',
+    play: '▶ Play',
+    notRatedYet: 'Not rated yet',
+    ratingCount: '{n} rating',
+    ratingCountPlural: '{n} ratings',
+  },
+  it: {
+    subtitle: 'Un nuovo gioco ogni giorno — gioca, vota, goditi',
+    statGames: 'Giochi',
+    statRatings: 'Valutazioni',
+    filterLabel: 'Filtro:',
+    noGamesYet: 'Ancora nessun gioco',
+    firstGameSoon: 'Il primo gioco arriva domani mattina! 🌅',
+    noGamesMatch: 'Nessun gioco corrisponde a questi tag',
+    play: '▶ Gioca',
+    notRatedYet: 'Non ancora valutato',
+    ratingCount: '{n} valutazione',
+    ratingCountPlural: '{n} valutazioni',
+  },
+  es: {
+    subtitle: 'Un nuevo juego cada día — juega, valora, disfruta',
+    statGames: 'Juegos',
+    statRatings: 'Valoraciones',
+    filterLabel: 'Filtro:',
+    noGamesYet: 'Aún no hay juegos',
+    firstGameSoon: '¡El primer juego llega mañana por la mañana! 🌅',
+    noGamesMatch: 'Ningún juego coincide con estas etiquetas',
+    play: '▶ Jugar',
+    notRatedYet: 'Sin valorar aún',
+    ratingCount: '{n} valoración',
+    ratingCountPlural: '{n} valoraciones',
+  },
+  fr: {
+    subtitle: 'Un nouveau jeu chaque jour — jouer, noter, profiter',
+    statGames: 'Jeux',
+    statRatings: 'Évaluations',
+    filterLabel: 'Filtre :',
+    noGamesYet: 'Pas encore de jeux',
+    firstGameSoon: 'Le premier jeu arrive demain matin ! 🌅',
+    noGamesMatch: 'Aucun jeu ne correspond à ces tags',
+    play: '▶ Jouer',
+    notRatedYet: 'Pas encore évalué',
+    ratingCount: '{n} évaluation',
+    ratingCountPlural: '{n} évaluations',
+  },
 };
+const { t, lang, onLangChange, translatePage } = initI18n(TRANSLATIONS);
+window.t = t;
+window.onLangChange = onLangChange;
+</script>
 
-let currentLang = 'en';
-try {
-  const stored = localStorage.getItem('dg-lang');
-  if (stored && LANGS.includes(stored)) currentLang = stored;
-  else {
-    const nav = (navigator.language || '').slice(0,2).toLowerCase();
-    if (LANGS.includes(nav)) currentLang = nav;
-  }
-} catch {}
-
-function setLang(l) {
-  currentLang = l;
-  try { localStorage.setItem('dg-lang', l); } catch {}
-  document.documentElement.lang = l;
-  updateLangButtons();
-  updateUIStrings();
-  load();
-}
-
-function updateLangButtons() {
-  document.querySelectorAll('.lang-btn').forEach(b => b.classList.toggle('active', b.dataset.lang === currentLang));
-}
-
-function updateUIStrings() {
-  const u = UI[currentLang] || UI.en;
-  document.getElementById('header-sub').textContent = u.sub;
-  document.getElementById('label-games').textContent = u.games;
-  document.getElementById('label-ratings').textContent = u.ratings;
-}
-
-// Build lang selector
-const sel = document.getElementById('lang-selector');
-LANGS.forEach(l => {
-  const btn = document.createElement('button');
-  btn.className = 'lang-btn' + (l === currentLang ? ' active' : '');
-  btn.dataset.lang = l;
-  btn.textContent = LANG_FLAGS[l];
-  btn.title = l.toUpperCase();
-  btn.addEventListener('click', () => setLang(l));
-  sel.appendChild(btn);
-});
-
-function localized(g, field) {
-  const key = field + '_' + currentLang;
-  return g[key] || g[field] || '';
-}
+<script>
+let allGames = [];
+let activeTags = new Set();
 
 async function load() {
   const res = await fetch('/api/games');
-  const games = await res.json();
+  allGames = await res.json();
+  document.getElementById('total-games').textContent = allGames.length;
+  document.getElementById('total-ratings').textContent = allGames.reduce((s, g) => s + (g.ratings?.length || 0), 0);
+  buildFilters();
+  render();
+}
+
+function buildFilters() {
+  const bar = document.getElementById('filter-bar');
+  const allTags = [...new Set(allGames.flatMap(g => g.tags || []))].sort();
+  if (allTags.length === 0) { bar.style.display = 'none'; return; }
+  bar.style.display = 'flex';
+  bar.querySelectorAll('.tag-btn').forEach(b => b.remove());
+  allTags.forEach(tag => {
+    const btn = document.createElement('button');
+    btn.className = 'tag-btn' + (activeTags.has(tag) ? ' active' : '');
+    btn.textContent = tag;
+    btn.onclick = () => { activeTags.has(tag) ? activeTags.delete(tag) : activeTags.add(tag); buildFilters(); render(); };
+    bar.appendChild(btn);
+  });
+}
+
+function ratingText(ratings) {
+  if (!ratings?.length) return window.t('notRatedYet');
+  const n = ratings.length;
+  return n === 1
+    ? window.t('ratingCount').replace('{n}', n)
+    : window.t('ratingCountPlural').replace('{n}', n);
+}
+
+function render() {
   const container = document.getElementById('games-list');
-  const u = UI[currentLang] || UI.en;
+  let games = allGames;
+  if (activeTags.size > 0) {
+    games = games.filter(g => (g.tags || []).some(tag => activeTags.has(tag)));
+  }
+  games.sort((a, b) => {
+    const dayA = parseInt(a.id.match(/day-(\d+)/)?.[1] || '0');
+    const dayB = parseInt(b.id.match(/day-(\d+)/)?.[1] || '0');
+    return dayB - dayA;
+  });
 
-  document.getElementById('total-games').textContent = games.length;
-  document.getElementById('total-ratings').textContent = games.reduce((s, g) => s + (g.ratings?.length || 0), 0);
-
+  if (games.length === 0 && allGames.length === 0) {
+    container.innerHTML = `<div class="empty"><h2>${window.t('noGamesYet')}</h2><p>${window.t('firstGameSoon')}</p></div>`;
+    return;
+  }
   if (games.length === 0) {
-    container.innerHTML = `<div class="empty"><h2>${u.noGames}</h2><p>${u.noGamesSub}</p></div>`;
+    container.innerHTML = `<div class="empty"><h2>${window.t('noGamesMatch')}</h2></div>`;
     return;
   }
 
-  games.sort((a, b) => b.date.localeCompare(a.date));
-
   container.innerHTML = games.map(g => {
-    const name = localized(g, 'name');
-    const desc = localized(g, 'description');
-    const rCount = g.ratings?.length || 0;
-    const rText = rCount ? `${rCount} ${rCount > 1 ? u.ratingPlural : u.rating}` : u.notRated;
+    const currentLang = window.lang ? window.lang() : 'en';
+    const name = g['name_' + currentLang] || g.name;
+    const desc = g['description_' + currentLang] || g.description;
+    
     return `
     <div class="game-card">
-      <h2>${esc(name)}</h2>
-      <div class="meta">Day ${g.id.split('-')[1] || '?'} · ${g.date}${g.averageRating ? ` · ⭐ ${g.averageRating.toFixed(1)} (${rCount})` : ''}</div>
-      <div class="desc">${esc(desc)}</div>
-      <div class="actions">
-        <a class="play-btn" href="/games/${g.id}/">${u.play}</a>
-        <div class="stars" data-game="${g.id}">
-          ${[1,2,3,4,5].map(n => `<span class="star${g.averageRating && n <= Math.round(g.averageRating) ? ' active' : ''}" data-rating="${n}">★</span>`).join('')}
+      <img class="game-screenshot" src="/games/${g.id}/screenshot.png" alt="${esc(name)}" onerror="if(!this.dataset.retry){this.dataset.retry='1';this.src='/games/${g.id}/screenshot.jpg';}else{this.outerHTML='<div class=\\'game-screenshot missing\\'>🎮</div>';}" loading="lazy">
+      <div class="game-body">
+        <h2>${esc(name)}</h2>
+        <div class="meta">Day ${g.id.match(/day-(\d+)/)?.[1] || '?'} · ${g.date}${g.averageRating ? ` · ⭐ ${g.averageRating.toFixed(1)} (${g.ratings.length})` : ''}</div>
+        <div class="desc">${esc(desc)}</div>
+        ${(g.tags||[]).length ? `<div class="tags">${g.tags.map(tag => `<span class="game-tag">${esc(tag)}</span>`).join('')}</div>` : ''}
+        <div class="actions">
+          <a class="play-btn" href="/games/${g.id}/">${window.t('play')}</a>
+          <div class="stars" data-game="${g.id}">
+            ${[1,2,3,4,5].map(n => `<span class="star${g.averageRating && n <= Math.round(g.averageRating) ? ' active' : ''}" data-rating="${n}">★</span>`).join('')}
+          </div>
+          <span class="rating-info">${ratingText(g.ratings)}</span>
         </div>
-        <span class="rating-info">${rText}</span>
       </div>
-    </div>`;
-  }).join('');
+    </div>
+  `}).join('');
 
+  // Star hover + click
   container.querySelectorAll('.stars').forEach(el => {
-    el.querySelectorAll('.star').forEach(star => {
+    const stars = el.querySelectorAll('.star');
+    stars.forEach(star => {
       star.addEventListener('mouseenter', () => {
         const r = +star.dataset.rating;
-        el.querySelectorAll('.star').forEach(s => s.style.color = +s.dataset.rating <= r ? '#ffcc00' : '#444');
+        stars.forEach(s => s.style.color = +s.dataset.rating <= r ? '#ffcc00' : '#444');
       });
       star.addEventListener('click', async () => {
         await fetch(`/api/games/${el.dataset.game}/rate`, {
@@ -158,15 +241,15 @@ async function load() {
         load();
       });
     });
-    el.addEventListener('mouseleave', () => {
-      el.querySelectorAll('.star').forEach(s => s.style.color = '');
-    });
+    el.addEventListener('mouseleave', () => stars.forEach(s => s.style.color = ''));
   });
 }
 
-function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
-document.documentElement.lang = currentLang;
-updateUIStrings();
+function esc(s) { if (!s) return ''; const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+// Re-render on language change so dynamic text updates
+window.onLangChange(render);
+
 load();
 </script>
 </body>
