@@ -141,7 +141,9 @@ const TRANSLATIONS = {
 };
 const { t, lang, onLangChange, translatePage } = initI18n(TRANSLATIONS);
 window.t = t;
+window.lang = lang;
 window.onLangChange = onLangChange;
+window.translatePage = translatePage;
 </script>
 
 <script>
@@ -248,7 +250,7 @@ function render() {
 function esc(s) { if (!s) return ''; const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
 
 // Re-render on language change so dynamic text updates
-window.onLangChange(render);
+window.onLangChange(() => { translatePage(); render(); });
 
 load();
 </script>
