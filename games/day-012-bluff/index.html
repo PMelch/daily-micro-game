@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Bluff! – Daily Game 012</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --c1:#ff4444;--c2:#ff8c00;--c3:#ffd700;--c4:#4caf50;
+  --c5:#00bcd4;--c6:#2196f3;--c7:#9c27b0;--c8:#e91e63;
+  --bg:#0a0a1a;--surface:#151530;--border:#2a2a4a;
+}
+body{background:var(--bg);color:#eee;font-family:system-ui,sans-serif;min-height:100vh;display:flex;flex-direction:column;overflow-x:hidden;}
+.back-bar{width:100%;background:var(--bg);padding:0.5rem 1rem;border-bottom:1px solid #333;}
+.back-bar a{color:#ffcc00;text-decoration:none;font-size:0.9rem;}
+.back-bar a:hover{text-decoration:underline;}
+
+/* Screens */
+.screen{display:none;flex:1;flex-direction:column;align-items:center;justify-content:center;padding:1.5rem;text-align:center;}
+.screen.active{display:flex;}
+
+/* ===== SETUP ===== */
+#setup h1{font-size:2.2rem;margin-bottom:0.25rem;background:linear-gradient(135deg,#ff4444,#ff8c00,#ffd700);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+#setup .tagline{color:#888;font-size:0.9rem;margin-bottom:1.5rem;}
+.count-row{display:flex;gap:0.5rem;margin-bottom:1.5rem;}
+.cnt-btn{padding:0.5rem 1.2rem;border:2px solid var(--border);background:var(--surface);color:#eee;border-radius:8px;cursor:pointer;font-size:1rem;transition:all .2s;}
+.cnt-btn.active{border-color:#ffcc00;color:#ffcc00;}
+.name-inputs{display:flex;flex-direction:column;gap:0.6rem;margin-bottom:1.5rem;width:100%;max-width:300px;}
+.name-row{display:flex;align-items:center;gap:0.5rem;}
+.name-row .dot{width:14px;height:14px;border-radius:50%;flex-shrink:0;}
+.name-row input{flex:1;padding:0.45rem 0.75rem;background:var(--surface);border:1px solid var(--border);color:#eee;border-radius:8px;font-size:0.95rem;outline:none;}
+.name-row input:focus{border-color:#ffcc00;}
+.btn-primary{padding:0.75rem 2.5rem;background:linear-gradient(135deg,#ff4444,#ff8c00);border:none;color:#fff;font-size:1.2rem;font-weight:700;border-radius:12px;cursor:pointer;transition:transform .15s;}
+.btn-primary:hover{transform:scale(1.05);}
+
+/* ===== HANDOFF ===== */
+#handoff{background:var(--bg);}
+#handoff .handoff-icon{font-size:4rem;margin-bottom:1rem;animation:bounce 1.5s infinite;}
+@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+#handoff h2{font-size:1.6rem;margin-bottom:0.5rem;}
+#handoff .sub{color:#888;font-size:0.9rem;margin-bottom:2rem;}
+#handoff .tap-hint{font-size:0.85rem;color:#555;animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:.4}50%{opacity:1}}
+.btn-reveal{padding:0.8rem 2.5rem;background:linear-gradient(135deg,#4caf50,#00bcd4);border:none;color:#fff;font-size:1.1rem;font-weight:700;border-radius:12px;cursor:pointer;transition:transform .15s;}
+.btn-reveal:hover{transform:scale(1.05);}
+
+/* ===== GAME SCREEN ===== */
+#game-screen{padding:1rem;justify-content:flex-start;padding-top:1.5rem;}
+.status-bar{width:100%;max-width:480px;display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;}
+.current-claim{text-align:center;}
+.claim-label{font-size:0.75rem;color:#888;text-transform:uppercase;letter-spacing:.05em;}
+.claim-value{font-size:3rem;font-weight:900;line-height:1;}
+.pile-info{text-align:center;}
+.pile-label{font-size:0.75rem;color:#888;text-transform:uppercase;letter-spacing:.05em;}
+.pile-count{font-size:1.8rem;font-weight:700;color:#ffcc00;}
+.scoreboard{display:flex;gap:0.5rem;flex-wrap:wrap;justify-content:center;margin-bottom:1rem;}
+.score-chip{padding:0.25rem 0.7rem;border-radius:20px;font-size:0.8rem;font-weight:600;border:2px solid transparent;background:var(--surface);display:flex;align-items:center;gap:0.3rem;}
+.score-chip.active-player{border-color:#ffcc00;}
+.score-chip .chip-dot{width:8px;height:8px;border-radius:50%;}
+.hand-label{font-size:0.85rem;color:#888;margin-bottom:0.75rem;align-self:flex-start;max-width:480px;width:100%;}
+.hand{display:flex;flex-wrap:wrap;gap:0.5rem;justify-content:center;max-width:480px;margin-bottom:1rem;}
+.card{width:58px;height:80px;border-radius:10px;border:3px solid transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1.8rem;font-weight:900;color:#fff;transition:transform .15s,border-color .15s;position:relative;text-shadow:0 2px 4px rgba(0,0,0,0.5);user-select:none;}
+.card.selected{transform:translateY(-10px);border-color:#fff !important;box-shadow:0 4px 20px rgba(255,255,255,0.4);}
+.card:hover{transform:translateY(-4px);}
+.card.selected:hover{transform:translateY(-12px);}
+.selected-badge{position:absolute;top:-8px;right:-8px;width:20px;height:20px;border-radius:50%;background:#ffcc00;color:#000;font-size:0.65rem;font-weight:900;display:flex;align-items:center;justify-content:center;}
+
+.play-section{display:flex;flex-direction:column;align-items:center;gap:0.75rem;max-width:480px;width:100%;}
+.selection-info{font-size:0.9rem;color:#aaa;}
+.selection-info span{color:#ffcc00;font-weight:700;}
+.btn-play{padding:0.7rem 2rem;background:linear-gradient(135deg,#ff4444,#ff8c00);border:none;color:#fff;font-size:1.1rem;font-weight:700;border-radius:10px;cursor:pointer;transition:all .2s;width:100%;max-width:260px;}
+.btn-play:disabled{opacity:.35;cursor:not-allowed;transform:none;}
+.btn-play:not(:disabled):hover{transform:scale(1.03);}
+.bluff-hint{font-size:0.78rem;color:#666;font-style:italic;}
+
+/* ===== CHALLENGE SCREEN ===== */
+#challenge-screen{gap:1.5rem;}
+#challenge-screen h2{font-size:1.6rem;}
+.pile-visual{display:flex;flex-direction:column;align-items:center;gap:0.5rem;}
+.pile-cards{position:relative;width:70px;height:90px;margin:0 auto;}
+.pile-card-bg{position:absolute;background:linear-gradient(135deg,#333,#555);border-radius:10px;border:2px solid #666;}
+.claim-reveal-box{background:var(--surface);border:2px solid var(--border);border-radius:12px;padding:1rem 2rem;text-align:center;}
+.claim-reveal-box .cnum{font-size:3.5rem;font-weight:900;}
+.claim-reveal-box .ctxt{font-size:0.85rem;color:#888;}
+.challenge-btns{display:flex;flex-direction:column;gap:0.75rem;width:100%;max-width:300px;}
+.btn-trust{padding:0.8rem;background:linear-gradient(135deg,#4caf50,#2196f3);border:none;color:#fff;font-size:1.1rem;font-weight:700;border-radius:10px;cursor:pointer;transition:transform .15s;}
+.btn-trust:hover{transform:scale(1.03);}
+.btn-challenge{padding:0.8rem;background:linear-gradient(135deg,#ff4444,#9c27b0);border:none;color:#fff;font-size:1.1rem;font-weight:700;border-radius:10px;cursor:pointer;transition:transform .15s;}
+.btn-challenge:hover{transform:scale(1.03);}
+
+/* ===== REVEAL ===== */
+#reveal-screen{gap:1rem;}
+#reveal-screen h2{font-size:1.5rem;}
+.reveal-cards{display:flex;gap:0.75rem;flex-wrap:wrap;justify-content:center;margin:1rem 0;}
+.reveal-card{width:64px;height:88px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:2rem;font-weight:900;color:#fff;text-shadow:0 2px 4px rgba(0,0,0,0.5);animation:flipIn 0.3s ease-out both;}
+@keyframes flipIn{from{transform:rotateY(90deg) scale(0.5);opacity:0}to{transform:rotateY(0) scale(1);opacity:1}}
+.verdict-box{padding:1rem 1.5rem;border-radius:12px;font-size:1.1rem;font-weight:700;text-align:center;max-width:340px;}
+.verdict-box.caught{background:rgba(255,68,68,.15);border:2px solid #ff4444;color:#ff7777;}
+.verdict-box.honest{background:rgba(76,175,80,.15);border:2px solid #4caf50;color:#81c784;}
+
+/* ===== RESULT ===== */
+#result-screen{gap:1rem;}
+#result-screen h2{font-size:1.8rem;}
+.result-detail{font-size:1rem;color:#aaa;max-width:320px;line-height:1.6;}
+.pile-takeback{font-size:1.3rem;font-weight:700;padding:0.75rem 1.5rem;border-radius:12px;background:var(--surface);border:2px solid var(--border);}
+
+/* ===== WINNER ===== */
+#winner-screen{gap:1rem;}
+.winner-emoji{font-size:5rem;animation:spin 3s linear infinite;}
+@keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
+#winner-screen h2{font-size:2.2rem;font-weight:900;}
+.final-scores{display:flex;flex-direction:column;gap:0.4rem;margin:0.5rem 0 1.5rem;width:100%;max-width:280px;}
+.final-row{display:flex;align-items:center;gap:0.5rem;font-size:1rem;padding:0.4rem 0.6rem;border-radius:8px;background:var(--surface);}
+.final-row.winner-row{background:rgba(255,204,0,.15);border:1px solid #ffcc00;}
+.final-dot{width:12px;height:12px;border-radius:50%;flex-shrink:0;}
+.final-rank{width:24px;font-weight:700;color:#888;}
+
+/* Card color helpers (applied via JS) */
+.card[data-v="1"]{background:linear-gradient(135deg,#ff4444,#cc0000);}
+.card[data-v="2"]{background:linear-gradient(135deg,#ff8c00,#e65c00);}
+.card[data-v="3"]{background:linear-gradient(135deg,#ffd700,#e6ac00);}
+.card[data-v="4"]{background:linear-gradient(135deg,#4caf50,#2e7d32);}
+.card[data-v="5"]{background:linear-gradient(135deg,#00bcd4,#00838f);}
+.card[data-v="6"]{background:linear-gradient(135deg,#2196f3,#0d47a1);}
+.card[data-v="7"]{background:linear-gradient(135deg,#9c27b0,#6a0080);}
+.card[data-v="8"]{background:linear-gradient(135deg,#e91e63,#880e4f);}
+
+/* Pile card stack visuals */
+.pile-stack{position:relative;width:60px;height:80px;}
+.pile-stack .ps-card{position:absolute;width:54px;height:76px;border-radius:8px;background:linear-gradient(135deg,#2a2a4a,#3a3a5a);border:2px solid #4a4a6a;}
+</style>
+</head>
+<body>
+<div class="back-bar"><a href="/" data-i18n="back">← Zurück zu den Spielen</a></div>
+
+<!-- SETUP SCREEN -->
+<div id="setup" class="screen active">
+  <h1>🃏 Bluff!</h1>
+  <p class="tagline" data-i18n="tagline">Leg Karten – Lüg frech – Erwisch die anderen!</p>
+  <p class="claim-label" style="margin-bottom:0.5rem;" data-i18n="numPlayers">Anzahl Spieler</p>
+  <div class="count-row">
+    <button class="cnt-btn active" data-n="2">2</button>
+    <button class="cnt-btn" data-n="3">3</button>
+    <button class="cnt-btn" data-n="4">4</button>
+  </div>
+  <div class="name-inputs" id="nameInputs"></div>
+  <button class="btn-primary" id="startBtn" data-i18n="startGame">Spiel starten!</button>
+</div>
+
+<!-- HANDOFF SCREEN -->
+<div id="handoff" class="screen">
+  <div class="handoff-icon">📱</div>
+  <h2 id="handoffName">Spieler 1</h2>
+  <p class="sub" data-i18n="handoffSub">Du bist dran! Nimm das Gerät.</p>
+  <p style="color:#888;font-size:0.85rem;margin-bottom:2rem;" data-i18n="handoffPrivate">Zeige den Bildschirm niemandem!</p>
+  <button class="btn-reveal" id="handoffBtn" data-i18n="seeMyCards">Meine Karten ansehen →</button>
+</div>
+
+<!-- GAME SCREEN (select cards) -->
+<div id="game-screen" class="screen">
+  <div class="status-bar">
+    <div class="current-claim">
+      <div class="claim-label" data-i18n="mustClaim">MUSS SPIELEN</div>
+      <div class="claim-value" id="claimValueDisplay">1</div>
+    </div>
+    <div class="pile-info">
+      <div class="pile-label" data-i18n="pileLabel">STAPEL</div>
+      <div class="pile-count" id="pileCountDisplay">0</div>
+    </div>
+  </div>
+  <div class="scoreboard" id="scoreboard"></div>
+  <div class="hand-label" id="handLabel">Deine Karten:</div>
+  <div class="hand" id="handContainer"></div>
+  <div class="play-section">
+    <div class="selection-info" id="selectionInfo"><span data-i18n="noCardsSelected">Keine Karte gewählt</span></div>
+    <button class="btn-play" id="playBtn" disabled data-i18n="playCards">Karten spielen 🃏</button>
+    <p class="bluff-hint" data-i18n="bluffHint">💡 Du MUSST die angezeigte Zahl behaupten – aber lügen ist erlaubt!</p>
+  </div>
+</div>
+
+<!-- CHALLENGE SCREEN (next player sees pile + claim) -->
+<div id="challenge-screen" class="screen">
+  <h2 id="challengeTitle">Spieler 2</h2>
+  <div class="pile-visual">
+    <div id="pileStack" class="pile-stack"></div>
+  </div>
+  <div class="claim-reveal-box">
+    <div class="ctxt" data-i18n="claimedLabel">Behauptete Zahl:</div>
+    <div class="claim-value" id="challengeClaimNum">1</div>
+    <div class="ctxt" id="challengeClaimCount"></div>
+  </div>
+  <p style="color:#888;font-size:0.88rem;" data-i18n="challengeQuestion">Glaubst du dem Mitspieler?</p>
+  <div class="challenge-btns">
+    <button class="btn-trust" id="trustBtn" data-i18n="trustBtn">✅ Ich glaub's!</button>
+    <button class="btn-challenge" id="challengeBtn" data-i18n="challengeBtn">🎯 Lügner aufdecken!</button>
+  </div>
+</div>
+
+<!-- REVEAL SCREEN -->
+<div id="reveal-screen" class="screen">
+  <h2 data-i18n="revealTitle">Aufdecken!</h2>
+  <div class="reveal-cards" id="revealCards"></div>
+  <div class="verdict-box" id="verdictBox"></div>
+</div>
+
+<!-- RESULT SCREEN (who takes pile) -->
+<div id="result-screen" class="screen">
+  <div style="font-size:3rem;" id="resultEmoji">😅</div>
+  <h2 id="resultTitle">Erwischt!</h2>
+  <p class="result-detail" id="resultDetail"></p>
+  <div class="pile-takeback" id="pileTakebackInfo"></div>
+  <button class="btn-primary" id="continueBtn" style="margin-top:1rem;" data-i18n="continueBtn">Weiter →</button>
+</div>
+
+<!-- WINNER SCREEN -->
+<div id="winner-screen" class="screen">
+  <div class="winner-emoji">🏆</div>
+  <h2 id="winnerTitle"></h2>
+  <p style="color:#888;margin-bottom:1rem;" data-i18n="winnerSub">hat alle Karten gespielt!</p>
+  <div class="final-scores" id="finalScores"></div>
+  <button class="btn-primary" id="restartBtn" data-i18n="playAgain">Nochmal spielen!</button>
+</div>
+
+<script src="/shared/i18n.js"></script>
+<script>
+// ========== i18n ==========
+const TRANSLATIONS = {
+  de: {
+    back: '← Zurück zu den Spielen',
+    tagline: 'Leg Karten – Lüg frech – Erwisch die anderen!',
+    numPlayers: 'Anzahl Spieler',
+    startGame: 'Spiel starten!',
+    handoffSub: 'Du bist dran! Nimm das Gerät.',
+    handoffPrivate: 'Zeige den Bildschirm niemandem!',
+    seeMyCards: 'Meine Karten ansehen →',
+    mustClaim: 'MUSS SPIELEN',
+    pileLabel: 'STAPEL',
+    noCardsSelected: 'Keine Karte gewählt',
+    playCards: 'Karten spielen 🃏',
+    bluffHint: '💡 Du MUSST die angezeigte Zahl behaupten – aber lügen ist erlaubt!',
+    claimedLabel: 'Behauptete Zahl:',
+    challengeQuestion: 'Glaubst du dem Mitspieler?',
+    trustBtn: '✅ Ich glaub\'s!',
+    challengeBtn: '🎯 Lügner aufdecken!',
+    revealTitle: 'Aufdecken!',
+    continueBtn: 'Weiter →',
+    winnerSub: 'hat alle Karten gespielt!',
+    playAgain: 'Nochmal spielen!',
+    handLabel: 'Deine Karten:',
+    cardsSelected: 'Karte(n) ausgewählt',
+    cardsPlayed: 'Karte(n) als',
+    andBehauptet: 'behauptet',
+    challengeSubtitle: 'ist dran — aufgedeckt oder geglaubt?',
+    verdictCaught: '🎯 ERWISCHT! Mindestens eine Karte war falsch!',
+    verdictHonest: '✅ EHRLICH! Alle Karten waren korrekt!',
+    resultCaught: 'wurde beim Lügen erwischt!',
+    resultHonest: 'hat unnötig gechallengt!',
+    takesThePile: 'nimmt den ganzen Stapel! ({n} Karten)',
+    cardsLeft: 'Karten übrig',
+    winnerTitle: '🏆 {name} gewinnt!',
+    defaultPlayer: 'Spieler',
+    handoffTitle: 'Gerät an {name}!',
+  },
+  en: {
+    back: '← Back to Games',
+    tagline: 'Play cards – Lie boldly – Catch the others!',
+    numPlayers: 'Number of Players',
+    startGame: 'Start Game!',
+    handoffSub: 'It\'s your turn! Take the device.',
+    handoffPrivate: 'Don\'t show the screen to anyone!',
+    seeMyCards: 'See my cards →',
+    mustClaim: 'MUST PLAY',
+    pileLabel: 'PILE',
+    noCardsSelected: 'No card selected',
+    playCards: 'Play cards 🃏',
+    bluffHint: '💡 You MUST claim the shown number – but lying is allowed!',
+    claimedLabel: 'Claimed number:',
+    challengeQuestion: 'Do you believe your opponent?',
+    trustBtn: '✅ I believe it!',
+    challengeBtn: '🎯 Call the bluff!',
+    revealTitle: 'Reveal!',
+    continueBtn: 'Continue →',
+    winnerSub: 'played all their cards!',
+    playAgain: 'Play again!',
+    handLabel: 'Your cards:',
+    cardsSelected: 'card(s) selected',
+    cardsPlayed: 'card(s) as',
+    andBehauptet: 'claimed',
+    challengeSubtitle: 'is up — reveal or believe?',
+    verdictCaught: '🎯 CAUGHT! At least one card was wrong!',
+    verdictHonest: '✅ HONEST! All cards were correct!',
+    resultCaught: 'was caught lying!',
+    resultHonest: 'challenged unnecessarily!',
+    takesThePile: 'takes the whole pile! ({n} cards)',
+    cardsLeft: 'cards left',
+    winnerTitle: '🏆 {name} wins!',
+    defaultPlayer: 'Player',
+    handoffTitle: 'Device to {name}!',
+  },
+  fr: {
+    back: '← Retour aux Jeux',
+    tagline: 'Joue des cartes – Mens effrontément – Attrape les autres!',
+    numPlayers: 'Nombre de joueurs',
+    startGame: 'Lancer le jeu!',
+    handoffSub: 'C\'est ton tour! Prends l\'appareil.',
+    handoffPrivate: 'Ne montre pas l\'écran aux autres!',
+    seeMyCards: 'Voir mes cartes →',
+    mustClaim: 'DOIT JOUER',
+    pileLabel: 'PILE',
+    noCardsSelected: 'Aucune carte sélectionnée',
+    playCards: 'Jouer les cartes 🃏',
+    bluffHint: '💡 Tu DOIS annoncer le numéro affiché – mais le mensonge est autorisé!',
+    claimedLabel: 'Numéro annoncé:',
+    challengeQuestion: 'Crois-tu ton adversaire?',
+    trustBtn: '✅ Je le crois!',
+    challengeBtn: '🎯 Appeler le bluff!',
+    revealTitle: 'Révélation!',
+    continueBtn: 'Continuer →',
+    winnerSub: 'a joué toutes ses cartes!',
+    playAgain: 'Rejouer!',
+    handLabel: 'Tes cartes:',
+    cardsSelected: 'carte(s) sélectionnée(s)',
+    cardsPlayed: 'carte(s) en tant que',
+    andBehauptet: 'annoncé',
+    challengeSubtitle: 'est en jeu — révéler ou croire?',
+    verdictCaught: '🎯 PRIS! Au moins une carte était fausse!',
+    verdictHonest: '✅ HONNÊTE! Toutes les cartes étaient correctes!',
+    resultCaught: 'a été pris en train de mentir!',
+    resultHonest: 'a challengé inutilement!',
+    takesThePile: 'prend toute la pile! ({n} cartes)',
+    cardsLeft: 'cartes restantes',
+    winnerTitle: '🏆 {name} gagne!',
+    defaultPlayer: 'Joueur',
+    handoffTitle: 'Appareil à {name}!',
+  },
+  it: {
+    back: '← Torna ai Giochi',
+    tagline: 'Gioca carte – Menti audacemente – Sgama gli altri!',
+    numPlayers: 'Numero di giocatori',
+    startGame: 'Inizia il gioco!',
+    handoffSub: 'È il tuo turno! Prendi il dispositivo.',
+    handoffPrivate: 'Non mostrare lo schermo a nessuno!',
+    seeMyCards: 'Vedi le mie carte →',
+    mustClaim: 'DEVE GIOCARE',
+    pileLabel: 'MAZZO',
+    noCardsSelected: 'Nessuna carta selezionata',
+    playCards: 'Gioca le carte 🃏',
+    bluffHint: '💡 DEVI dichiarare il numero mostrato – ma mentire è permesso!',
+    claimedLabel: 'Numero dichiarato:',
+    challengeQuestion: 'Credi al tuo avversario?',
+    trustBtn: '✅ Ci credo!',
+    challengeBtn: '🎯 Chiama il bluff!',
+    revealTitle: 'Rivelazione!',
+    continueBtn: 'Continua →',
+    winnerSub: 'ha giocato tutte le sue carte!',
+    playAgain: 'Giocare ancora!',
+    handLabel: 'Le tue carte:',
+    cardsSelected: 'carta/e selezionata/e',
+    cardsPlayed: 'carta/e come',
+    andBehauptet: 'dichiarato',
+    challengeSubtitle: 'tocca a lui — rivelare o credere?',
+    verdictCaught: '🎯 SGAMATO! Almeno una carta era sbagliata!',
+    verdictHonest: '✅ ONESTO! Tutte le carte erano corrette!',
+    resultCaught: 'è stato sgamato a mentire!',
+    resultHonest: 'ha sfidato inutilmente!',
+    takesThePile: 'prende tutto il mazzo! ({n} carte)',
+    cardsLeft: 'carte rimaste',
+    winnerTitle: '🏆 {name} vince!',
+    defaultPlayer: 'Giocatore',
+    handoffTitle: 'Dispositivo a {name}!',
+  },
+  es: {
+    back: '← Volver a los Juegos',
+    tagline: '¡Juega cartas – Miente osadamente – Atrapa a los demás!',
+    numPlayers: 'Número de jugadores',
+    startGame: '¡Empezar!',
+    handoffSub: '¡Es tu turno! Toma el dispositivo.',
+    handoffPrivate: '¡No muestres la pantalla a nadie!',
+    seeMyCards: 'Ver mis cartas →',
+    mustClaim: 'DEBE JUGAR',
+    pileLabel: 'PILA',
+    noCardsSelected: 'Ninguna carta seleccionada',
+    playCards: 'Jugar cartas 🃏',
+    bluffHint: '💡 DEBES declarar el número mostrado – ¡pero mentir está permitido!',
+    claimedLabel: 'Número declarado:',
+    challengeQuestion: '¿Le crees a tu oponente?',
+    trustBtn: '✅ ¡Le creo!',
+    challengeBtn: '🎯 ¡Llamar el farol!',
+    revealTitle: '¡Revelar!',
+    continueBtn: 'Continuar →',
+    winnerSub: '¡ha jugado todas sus cartas!',
+    playAgain: '¡Jugar de nuevo!',
+    handLabel: 'Tus cartas:',
+    cardsSelected: 'carta(s) seleccionada(s)',
+    cardsPlayed: 'carta(s) como',
+    andBehauptet: 'declarado',
+    challengeSubtitle: 'le toca — ¿revelar o creer?',
+    verdictCaught: '🎯 ¡PILLADO! ¡Al menos una carta era incorrecta!',
+    verdictHonest: '✅ ¡HONESTO! ¡Todas las cartas eran correctas!',
+    resultCaught: '¡fue pillado mintiendo!',
+    resultHonest: '¡desafió innecesariamente!',
+    takesThePile: '¡toma toda la pila! ({n} cartas)',
+    cardsLeft: 'cartas restantes',
+    winnerTitle: '🏆 ¡{name} gana!',
+    defaultPlayer: 'Jugador',
+    handoffTitle: '¡Dispositivo para {name}!',
+  },
+};
+
+const { t, lang, onLangChange, translatePage } = initI18n(TRANSLATIONS);
+
+// ========== Game Logic (inline) ==========
+const PLAYER_COLORS = ['#ff4444','#4caf50','#2196f3','#ffd700'];
+const MAX_VALUE = 8;
+const COPIES = 4;
+
+function createDeck() {
+  const d = [];
+  for (let v = 1; v <= MAX_VALUE; v++)
+    for (let c = 0; c < COPIES; c++) d.push(v);
+  return d;
+}
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function dealCards(deck, n) {
+  const hands = Array.from({ length: n }, () => []);
+  for (let i = 0; i < deck.length; i++) hands[i % n].push(deck[i]);
+  return hands;
+}
+
+function nextVal(v) { return v >= MAX_VALUE ? 1 : v + 1; }
+
+// ========== Game State ==========
+let players = [];
+let state = {};
+
+function initGame(names) {
+  const deck = shuffle(createDeck());
+  const hands = dealCards(deck, names.length);
+  players = names.map((name, i) => ({
+    name,
+    color: PLAYER_COLORS[i],
+    hand: hands[i].sort((a, b) => a - b),
+  }));
+  state = {
+    currentPlayer: 0,
+    claimValue: 1,
+    pile: [],           // all played cards (flattened)
+    lastPlay: null,     // { cards: [], claimed: N, playerIndex: N }
+    phase: 'handoff',
+    challengerIndex: null,
+    bluffCaught: null,
+    pileRecipient: null,
+  };
+  showHandoff();
+}
+
+// ========== Screen Management ==========
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+// ========== Handoff ==========
+function showHandoff() {
+  const p = players[state.currentPlayer];
+  const title = t('handoffTitle').replace('{name}', p.name);
+  document.getElementById('handoffName').textContent = title;
+  showScreen('handoff');
+}
+
+document.getElementById('handoffBtn').addEventListener('click', () => {
+  showGameScreen();
+});
+
+// ========== Game Screen ==========
+let selectedIndices = new Set();
+
+function showGameScreen() {
+  selectedIndices.clear();
+  const p = players[state.currentPlayer];
+  
+  // Update status bar
+  const cv = document.getElementById('claimValueDisplay');
+  cv.textContent = state.claimValue;
+  cv.style.color = getValueColor(state.claimValue);
+  document.getElementById('pileCountDisplay').textContent = state.pile.length;
+  
+  // Scoreboard
+  const sb = document.getElementById('scoreboard');
+  sb.innerHTML = '';
+  players.forEach((pl, i) => {
+    const chip = document.createElement('div');
+    chip.className = 'score-chip' + (i === state.currentPlayer ? ' active-player' : '');
+    chip.innerHTML = `<span class="chip-dot" style="background:${pl.color}"></span>${pl.name}: <strong>${pl.hand.length}</strong> ${t('cardsLeft')}`;
+    sb.appendChild(chip);
+  });
+  
+  // Hand label
+  document.getElementById('handLabel').textContent = t('handLabel');
+  
+  // Hand
+  renderHand();
+  updatePlayButton();
+  showScreen('game-screen');
+}
+
+function getValueColor(v) {
+  const colors = ['','#ff4444','#ff8c00','#ffd700','#4caf50','#00bcd4','#2196f3','#9c27b0','#e91e63'];
+  return colors[v] || '#fff';
+}
+
+function renderHand() {
+  const p = players[state.currentPlayer];
+  const container = document.getElementById('handContainer');
+  container.innerHTML = '';
+  p.hand.forEach((val, idx) => {
+    const card = document.createElement('div');
+    card.className = 'card' + (selectedIndices.has(idx) ? ' selected' : '');
+    card.dataset.v = val;
+    card.textContent = val;
+    if (selectedIndices.has(idx)) {
+      const badge = document.createElement('span');
+      badge.className = 'selected-badge';
+      badge.textContent = '✓';
+      card.appendChild(badge);
+    }
+    card.addEventListener('click', () => toggleCard(idx));
+    container.appendChild(card);
+  });
+}
+
+function toggleCard(idx) {
+  if (selectedIndices.has(idx)) {
+    selectedIndices.delete(idx);
+  } else {
+    if (selectedIndices.size >= 4) return; // max 4 cards
+    selectedIndices.add(idx);
+  }
+  renderHand();
+  updatePlayButton();
+}
+
+function updatePlayButton() {
+  const btn = document.getElementById('playBtn');
+  const info = document.getElementById('selectionInfo');
+  const n = selectedIndices.size;
+  if (n === 0) {
+    btn.disabled = true;
+    info.innerHTML = `<span>${t('noCardsSelected')}</span>`;
+  } else {
+    btn.disabled = false;
+    info.innerHTML = `<span style="color:#ffcc00;font-weight:700">${n}</span> ${t('cardsSelected')} — <span style="color:${getValueColor(state.claimValue)};font-weight:700">${t('cardsPlayed')} ${state.claimValue}</span>`;
+  }
+}
+
+document.getElementById('playBtn').addEventListener('click', () => {
+  const p = players[state.currentPlayer];
+  const idxArr = Array.from(selectedIndices).sort((a, b) => b - a); // remove high first
+  const playedCards = idxArr.map(i => p.hand[i]);
+  
+  // Remove from hand
+  idxArr.forEach(i => p.hand.splice(i, 1));
+  
+  // Add to pile
+  const claimed = state.claimValue;
+  state.pile.push(...playedCards);
+  state.lastPlay = { cards: playedCards, claimed, playerIndex: state.currentPlayer };
+  
+  // Check win BEFORE passing to challenger
+  if (p.hand.length === 0) {
+    showWinner();
+    return;
+  }
+  
+  // Advance claim value
+  state.claimValue = nextVal(state.claimValue);
+  
+  // Next player challenges
+  state.challengerIndex = (state.currentPlayer + 1) % players.length;
+  showChallengeHandoff();
+});
+
+// ========== Challenge Handoff ==========
+function showChallengeHandoff() {
+  // Show a quick handoff to the challenger
+  const challenger = players[state.challengerIndex];
+  const title = t('handoffTitle').replace('{name}', challenger.name);
+  document.getElementById('handoffName').textContent = title;
+  document.getElementById('handoffBtn').removeEventListener('click', handleHandoffForChallenge);
+  document.getElementById('handoffBtn').addEventListener('click', handleHandoffForChallenge, { once: true });
+  document.getElementById('handoffBtn').setAttribute('data-i18n', 'trustBtn');
+  document.getElementById('handoffBtn').textContent = t('challengeBtn').replace('🎯 ', '👀 ') || '→ Prüfen';
+  // Override sub text
+  document.querySelector('#handoff .sub').textContent = challenger.name + ' – ' + t('challengeSubtitle');
+  showScreen('handoff');
+}
+
+function handleHandoffForChallenge() {
+  document.getElementById('handoffBtn').setAttribute('data-i18n', 'seeMyCards');
+  document.getElementById('handoffBtn').textContent = t('seeMyCards');
+  document.querySelector('#handoff .sub').textContent = t('handoffSub');
+  showChallengeScreen();
+}
+
+// ========== Challenge Screen ==========
+function showChallengeScreen() {
+  const { lastPlay } = state;
+  const challenger = players[state.challengerIndex];
+  const actor = players[lastPlay.playerIndex];
+  
+  document.getElementById('challengeTitle').textContent = challenger.name;
+  document.getElementById('challengeClaimNum').textContent = lastPlay.claimed;
+  document.getElementById('challengeClaimNum').style.color = getValueColor(lastPlay.claimed);
+  document.getElementById('challengeClaimCount').textContent = `(${lastPlay.cards.length} ${t('cardsSelected')})`;
+  
+  // Pile stack visualization
+  const stack = document.getElementById('pileStack');
+  stack.innerHTML = '';
+  const numVisible = Math.min(state.pile.length, 5);
+  for (let i = 0; i < numVisible; i++) {
+    const c = document.createElement('div');
+    c.className = 'ps-card';
+    c.style.bottom = `${i * 4}px`;
+    c.style.left = `${i * 2}px`;
+    stack.appendChild(c);
+  }
+  
+  showScreen('challenge-screen');
+}
+
+document.getElementById('trustBtn').addEventListener('click', () => {
+  // Challenger trusts — game continues, challenger becomes current player
+  state.currentPlayer = state.challengerIndex;
+  showHandoff();
+});
+
+document.getElementById('challengeBtn').addEventListener('click', () => {
+  showReveal();
+});
+
+// ========== Reveal ==========
+function showReveal() {
+  const { lastPlay } = state;
+  const result = resolveChallenge(lastPlay.cards, lastPlay.claimed);
+  state.bluffCaught = result.bluffCaught;
+  
+  const revealContainer = document.getElementById('revealCards');
+  revealContainer.innerHTML = '';
+  lastPlay.cards.forEach((val, i) => {
+    const card = document.createElement('div');
+    card.className = 'reveal-card';
+    card.dataset.v = val;
+    card.style.background = getCardGradient(val);
+    card.style.animationDelay = `${i * 0.15}s`;
+    card.textContent = val;
+    revealContainer.appendChild(card);
+  });
+  
+  const verdict = document.getElementById('verdictBox');
+  verdict.textContent = result.bluffCaught ? t('verdictCaught') : t('verdictHonest');
+  verdict.className = 'verdict-box ' + (result.bluffCaught ? 'caught' : 'honest');
+  
+  showScreen('reveal-screen');
+  
+  setTimeout(() => showResult(), 2200);
+}
+
+function resolveChallenge(playedCards, claimedValue) {
+  const bluffCaught = playedCards.some(c => c !== claimedValue);
+  return { bluffCaught };
+}
+
+function getCardGradient(v) {
+  const grads = ['',
+    'linear-gradient(135deg,#ff4444,#cc0000)',
+    'linear-gradient(135deg,#ff8c00,#e65c00)',
+    'linear-gradient(135deg,#ffd700,#e6ac00)',
+    'linear-gradient(135deg,#4caf50,#2e7d32)',
+    'linear-gradient(135deg,#00bcd4,#00838f)',
+    'linear-gradient(135deg,#2196f3,#0d47a1)',
+    'linear-gradient(135deg,#9c27b0,#6a0080)',
+    'linear-gradient(135deg,#e91e63,#880e4f)',
+  ];
+  return grads[v] || '#333';
+}
+
+// ========== Result ==========
+function showResult() {
+  const { lastPlay, bluffCaught, pile } = state;
+  const actor = players[lastPlay.playerIndex];
+  const challenger = players[state.challengerIndex];
+  
+  // Who takes the pile?
+  let recipient;
+  if (bluffCaught) {
+    recipient = actor; // bluffer takes pile
+    state.pileRecipient = lastPlay.playerIndex;
+    document.getElementById('resultEmoji').textContent = '🎯';
+    document.getElementById('resultTitle').textContent = actor.name + ' – ' + t('resultCaught');
+  } else {
+    recipient = challenger; // challenger takes pile
+    state.pileRecipient = state.challengerIndex;
+    document.getElementById('resultEmoji').textContent = '😅';
+    document.getElementById('resultTitle').textContent = challenger.name + ' – ' + t('resultHonest');
+  }
+  
+  const pileSize = pile.length;
+  const takeMsg = t('takesThePile').replace('{n}', pileSize);
+  document.getElementById('resultDetail').textContent = recipient.name + ' ' + takeMsg;
+  document.getElementById('pileTakebackInfo').textContent = `🃏 ${recipient.name}: ${recipient.hand.length} → ${recipient.hand.length + pileSize} ${t('cardsLeft')}`;
+  document.getElementById('pileTakebackInfo').style.borderColor = recipient.color;
+  
+  showScreen('result-screen');
+}
+
+document.getElementById('continueBtn').addEventListener('click', () => {
+  // Give pile to recipient
+  const recipient = players[state.pileRecipient];
+  recipient.hand.push(...state.pile);
+  recipient.hand.sort((a, b) => a - b);
+  state.pile = [];
+  state.lastPlay = null;
+  
+  // Challenger (if they took pile) becomes current player? No — the one AFTER the actor plays next
+  // After a challenge: the CHALLENGER becomes current player regardless
+  state.currentPlayer = state.challengerIndex;
+  showHandoff();
+});
+
+// ========== Winner ==========
+function showWinner() {
+  const winner = players[state.currentPlayer];
+  document.getElementById('winnerTitle').textContent = t('winnerTitle').replace('{name}', winner.name);
+  
+  const fs = document.getElementById('finalScores');
+  fs.innerHTML = '';
+  
+  // Sort by hand size (fewest = winner)
+  const sorted = players
+    .map((p, i) => ({ ...p, originalIndex: i }))
+    .sort((a, b) => a.hand.length - b.hand.length);
+  
+  sorted.forEach((p, rank) => {
+    const row = document.createElement('div');
+    row.className = 'final-row' + (p.hand.length === 0 ? ' winner-row' : '');
+    row.innerHTML = `
+      <span class="final-rank">${rank + 1}.</span>
+      <span class="final-dot" style="background:${p.color}"></span>
+      <span style="flex:1">${p.name}</span>
+      <span style="color:#888">${p.hand.length} ${t('cardsLeft')}</span>
+    `;
+    fs.appendChild(row);
+  });
+  
+  showScreen('winner-screen');
+}
+
+// ========== Setup ==========
+let numPlayers = 2;
+
+document.querySelectorAll('.cnt-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    numPlayers = parseInt(btn.dataset.n);
+    document.querySelectorAll('.cnt-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderNameInputs();
+  });
+});
+
+function getDefaultName(i) {
+  return t('defaultPlayer') + ' ' + (i + 1);
+}
+
+function renderNameInputs() {
+  const container = document.getElementById('nameInputs');
+  container.innerHTML = '';
+  for (let i = 0; i < numPlayers; i++) {
+    const row = document.createElement('div');
+    row.className = 'name-row';
+    row.innerHTML = `
+      <span class="dot" style="background:${PLAYER_COLORS[i]}"></span>
+      <input type="text" placeholder="${getDefaultName(i)}" maxlength="16" data-idx="${i}" />
+    `;
+    container.appendChild(row);
+  }
+}
+
+document.getElementById('startBtn').addEventListener('click', () => {
+  const inputs = document.querySelectorAll('#nameInputs input');
+  const names = Array.from(inputs).map((inp, i) => inp.value.trim() || getDefaultName(i));
+  initGame(names);
+});
+
+document.getElementById('restartBtn').addEventListener('click', () => {
+  showScreen('setup');
+  renderNameInputs();
+});
+
+// ========== Init ==========
+renderNameInputs();
+onLangChange(() => {
+  renderNameInputs();
+  translatePage();
+});
+
+// Translate dynamic handoff sub text if visible
+</script>
+</body>
+</html>
