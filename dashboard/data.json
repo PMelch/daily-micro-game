@@ -1,6 +1,22 @@
 {
   "games": [
     {
+      "id": "day-010-type-blitz",
+      "name": "Type Blitz ⚡",
+      "name_de": "Tipp-Blitz ⚡",
+      "description": "An alien typing attack game where you type words to blast descending alien ships. 🛸⌨️💥",
+      "description_de": "Ein Alien-Tippspiel: Tippe Wörter, um herabsteigende Raumschiffe abzuschießen. 🛸⌨️💥",
+      "date": "2026-02-23",
+      "tags": [
+        "action",
+        "typing",
+        "arcade"
+      ],
+      "howToPlay": "Aliens descend with words. Type the word to shoot. Don't let them reach the bottom!",
+      "whyFun": "Classic typing tutor meets Space Invaders.",
+      "ratings": []
+    },
+    {
       "id": "day-002-stroop-sprint",
       "name": "Stroop Sprint",
       "description": "Words say one color but are painted in another — tap the COLOR you see, not the word. Gets faster every round. How long can you keep your brain from short-circuiting?",

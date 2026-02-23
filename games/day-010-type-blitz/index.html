@@ -195,14 +195,14 @@
   </style>
 </head>
 <body>
-<div class="back-bar"><a href="/">← Back to Games</a></div>
+<div class="back-bar"><a href="/" data-i18n="back">← Back to Games</a></div>
 
 <div id="game-wrapper">
   <div id="hud">
-    <span class="hud-score">⚡ <span id="hud-score">0</span></span>
-    <span class="hud-level">LVL <span id="hud-level">1</span></span>
+    <span class="hud-score"><span data-i18n="score">⚡</span> <span id="hud-score">0</span></span>
+    <span class="hud-level"><span data-i18n="level">LVL</span> <span id="hud-level">1</span></span>
     <span class="hud-combo" id="hud-combo"></span>
-    <span class="hud-lives" id="hud-lives">♥ ♥ ♥</span>
+    <span class="hud-lives" id="hud-lives" data-i18n-html="lives">♥ ♥ ♥</span>
   </div>
 
   <canvas id="canvas" width="480" height="560"></canvas>
@@ -213,47 +213,172 @@
 
   <!-- Start screen -->
   <div class="overlay" id="screen-start">
-    <h1 class="glow-title">TYPE BLITZ</h1>
-    <h2 class="glow-yellow">⚡ Alien Typing Attack</h2>
+    <h1 class="glow-title" data-i18n="title">TYPE BLITZ</h1>
+    <h2 class="glow-yellow" data-i18n="subtitle">⚡ Alien Typing Attack</h2>
     <div class="how-to">
       <ul style="list-style:none; padding:0;">
-        <li>🛸 <strong>Aliens</strong> descend with words on them</li>
-        <li>⌨️ <strong>Start typing</strong> — the first letter locks a target</li>
-        <li>💥 <strong>Type the full word</strong> to blast it</li>
-        <li>❌ <strong>Wrong key</strong> resets your progress</li>
-        <li>💀 <strong>Enemy reaches bottom</strong> = lose a life</li>
-        <li>🏆 <strong>3 lives</strong> — get the highest score!</li>
+        <li data-i18n-html="instruction1">🛸 <strong>Aliens</strong> descend with words on them</li>
+        <li data-i18n-html="instruction2">⌨️ <strong>Start typing</strong> — the first letter locks a target</li>
+        <li data-i18n-html="instruction3">💥 <strong>Type the full word</strong> to blast it</li>
+        <li data-i18n-html="instruction4">❌ <strong>Wrong key</strong> resets your progress</li>
+        <li data-i18n-html="instruction5">💀 <strong>Enemy reaches bottom</strong> = lose a life</li>
+        <li data-i18n-html="instruction6">🏆 <strong>3 lives</strong> — get the highest score!</li>
       </ul>
     </div>
-    <button class="btn" id="btn-start">START GAME</button>
-    <p style="font-size:0.75rem; margin-top:12px; color:#444;">Mobile: tap screen to activate keyboard</p>
+    <button class="btn" id="btn-start" data-i18n="startBtn">START GAME</button>
+    <p style="font-size:0.75rem; margin-top:12px; color:#444;" data-i18n="mobileHint">Mobile: tap screen to activate keyboard</p>
   </div>
 
   <!-- Game over screen -->
   <div class="overlay" id="screen-gameover" style="display:none">
-    <h1 style="color:#ff4466; text-shadow: 0 0 30px #ff446688;">GAME OVER</h1>
+    <h1 style="color:#ff4466; text-shadow: 0 0 30px #ff446688;" data-i18n="gameOver">GAME OVER</h1>
     <div class="score-big" id="final-score">0</div>
-    <div id="new-best-badge" class="new-best" style="display:none">🏆 NEW HIGH SCORE!</div>
+    <div id="new-best-badge" class="new-best" style="display:none" data-i18n="newBest">🏆 NEW HIGH SCORE!</div>
     <div class="stat-row">
       <div class="stat-item">
-        <div class="label">Words Typed</div>
+        <div class="label" data-i18n="statWords">Words Typed</div>
         <div class="value" id="stat-words">0</div>
       </div>
       <div class="stat-item">
-        <div class="label">Best Combo</div>
+        <div class="label" data-i18n="statCombo">Best Combo</div>
         <div class="value" id="stat-combo">0</div>
       </div>
       <div class="stat-item">
-        <div class="label">Level Reached</div>
+        <div class="label" data-i18n="statLevel">Level Reached</div>
         <div class="value" id="stat-level">1</div>
       </div>
     </div>
-    <button class="btn" id="btn-restart">PLAY AGAIN</button>
+    <button class="btn" id="btn-restart" data-i18n="playAgain">PLAY AGAIN</button>
     <p id="best-score-display" style="font-size:0.8rem; color:#555; margin-top:8px;"></p>
   </div>
 
   <input id="hidden-input" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
 </div>
+
+<script src="/shared/i18n.js"></script>
+<script>
+const TRANSLATIONS = {
+  de: {
+    back: '← Zurück zu den Spielen',
+    score: '⚡',
+    level: 'LVL',
+    lives: '♥ ♥ ♥',
+    title: 'TIPP-BLITZ',
+    subtitle: '⚡ Alien-Tipp-Attacke',
+    instruction1: '🛸 <strong>Aliens</strong> kommen mit Wörtern herab',
+    instruction2: '⌨️ <strong>Tippen</strong> — erster Buchstabe visiert an',
+    instruction3: '💥 <strong>Ganzes Wort</strong> tippen zum Abschießen',
+    instruction4: '❌ <strong>Falsche Taste</strong> setzt zurück',
+    instruction5: '💀 <strong>Boden erreicht</strong> = Leben verloren',
+    instruction6: '🏆 <strong>3 Leben</strong> — knack den Highscore!',
+    startBtn: 'SPIEL STARTEN',
+    mobileHint: 'Mobil: Tippen für Tastatur',
+    gameOver: 'GAME OVER',
+    newBest: '🏆 NEUER REKORD!',
+    statWords: 'Wörter',
+    statCombo: 'Beste Kombo',
+    statLevel: 'Level',
+    playAgain: 'NOCHMAL SPIELEN',
+    bestScore: 'Bester: {score}'
+  },
+  en: {
+    back: '← Back to Games',
+    score: '⚡',
+    level: 'LVL',
+    lives: '♥ ♥ ♥',
+    title: 'TYPE BLITZ',
+    subtitle: '⚡ Alien Typing Attack',
+    instruction1: '🛸 <strong>Aliens</strong> descend with words on them',
+    instruction2: '⌨️ <strong>Start typing</strong> — the first letter locks a target',
+    instruction3: '💥 <strong>Type the full word</strong> to blast it',
+    instruction4: '❌ <strong>Wrong key</strong> resets your progress',
+    instruction5: '💀 <strong>Enemy reaches bottom</strong> = lose a life',
+    instruction6: '🏆 <strong>3 lives</strong> — get the highest score!',
+    startBtn: 'START GAME',
+    mobileHint: 'Mobile: tap screen to activate keyboard',
+    gameOver: 'GAME OVER',
+    newBest: '🏆 NEW HIGH SCORE!',
+    statWords: 'Words Typed',
+    statCombo: 'Best Combo',
+    statLevel: 'Level Reached',
+    playAgain: 'PLAY AGAIN',
+    bestScore: 'Best: {score}'
+  },
+  it: {
+    back: '← Torna ai Giochi',
+    score: '⚡',
+    level: 'LIV',
+    lives: '♥ ♥ ♥',
+    title: 'BLITZ DI DIGITAZIONE',
+    subtitle: '⚡ Attacco Alieno',
+    instruction1: '🛸 <strong>Alieni</strong> scendono con parole',
+    instruction2: '⌨️ <strong>Digita</strong> — la prima lettera aggancia',
+    instruction3: '💥 <strong>Parola intera</strong> per sparare',
+    instruction4: '❌ <strong>Tasto errato</strong> resetta',
+    instruction5: '💀 <strong>Nemico tocca fondo</strong> = perdi vita',
+    instruction6: '🏆 <strong>3 vite</strong> — fai il record!',
+    startBtn: 'INIZIA GIOCO',
+    mobileHint: 'Mobile: tocca per tastiera',
+    gameOver: 'GAME OVER',
+    newBest: '🏆 NUOVO RECORD!',
+    statWords: 'Parole',
+    statCombo: 'Miglior Combo',
+    statLevel: 'Livello',
+    playAgain: 'GIOCA ANCORA',
+    bestScore: 'Migliore: {score}'
+  },
+  es: {
+    back: '← Volver a Juegos',
+    score: '⚡',
+    level: 'NIV',
+    lives: '♥ ♥ ♥',
+    title: 'ATAQUE DE TECLAS',
+    subtitle: '⚡ Invasión Alienígena',
+    instruction1: '🛸 <strong>Alienígenas</strong> descienden con palabras',
+    instruction2: '⌨️ <strong>Escribe</strong> — la primera letra apunta',
+    instruction3: '💥 <strong>Palabra completa</strong> para disparar',
+    instruction4: '❌ <strong>Tecla errónea</strong> reinicia',
+    instruction5: '💀 <strong>Llegan abajo</strong> = pierdes vida',
+    instruction6: '🏆 <strong>3 vidas</strong> — ¡consigue el récord!',
+    startBtn: 'JUGAR',
+    mobileHint: 'Móvil: toca para teclado',
+    gameOver: 'FIN DEL JUEGO',
+    newBest: '🏆 ¡NUEVO RÉCORD!',
+    statWords: 'Palabras',
+    statCombo: 'Mejor Combo',
+    statLevel: 'Nivel',
+    playAgain: 'JUGAR OTRA VEZ',
+    bestScore: 'Mejor: {score}'
+  },
+  fr: {
+    back: '← Retour aux Jeux',
+    score: '⚡',
+    level: 'NIV',
+    lives: '♥ ♥ ♥',
+    title: 'BLITZ DE FRAPPE',
+    subtitle: '⚡ Attaque Alien',
+    instruction1: '🛸 <strong>Aliens</strong> descendent avec des mots',
+    instruction2: '⌨️ <strong>Tapez</strong> — la première lettre vise',
+    instruction3: '💥 <strong>Mot entier</strong> pour tirer',
+    instruction4: '❌ <strong>Mauvaise touche</strong> réinitialise',
+    instruction5: '💀 <strong>En bas</strong> = vie perdue',
+    instruction6: '🏆 <strong>3 vies</strong> — battez le record !',
+    startBtn: 'JOUER',
+    mobileHint: 'Mobile : touchez pour clavier',
+    gameOver: 'GAME OVER',
+    newBest: '🏆 NOUVEAU RECORD !',
+    statWords: 'Mots',
+    statCombo: 'Meilleur Combo',
+    statLevel: 'Niveau',
+    playAgain: 'REJOUER',
+    bestScore: 'Meilleur : {score}'
+  }
+};
+const { t, lang, onLangChange, translatePage } = initI18n(TRANSLATIONS);
+window.t = t;
+window.lang = lang;
+window.onLangChange = onLangChange;
+</script>
 
 <script type="module">
 import {
@@ -748,7 +873,7 @@ function endGame() {
   document.getElementById('stat-level').textContent = getLevelFromScore(score) + 1;
   document.getElementById('new-best-badge').style.display = isNew ? 'block' : 'none';
   document.getElementById('best-score-display').textContent =
-    isNew ? '' : `Best: ${best}`;
+    isNew ? '' : window.t('bestScore').replace('{score}', best);
 
   document.getElementById('screen-gameover').style.display = 'flex';
 }

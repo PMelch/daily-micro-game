@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>Stille Post – Telephone Pictionary</title>
+  <script src="/shared/i18n.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -527,12 +528,12 @@
   <!-- ── SETUP SCREEN ── -->
   <div id="screen-setup" class="screen active fade-in">
     <h1>🤫 Stille Post</h1>
-    <p>Zeichne es. Rate es. Lache darüber.<br>Telephone Pictionary für die Couch!</p>
+    <p data-i18n="subtitle">Zeichne es. Rate es. Lache darüber.<br>Telephone Pictionary für die Couch!</p>
 
     <div class="card w-full">
       <div style="display:flex;flex-direction:column;gap:1rem;">
         <div>
-          <label class="small">Anzahl Spieler</label>
+          <label class="small" data-i18n="playerCount">Anzahl Spieler</label>
           <div class="player-count-row" style="margin-top:0.6rem;">
             <button class="count-btn" data-n="2">2</button>
             <button class="count-btn selected" data-n="3">3</button>
@@ -540,15 +541,15 @@
           </div>
         </div>
         <div>
-          <label class="small">Spielernamen</label>
+          <label class="small" data-i18n="playerNames">Spielernamen</label>
           <div class="name-inputs" id="name-inputs" style="margin-top:0.6rem;"></div>
         </div>
       </div>
     </div>
 
-    <button class="btn btn-primary" id="btn-start-game">🎮 Spiel starten!</button>
+    <button class="btn btn-primary" id="btn-start-game" data-i18n="startGame">🎮 Spiel starten!</button>
 
-    <div class="card w-full" style="font-size:0.9rem;color:var(--muted);line-height:1.6;">
+    <div class="card w-full" style="font-size:0.9rem;color:var(--muted);line-height:1.6;" data-i18n-html="howToPlay">
       <strong style="color:var(--text);">So geht's:</strong><br>
       Spieler 1 sieht ein geheimes Wort und zeichnet es.<br>
       Spieler 2 sieht die Zeichnung und tippt ein Wort.<br>
@@ -560,31 +561,31 @@
   <div id="screen-handoff" class="screen" onclick="handleHandoffTap()">
     <div class="handoff-emoji" id="handoff-emoji">📱</div>
     <div id="handoff-text" style="text-align:center;">
-      <div style="font-size:1.1rem;color:var(--muted);margin-bottom:0.3rem;">Gib das Gerät an</div>
+      <div style="font-size:1.1rem;color:var(--muted);margin-bottom:0.3rem;" data-i18n="passDevice">Gib das Gerät an</div>
       <div class="handoff-name" id="handoff-name">Spieler 1</div>
     </div>
-    <div class="handoff-hint">Tippe irgendwo, wenn du bereit bist ✋</div>
+    <div class="handoff-hint" data-i18n="tapReady">Tippe irgendwo, wenn du bereit bist ✋</div>
     <div class="progress-dots" id="handoff-dots" style="margin-top:1rem;"></div>
   </div>
 
   <!-- ── WORD REVEAL SCREEN ── -->
   <div id="screen-word-reveal" class="screen">
-    <div style="text-align:center;font-size:1rem;color:var(--muted);">Dein geheimes Wort — nur du siehst das!</div>
+    <div style="text-align:center;font-size:1rem;color:var(--muted);" data-i18n="secretWordHint">Dein geheimes Wort — nur du siehst das!</div>
     <div class="word-box">
-      <div style="font-size:0.9rem;color:var(--muted);margin-bottom:0.5rem;">ZEICHNE:</div>
+      <div style="font-size:0.9rem;color:var(--muted);margin-bottom:0.5rem;" data-i18n="drawLabel">ZEICHNE:</div>
       <div class="secret-word" id="secret-word-display">Katze</div>
     </div>
-    <div class="word-countdown">
+    <div class="word-countdown" id="word-countdown-text">
       Beginne zu zeichnen… verschwindet in <span class="word-counter" id="word-timer-countdown">5</span>s
     </div>
-    <p style="font-size:0.85rem;margin-top:0.5rem;">Zeig das Wort niemandem! 🙈</p>
+    <p style="font-size:0.85rem;margin-top:0.5rem;" data-i18n="dontShow">Zeig das Wort niemandem! 🙈</p>
   </div>
 
   <!-- ── DRAW SCREEN ── -->
   <div id="screen-draw" class="screen" style="gap:0.5rem;">
     <div class="draw-header">
       <div class="draw-prompt">
-        <span id="draw-player-name">Anna</span> zeichnet
+        <span id="draw-player-name">Anna</span> <span id="draw-verb">zeichnet</span>
         <span id="draw-step-hint"></span>
       </div>
       <svg class="timer-ring" viewBox="0 0 48 48">
@@ -620,36 +621,181 @@
     </div>
 
     <div class="draw-actions" style="padding:0 0.5rem;">
-      <button class="btn btn-success" id="btn-done-drawing">Fertig ✓</button>
+      <button class="btn btn-success" id="btn-done-drawing" data-i18n="done">Fertig ✓</button>
     </div>
   </div>
 
   <!-- ── GUESS SCREEN ── -->
   <div id="screen-guess" class="screen">
     <h2 id="guess-player-name" style="font-size:1.1rem;"></h2>
-    <p>Was wurde hier gezeichnet?</p>
+    <p data-i18n="whatDrawn">Was wurde hier gezeichnet?</p>
     <img id="guess-drawing" class="guess-drawing" src="" alt="Zeichnung">
     <input type="text" id="guess-input" class="guess-input"
-      placeholder="Dein Tipp…"
+      data-i18n-placeholder="yourGuess" placeholder="Dein Tipp…"
       maxlength="40"
       autocomplete="off"
       autocorrect="off"
       spellcheck="false">
-    <button class="btn btn-primary" id="btn-submit-guess" disabled>Absenden ✓</button>
+    <button class="btn btn-primary" id="btn-submit-guess" disabled data-i18n="submit">Absenden ✓</button>
   </div>
 
   <!-- ── REVEAL SCREEN ── -->
   <div id="screen-reveal" class="screen">
     <div style="text-align:center;width:100%;max-width:480px;">
-      <h1 style="font-size:1.8rem;">🎉 Enthüllung!</h1>
-      <p>So hat sich das Wort verändert…</p>
+      <h1 style="font-size:1.8rem;" data-i18n="reveal">🎉 Enthüllung!</h1>
+      <p data-i18n="revealSub">So hat sich das Wort verändert…</p>
     </div>
     <div class="reveal-chain" id="reveal-chain"></div>
-    <button class="btn btn-primary" id="btn-play-again" style="margin-top:0.5rem;">Nochmal spielen! 🔁</button>
+    <button class="btn btn-primary" id="btn-play-again" style="margin-top:0.5rem;" data-i18n="playAgain">Nochmal spielen! 🔁</button>
   </div>
 
 </div>
 
+<script>
+const TRANSLATIONS = {
+  de: {
+    subtitle: 'Zeichne es. Rate es. Lache darüber.<br>Telephone Pictionary für die Couch!',
+    playerCount: 'Anzahl Spieler',
+    playerNames: 'Spielernamen',
+    startGame: '🎮 Spiel starten!',
+    howToPlay: '<strong style="color:var(--text);">So geht\'s:</strong><br>Spieler 1 sieht ein geheimes Wort und zeichnet es.<br>Spieler 2 sieht die Zeichnung und tippt ein Wort.<br>Das geht reihum – am Ende wird alles enthüllt! 😂',
+    passDevice: 'Gib das Gerät an',
+    tapReady: 'Tippe irgendwo, wenn du bereit bist ✋',
+    secretWordHint: 'Dein geheimes Wort — nur du siehst das!',
+    drawLabel: 'ZEICHNE:',
+    countdown: 'Beginne zu zeichnen… verschwindet in',
+    dontShow: 'Zeig das Wort niemandem! 🙈',
+    draws: 'zeichnet',
+    theWord: 'das Wort',
+    theGuess: 'den Tipp',
+    done: 'Fertig ✓',
+    whatDrawn: 'Was wurde hier gezeichnet?',
+    whatIsThis: 'was ist das?',
+    yourGuess: 'Dein Tipp…',
+    submit: 'Absenden ✓',
+    reveal: '🎉 Enthüllung!',
+    revealSub: 'So hat sich das Wort verändert…',
+    secretWord: 'Geheimwort',
+    drew: 'hat gezeichnet',
+    guessed: 'hat geraten',
+    playAgain: 'Nochmal spielen! 🔁',
+    defaultPlayer: 'Spieler',
+  },
+  en: {
+    subtitle: 'Draw it. Guess it. Laugh about it.<br>Telephone Pictionary for the couch!',
+    playerCount: 'Number of Players',
+    playerNames: 'Player Names',
+    startGame: '🎮 Start Game!',
+    howToPlay: '<strong style="color:var(--text);">How to play:</strong><br>Player 1 sees a secret word and draws it.<br>Player 2 sees the drawing and types a word.<br>This continues until the big reveal! 😂',
+    passDevice: 'Pass the device to',
+    tapReady: 'Tap anywhere when ready ✋',
+    secretWordHint: 'Your secret word — only you can see this!',
+    drawLabel: 'DRAW:',
+    countdown: 'Start drawing… disappears in',
+    dontShow: 'Don\'t show the word to anyone! 🙈',
+    draws: 'is drawing',
+    theWord: 'the word',
+    theGuess: 'the guess',
+    done: 'Done ✓',
+    whatDrawn: 'What was drawn here?',
+    whatIsThis: 'what is this?',
+    yourGuess: 'Your guess…',
+    submit: 'Submit ✓',
+    reveal: '🎉 The Reveal!',
+    revealSub: 'See how the word evolved…',
+    secretWord: 'Secret Word',
+    drew: 'drew',
+    guessed: 'guessed',
+    playAgain: 'Play Again! 🔁',
+    defaultPlayer: 'Player',
+  },
+  fr: {
+    subtitle: 'Dessine. Devine. Rigole.<br>Pictionary téléphone pour le canapé !',
+    playerCount: 'Nombre de joueurs',
+    playerNames: 'Noms des joueurs',
+    startGame: '🎮 Commencer !',
+    howToPlay: '<strong style="color:var(--text);">Comment jouer :</strong><br>Joueur 1 voit un mot secret et le dessine.<br>Joueur 2 voit le dessin et écrit un mot.<br>Ça continue jusqu\'à la grande révélation ! 😂',
+    passDevice: 'Passe l\'appareil à',
+    tapReady: 'Touche l\'écran quand tu es prêt ✋',
+    secretWordHint: 'Ton mot secret — toi seul peux le voir !',
+    drawLabel: 'DESSINE :',
+    countdown: 'Commence à dessiner… disparaît dans',
+    dontShow: 'Ne montre le mot à personne ! 🙈',
+    draws: 'dessine',
+    theWord: 'le mot',
+    theGuess: 'la devinette',
+    done: 'Terminé ✓',
+    whatDrawn: 'Qu\'est-ce qui a été dessiné ?',
+    whatIsThis: 'qu\'est-ce que c\'est ?',
+    yourGuess: 'Ta réponse…',
+    submit: 'Envoyer ✓',
+    reveal: '🎉 La Révélation !',
+    revealSub: 'Voici comment le mot a évolué…',
+    secretWord: 'Mot secret',
+    drew: 'a dessiné',
+    guessed: 'a deviné',
+    playAgain: 'Rejouer ! 🔁',
+    defaultPlayer: 'Joueur',
+  },
+  it: {
+    subtitle: 'Disegna. Indovina. Ridi.<br>Pictionary telefonico per il divano!',
+    playerCount: 'Numero di giocatori',
+    playerNames: 'Nomi dei giocatori',
+    startGame: '🎮 Inizia!',
+    howToPlay: '<strong style="color:var(--text);">Come si gioca:</strong><br>Giocatore 1 vede una parola segreta e la disegna.<br>Giocatore 2 vede il disegno e scrive una parola.<br>Si continua fino alla grande rivelazione! 😂',
+    passDevice: 'Passa il dispositivo a',
+    tapReady: 'Tocca ovunque quando sei pronto ✋',
+    secretWordHint: 'La tua parola segreta — solo tu puoi vederla!',
+    drawLabel: 'DISEGNA:',
+    countdown: 'Inizia a disegnare… scompare tra',
+    dontShow: 'Non mostrare la parola a nessuno! 🙈',
+    draws: 'disegna',
+    theWord: 'la parola',
+    theGuess: 'l\'ipotesi',
+    done: 'Fatto ✓',
+    whatDrawn: 'Cosa è stato disegnato?',
+    whatIsThis: 'cos\'è questo?',
+    yourGuess: 'La tua risposta…',
+    submit: 'Invia ✓',
+    reveal: '🎉 La Rivelazione!',
+    revealSub: 'Ecco come si è trasformata la parola…',
+    secretWord: 'Parola segreta',
+    drew: 'ha disegnato',
+    guessed: 'ha indovinato',
+    playAgain: 'Gioca ancora! 🔁',
+    defaultPlayer: 'Giocatore',
+  },
+  es: {
+    subtitle: 'Dibuja. Adivina. Ríete.<br>¡Pictionary telefónico para el sofá!',
+    playerCount: 'Número de jugadores',
+    playerNames: 'Nombres de jugadores',
+    startGame: '🎮 ¡Empezar!',
+    howToPlay: '<strong style="color:var(--text);">Cómo jugar:</strong><br>Jugador 1 ve una palabra secreta y la dibuja.<br>Jugador 2 ve el dibujo y escribe una palabra.<br>¡Continúa hasta la gran revelación! 😂',
+    passDevice: 'Pasa el dispositivo a',
+    tapReady: 'Toca en cualquier lugar cuando estés listo ✋',
+    secretWordHint: '¡Tu palabra secreta — solo tú puedes verla!',
+    drawLabel: 'DIBUJA:',
+    countdown: 'Empieza a dibujar… desaparece en',
+    dontShow: '¡No muestres la palabra a nadie! 🙈',
+    draws: 'dibuja',
+    theWord: 'la palabra',
+    theGuess: 'la respuesta',
+    done: 'Listo ✓',
+    whatDrawn: '¿Qué se dibujó aquí?',
+    whatIsThis: '¿qué es esto?',
+    yourGuess: 'Tu respuesta…',
+    submit: 'Enviar ✓',
+    reveal: '🎉 ¡La Revelación!',
+    revealSub: 'Mira cómo evolucionó la palabra…',
+    secretWord: 'Palabra secreta',
+    drew: 'dibujó',
+    guessed: 'adivinó',
+    playAgain: '¡Jugar de nuevo! 🔁',
+    defaultPlayer: 'Jugador',
+  },
+};
+const { t, lang, onLangChange, translatePage } = initI18n(TRANSLATIONS);
+</script>
 <script type="module">
 import {
   getPlayerForStep,
@@ -703,7 +849,6 @@ function updateProgressDots(containerId, total, current) {
 
 // ── Setup Screen ───────────────────────────────────────────────────────────
 function renderNameInputs(n) {
-  const defaults = ['Spieler 1','Spieler 2','Spieler 3','Spieler 4'];
   const container = document.getElementById('name-inputs');
   // Preserve existing values
   const existing = [...container.querySelectorAll('.name-input')].map(i => i.value);
@@ -719,7 +864,7 @@ function renderNameInputs(n) {
     const input = document.createElement('input');
     input.type = 'text';
     input.className = 'name-input';
-    input.placeholder = defaults[i];
+    input.placeholder = `${t('defaultPlayer')} ${i + 1}`;
     input.maxLength = 16;
     input.value = existing[i] || '';
     row.appendChild(badge);
@@ -742,9 +887,8 @@ document.querySelectorAll('.count-btn').forEach(btn => {
 renderNameInputs(3);
 
 document.getElementById('btn-start-game').addEventListener('click', () => {
-  const defaults = ['Spieler 1','Spieler 2','Spieler 3','Spieler 4'];
   state.players = [...document.querySelectorAll('.name-input')]
-    .map((inp, i) => inp.value.trim() || defaults[i]);
+    .map((inp, i) => inp.value.trim() || `${t('defaultPlayer')} ${i + 1}`);
   // Pick secret word using current timestamp as seed
   state.secretWord = selectRandomWord(WORD_POOL, Date.now() % 997);
   state.chain = createInitialChain(state.secretWord);
@@ -786,6 +930,8 @@ window.handleHandoffTap = function() {
 function showWordReveal() {
   document.getElementById('secret-word-display').textContent = state.secretWord;
   document.getElementById('word-timer-countdown').textContent = '5';
+  document.getElementById('word-countdown-text').innerHTML =
+    `${t('countdown')} <span class="word-counter" id="word-timer-countdown">5</span>s`;
   showScreen('screen-word-reveal');
 
   let t = 5;
@@ -824,12 +970,13 @@ function startDrawing() {
   // Show hint about what to draw
   const hintEl = document.getElementById('draw-step-hint');
   if (step === 0) {
-    hintEl.textContent = `das Wort`;
+    hintEl.textContent = t('theWord');
   } else {
-    hintEl.textContent = `das Tipp`;
+    hintEl.textContent = t('theGuess');
   }
   document.getElementById('draw-player-name').textContent = playerName;
   document.getElementById('draw-player-name').style.color = playerColor(playerIdx);
+  document.getElementById('draw-verb').textContent = t('draws');
 
   // Reset canvas
   ctx.fillStyle = '#ffffff';
@@ -1015,7 +1162,7 @@ function showGuessScreen() {
   const playerName = state.players[playerIdx];
 
   const nameEl = document.getElementById('guess-player-name');
-  nameEl.textContent = `🔍 ${playerName} — was ist das?`;
+  nameEl.textContent = `🔍 ${playerName} — ${t('whatIsThis')}`;
   nameEl.style.color = playerColor(playerIdx);
 
   // Show the last drawing in the chain
@@ -1065,7 +1212,7 @@ function showReveal() {
     labelDiv.className = 'reveal-label';
 
     if (item.type === 'word') {
-      labelDiv.innerHTML = `🔑 <span>Geheimwort</span>`;
+      labelDiv.innerHTML = `🔑 <span>${t('secretWord')}</span>`;
       const val = document.createElement('div');
       val.className = 'reveal-value-word';
       val.textContent = item.value;
@@ -1073,7 +1220,7 @@ function showReveal() {
       div.appendChild(val);
     } else if (item.type === 'draw') {
       const pIdx = state.players.indexOf(item.author);
-      labelDiv.innerHTML = `🎨 <span class="author" style="color:${playerColor(pIdx)}">${item.author}</span> hat gezeichnet`;
+      labelDiv.innerHTML = `🎨 <span class="author" style="color:${playerColor(pIdx)}">${item.author}</span> ${t('drew')}`;
       const valDiv = document.createElement('div');
       valDiv.className = 'reveal-value-draw';
       const img = document.createElement('img');
@@ -1084,7 +1231,7 @@ function showReveal() {
       div.appendChild(valDiv);
     } else {
       const pIdx = state.players.indexOf(item.author);
-      labelDiv.innerHTML = `💬 <span class="author" style="color:${playerColor(pIdx)}">${item.author}</span> hat geraten`;
+      labelDiv.innerHTML = `💬 <span class="author" style="color:${playerColor(pIdx)}">${item.author}</span> ${t('guessed')}`;
       const val = document.createElement('div');
       val.className = 'reveal-value-guess';
       val.textContent = `"${item.value}"`;
@@ -1106,6 +1253,12 @@ document.getElementById('btn-play-again').addEventListener('click', () => {
   state.currentStep = 0;
   state.secretWord = selectRandomWord(WORD_POOL, Date.now() % 997);
   showHandoff(0);
+});
+
+// ── i18n reactivity ────────────────────────────────────────────────────────
+onLangChange(() => {
+  renderNameInputs(state.numPlayers);
+  translatePage();
 });
 
 // ── Init ───────────────────────────────────────────────────────────────────

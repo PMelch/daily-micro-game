@@ -201,13 +201,18 @@ function render() {
     return;
   }
 
-  container.innerHTML = games.map(g => `
+  container.innerHTML = games.map(g => {
+    const currentLang = window.lang ? window.lang() : 'en';
+    const name = g['name_' + currentLang] || g.name;
+    const desc = g['description_' + currentLang] || g.description;
+    
+    return `
     <div class="game-card">
-      <img class="game-screenshot" src="/games/${g.id}/screenshot.png" alt="${esc(g.name)}" onerror="if(!this.dataset.retry){this.dataset.retry='1';this.src='/games/${g.id}/screenshot.jpg';}else{this.outerHTML='<div class=\\'game-screenshot missing\\'>🎮</div>';}" loading="lazy">
+      <img class="game-screenshot" src="/games/${g.id}/screenshot.png" alt="${esc(name)}" onerror="if(!this.dataset.retry){this.dataset.retry='1';this.src='/games/${g.id}/screenshot.jpg';}else{this.outerHTML='<div class=\\'game-screenshot missing\\'>🎮</div>';}" loading="lazy">
       <div class="game-body">
-        <h2>${esc(g.name)}</h2>
+        <h2>${esc(name)}</h2>
         <div class="meta">Day ${g.id.match(/day-(\d+)/)?.[1] || '?'} · ${g.date}${g.averageRating ? ` · ⭐ ${g.averageRating.toFixed(1)} (${g.ratings.length})` : ''}</div>
-        <div class="desc">${esc(g.description)}</div>
+        <div class="desc">${esc(desc)}</div>
         ${(g.tags||[]).length ? `<div class="tags">${g.tags.map(tag => `<span class="game-tag">${esc(tag)}</span>`).join('')}</div>` : ''}
         <div class="actions">
           <a class="play-btn" href="/games/${g.id}/">${window.t('play')}</a>
@@ -218,7 +223,7 @@ function render() {
         </div>
       </div>
     </div>
-  `).join('');
+  `}).join('');
 
   // Star hover + click
   container.querySelectorAll('.stars').forEach(el => {
