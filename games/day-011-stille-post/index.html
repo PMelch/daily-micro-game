@@ -934,11 +934,11 @@ function showWordReveal() {
     `${t('countdown')} <span class="word-counter" id="word-timer-countdown">5</span>s`;
   showScreen('screen-word-reveal');
 
-  let t = 5;
+  let countdown = 5;
   state.wordTimer = setInterval(() => {
-    t--;
-    document.getElementById('word-timer-countdown').textContent = t;
-    if (t <= 0) {
+    countdown--;
+    document.getElementById('word-timer-countdown').textContent = countdown;
+    if (countdown <= 0) {
       clearInterval(state.wordTimer);
       startDrawing();
     }
