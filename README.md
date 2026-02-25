@@ -85,15 +85,9 @@ bun test games/day-NNN-name/
 }
 ```
 
-### 5. Auf den Server deployen
+### 5. Deployen
 
-```bash
-# Spiel-Dateien hochladen
-
-# data.json hochladen (Server liest aus Volume)
-
-# Container neustarten
-```
+Siehe `DEPLOY.md` (nicht im Repo, lokal vorhanden).
 
 ### 6. Committen
 
@@ -108,10 +102,6 @@ bun dashboard/server.js
 # → http://localhost:3000
 ```
 
-
-## Server-Setup
-
-- Container: `daily-games` auf lab.gogerl.com (Traefik-Netzwerk)
 
 ## Tests
 
