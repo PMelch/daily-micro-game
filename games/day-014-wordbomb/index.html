@@ -1,0 +1,1171 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WordBomb 💣</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0a0a1a;
+      --surface: #141428;
+      --card: #1e1e38;
+      --accent: #ffcc00;
+      --red: #ff4444;
+      --green: #44ff88;
+      --blue: #44aaff;
+      --text: #f0f0ff;
+      --muted: #888;
+      --heart: #ff6b6b;
+      --bomb: #ff8800;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: system-ui, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+    }
+
+    .back-bar {
+      width: 100%;
+      background: #0a0a1a;
+      padding: 0.5rem 1rem;
+      border-bottom: 1px solid #333;
+    }
+    .back-bar a {
+      color: #ffcc00;
+      text-decoration: none;
+      font-size: 0.9rem;
+      font-family: system-ui, sans-serif;
+    }
+    .back-bar a:hover { text-decoration: underline; }
+
+    /* ── SCREENS ── */
+    .screen {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 1rem;
+      min-height: calc(100vh - 44px);
+      width: 100%;
+    }
+    .screen.active { display: flex; }
+
+    h1 {
+      font-size: 2.5rem;
+      font-weight: 900;
+      text-align: center;
+      margin-bottom: 0.3rem;
+    }
+    h2 { font-size: 1.5rem; font-weight: 700; margin-bottom: 1rem; text-align: center; }
+    .subtitle { color: var(--muted); text-align: center; margin-bottom: 1.5rem; font-size: 0.9rem; }
+
+    /* ── SETUP SCREEN ── */
+    .setup-box {
+      background: var(--card);
+      border-radius: 16px;
+      padding: 1.5rem;
+      width: 100%;
+      max-width: 420px;
+    }
+
+    .player-count-row {
+      display: flex;
+      gap: 0.5rem;
+      justify-content: center;
+      margin-bottom: 1.5rem;
+    }
+    .count-btn {
+      width: 48px; height: 48px;
+      border-radius: 50%;
+      border: 2px solid #444;
+      background: var(--surface);
+      color: var(--text);
+      font-size: 1.2rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .count-btn.active {
+      border-color: var(--accent);
+      background: rgba(255,204,0,0.15);
+      color: var(--accent);
+    }
+
+    .player-inputs { display: flex; flex-direction: column; gap: 0.7rem; }
+    .player-input-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .player-emoji { font-size: 1.4rem; width: 2rem; text-align: center; }
+    .name-input {
+      flex: 1;
+      background: var(--surface);
+      border: 1px solid #333;
+      border-radius: 10px;
+      padding: 0.6rem 1rem;
+      color: var(--text);
+      font-size: 1rem;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .name-input:focus { border-color: var(--accent); }
+
+    .start-btn {
+      width: 100%;
+      margin-top: 1.5rem;
+      padding: 0.9rem;
+      background: var(--accent);
+      color: #000;
+      border: none;
+      border-radius: 12px;
+      font-size: 1.1rem;
+      font-weight: 800;
+      cursor: pointer;
+      transition: transform 0.1s;
+    }
+    .start-btn:hover { transform: scale(1.02); }
+    .start-btn:active { transform: scale(0.98); }
+
+    /* ── TRANSITION SCREEN ── */
+    #screen-transition {
+      text-align: center;
+      justify-content: center;
+    }
+    .transition-emoji { font-size: 5rem; margin-bottom: 0.5rem; }
+    .transition-message { font-size: 1.8rem; font-weight: 800; margin-bottom: 0.5rem; }
+    .transition-sub { color: var(--muted); margin-bottom: 2rem; }
+    .tap-btn {
+      padding: 1rem 3rem;
+      background: var(--accent);
+      color: #000;
+      border: none;
+      border-radius: 12px;
+      font-size: 1.1rem;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    /* ── GAME SCREEN ── */
+    #screen-game {
+      padding: 0.5rem;
+      justify-content: flex-start;
+    }
+
+    .players-row {
+      display: flex;
+      gap: 0.5rem;
+      width: 100%;
+      max-width: 500px;
+      margin-bottom: 0.8rem;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .player-badge {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background: var(--card);
+      border-radius: 10px;
+      padding: 0.5rem 0.8rem;
+      border: 2px solid transparent;
+      min-width: 70px;
+      transition: all 0.2s;
+    }
+    .player-badge.active {
+      border-color: var(--accent);
+      background: rgba(255,204,0,0.08);
+    }
+    .player-badge.eliminated {
+      opacity: 0.3;
+    }
+    .player-badge .p-name {
+      font-size: 0.75rem;
+      font-weight: 600;
+      margin-bottom: 0.2rem;
+      color: var(--muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 80px;
+    }
+    .player-badge.active .p-name { color: var(--accent); }
+    .player-badge .p-hearts {
+      font-size: 0.9rem;
+      letter-spacing: 1px;
+    }
+
+    .turn-indicator {
+      font-size: 1rem;
+      font-weight: 700;
+      text-align: center;
+      color: var(--accent);
+      margin-bottom: 0.6rem;
+    }
+
+    /* Timer */
+    .timer-wrap {
+      width: 100%;
+      max-width: 500px;
+      margin-bottom: 0.8rem;
+    }
+    .timer-bar {
+      width: 100%;
+      height: 8px;
+      background: #333;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .timer-fill {
+      height: 100%;
+      background: var(--green);
+      border-radius: 4px;
+      transition: width 0.1s linear, background 0.3s;
+    }
+    .timer-text {
+      text-align: right;
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    /* Fragment */
+    .fragment-box {
+      background: var(--card);
+      border-radius: 16px;
+      width: 100%;
+      max-width: 500px;
+      padding: 1.2rem;
+      text-align: center;
+      margin-bottom: 0.8rem;
+      min-height: 100px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+    .fragment-label {
+      font-size: 0.75rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 0.5rem;
+    }
+    .fragment-text {
+      font-size: 3rem;
+      font-weight: 900;
+      letter-spacing: 8px;
+      color: var(--accent);
+      text-transform: uppercase;
+      min-height: 3.5rem;
+      word-break: break-all;
+    }
+    .fragment-empty-hint {
+      font-size: 0.85rem;
+      color: #555;
+    }
+
+    /* Keyboard */
+    .keyboard {
+      width: 100%;
+      max-width: 500px;
+      margin-bottom: 0.8rem;
+    }
+    .kb-row {
+      display: flex;
+      justify-content: center;
+      gap: 4px;
+      margin-bottom: 4px;
+    }
+    .kb-key {
+      width: 32px; height: 40px;
+      background: var(--card);
+      border: 1px solid #333;
+      border-radius: 6px;
+      color: var(--text);
+      font-size: 0.85rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.1s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      user-select: none;
+    }
+    .kb-key:active, .kb-key.pressed {
+      background: var(--accent);
+      color: #000;
+      transform: scale(0.95);
+    }
+    .kb-delete {
+      padding: 0 10px;
+      width: auto;
+      font-size: 1rem;
+      background: #2a1a1a;
+      border-color: #4a2a2a;
+      color: var(--red);
+    }
+
+    /* Action Buttons */
+    .action-row {
+      display: flex;
+      gap: 0.7rem;
+      width: 100%;
+      max-width: 500px;
+    }
+    .challenge-btn {
+      flex: 1;
+      padding: 0.8rem;
+      background: #2a1a1a;
+      border: 2px solid var(--red);
+      border-radius: 12px;
+      color: var(--red);
+      font-size: 0.9rem;
+      font-weight: 800;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .challenge-btn:hover { background: rgba(255,68,68,0.15); }
+
+    /* ── BOOM SCREEN ── */
+    #screen-boom {
+      justify-content: center;
+      text-align: center;
+    }
+    .boom-emoji {
+      font-size: 6rem;
+      animation: boom-pop 0.4s cubic-bezier(0.36,0.07,0.19,0.97);
+      margin-bottom: 0.5rem;
+    }
+    @keyframes boom-pop {
+      0% { transform: scale(0.2) rotate(-10deg); }
+      60% { transform: scale(1.3) rotate(5deg); }
+      80% { transform: scale(0.9) rotate(-3deg); }
+      100% { transform: scale(1) rotate(0deg); }
+    }
+    .boom-word {
+      font-size: 2rem;
+      font-weight: 900;
+      color: var(--accent);
+      letter-spacing: 8px;
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+    }
+    .boom-message { font-size: 1.2rem; margin-bottom: 0.5rem; }
+    .boom-sub { color: var(--muted); margin-bottom: 2rem; font-size: 0.9rem; }
+    .lives-left {
+      font-size: 2rem;
+      margin-bottom: 2rem;
+    }
+
+    /* ── CHALLENGE SCREEN ── */
+    #screen-challenge {
+      justify-content: flex-start;
+      padding-top: 2rem;
+    }
+    .challenge-box {
+      background: var(--card);
+      border-radius: 16px;
+      padding: 1.5rem;
+      width: 100%;
+      max-width: 420px;
+      text-align: center;
+    }
+    .challenge-fragment {
+      font-size: 2.5rem;
+      font-weight: 900;
+      letter-spacing: 6px;
+      color: var(--accent);
+      text-transform: uppercase;
+      margin-bottom: 1rem;
+    }
+    .word-input {
+      width: 100%;
+      background: var(--surface);
+      border: 2px solid #333;
+      border-radius: 10px;
+      padding: 0.8rem;
+      color: var(--text);
+      font-size: 1.2rem;
+      text-align: center;
+      text-transform: lowercase;
+      outline: none;
+      margin-bottom: 1rem;
+    }
+    .word-input:focus { border-color: var(--accent); }
+    .challenge-btns { display: flex; flex-direction: column; gap: 0.6rem; }
+    .valid-btn {
+      padding: 0.8rem;
+      background: rgba(68,255,136,0.1);
+      border: 2px solid var(--green);
+      border-radius: 10px;
+      color: var(--green);
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .valid-btn:hover { background: rgba(68,255,136,0.2); }
+    .invalid-btn {
+      padding: 0.8rem;
+      background: rgba(255,68,68,0.1);
+      border: 2px solid var(--red);
+      border-radius: 10px;
+      color: var(--red);
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .invalid-btn:hover { background: rgba(255,68,68,0.2); }
+
+    /* ── GAMEOVER SCREEN ── */
+    #screen-gameover {
+      justify-content: center;
+      text-align: center;
+    }
+    .winner-emoji { font-size: 5rem; margin-bottom: 0.5rem; }
+    .winner-name {
+      font-size: 2.5rem;
+      font-weight: 900;
+      color: var(--accent);
+      margin-bottom: 0.5rem;
+    }
+    .final-scores {
+      background: var(--card);
+      border-radius: 12px;
+      padding: 1rem;
+      margin: 1rem 0 2rem;
+      width: 100%;
+      max-width: 320px;
+    }
+    .final-score-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.4rem 0;
+      border-bottom: 1px solid #333;
+      font-size: 0.95rem;
+    }
+    .final-score-row:last-child { border-bottom: none; }
+    .play-again-btn {
+      padding: 1rem 3rem;
+      background: var(--accent);
+      color: #000;
+      border: none;
+      border-radius: 12px;
+      font-size: 1.1rem;
+      font-weight: 800;
+      cursor: pointer;
+      margin-bottom: 0.5rem;
+    }
+    .back-setup-btn {
+      padding: 0.7rem 2rem;
+      background: transparent;
+      color: var(--muted);
+      border: 1px solid #444;
+      border-radius: 10px;
+      font-size: 0.9rem;
+      cursor: pointer;
+    }
+
+    /* ── RULES MODAL ── */
+    .rules-btn {
+      margin-top: 1rem;
+      padding: 0.5rem 1.2rem;
+      background: transparent;
+      border: 1px solid #444;
+      border-radius: 8px;
+      color: var(--muted);
+      font-size: 0.85rem;
+      cursor: pointer;
+    }
+    .modal-overlay {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.8);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+    .modal-overlay.show { display: flex; }
+    .modal {
+      background: var(--card);
+      border-radius: 16px;
+      padding: 1.5rem;
+      max-width: 400px;
+      width: 100%;
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+    .modal h3 { font-size: 1.2rem; margin-bottom: 1rem; color: var(--accent); }
+    .modal p, .modal li { font-size: 0.9rem; color: #ccc; line-height: 1.5; margin-bottom: 0.5rem; }
+    .modal ul { padding-left: 1.2rem; }
+    .modal-close {
+      width: 100%;
+      margin-top: 1rem;
+      padding: 0.7rem;
+      background: var(--surface);
+      border: 1px solid #444;
+      border-radius: 8px;
+      color: var(--text);
+      cursor: pointer;
+    }
+
+    /* Util */
+    .emoji-row { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; }
+    .badge-emoji { font-size: 1.2rem; }
+  </style>
+</head>
+<body>
+  <div class="back-bar"><a href="/">← Back to Games</a></div>
+
+  <!-- SETUP SCREEN -->
+  <div id="screen-setup" class="screen active">
+    <h1>💣 WordBomb</h1>
+    <p class="subtitle" data-i18n="subtitle"></p>
+
+    <div class="setup-box">
+      <h2 data-i18n="numPlayers"></h2>
+      <div class="player-count-row">
+        <button class="count-btn active" data-count="2">2</button>
+        <button class="count-btn" data-count="3">3</button>
+        <button class="count-btn" data-count="4">4</button>
+      </div>
+
+      <div class="player-inputs" id="playerInputs"></div>
+
+      <button class="start-btn" id="startBtn" data-i18n="startGame"></button>
+    </div>
+
+    <button class="rules-btn" id="rulesBtn" data-i18n="howToPlay"></button>
+  </div>
+
+  <!-- TRANSITION SCREEN -->
+  <div id="screen-transition" class="screen">
+    <div class="transition-emoji">🎯</div>
+    <div class="transition-message" id="transitionMsg"></div>
+    <div class="transition-sub" id="transitionSub"></div>
+    <button class="tap-btn" id="tapBtn" data-i18n="tapReady"></button>
+  </div>
+
+  <!-- GAME SCREEN -->
+  <div id="screen-game" class="screen">
+    <div class="players-row" id="playersRow"></div>
+    <div class="turn-indicator" id="turnIndicator"></div>
+
+    <div class="timer-wrap">
+      <div class="timer-bar"><div class="timer-fill" id="timerFill"></div></div>
+      <div class="timer-text" id="timerText"></div>
+    </div>
+
+    <div class="fragment-box">
+      <div class="fragment-label" data-i18n="fragment"></div>
+      <div class="fragment-text" id="fragmentDisplay">
+        <span class="fragment-empty-hint" data-i18n="addFirstLetter"></span>
+      </div>
+    </div>
+
+    <div class="keyboard" id="keyboard"></div>
+
+    <div class="action-row">
+      <button class="challenge-btn" id="challengeBtn">
+        <span data-i18n="challengeBtn"></span>
+      </button>
+    </div>
+  </div>
+
+  <!-- BOOM SCREEN -->
+  <div id="screen-boom" class="screen">
+    <div class="boom-emoji">💥</div>
+    <div class="boom-word" id="boomWord"></div>
+    <div class="boom-message" id="boomMsg"></div>
+    <div class="boom-sub" id="boomSub"></div>
+    <div class="lives-left" id="livesLeft"></div>
+    <button class="tap-btn" id="boomContinueBtn" data-i18n="tapContinue"></button>
+  </div>
+
+  <!-- CHALLENGE SCREEN -->
+  <div id="screen-challenge" class="screen">
+    <div class="challenge-box">
+      <h2 data-i18n="challengeTitle"></h2>
+      <p id="challengePrompt" style="color:var(--muted);margin-bottom:1rem;font-size:0.9rem;text-align:center;"></p>
+      <div class="challenge-fragment" id="challengeFragment"></div>
+      <p style="font-size:0.85rem;color:var(--muted);margin-bottom:0.8rem;" data-i18n="enterWord"></p>
+      <input type="text" class="word-input" id="wordInput" autocomplete="off" autocorrect="off" spellcheck="false">
+      <div class="challenge-btns">
+        <button class="valid-btn" id="validBtn" data-i18n="wordValid"></button>
+        <button class="invalid-btn" id="invalidBtn" data-i18n="wordInvalid"></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- GAMEOVER SCREEN -->
+  <div id="screen-gameover" class="screen">
+    <div class="winner-emoji">🏆</div>
+    <p style="color:var(--muted);font-size:1rem;" data-i18n="winnerIs"></p>
+    <div class="winner-name" id="winnerName"></div>
+    <div class="final-scores" id="finalScores"></div>
+    <button class="play-again-btn" id="playAgainBtn" data-i18n="playAgain"></button>
+    <button class="back-setup-btn" id="backSetupBtn" data-i18n="newGame"></button>
+  </div>
+
+  <!-- RULES MODAL -->
+  <div class="modal-overlay" id="rulesModal">
+    <div class="modal">
+      <h3 data-i18n="rulesTitle"></h3>
+      <ul>
+        <li data-i18n="rule1"></li>
+        <li data-i18n="rule2"></li>
+        <li data-i18n="rule3"></li>
+        <li data-i18n="rule4"></li>
+        <li data-i18n="rule5"></li>
+        <li data-i18n="rule6"></li>
+      </ul>
+      <button class="modal-close" data-i18n="close" onclick="document.getElementById('rulesModal').classList.remove('show')"></button>
+    </div>
+  </div>
+
+  <script src="/shared/i18n.js"></script>
+  <script type="module">
+    import {
+      initGame, addLetter, applyBoom, nextTurn,
+      startChallenge, resolveChallenge,
+      getActivePlayers, getWinner, isCompleteWord, canFragmentContinue
+    } from './game.js';
+
+    // ── i18n ──────────────────────────────────────────────────────
+    const TRANSLATIONS = {
+      de: {
+        subtitle: 'Pass & Play · Füge Buchstaben hinzu – ohne ein Wort zu beenden!',
+        numPlayers: 'Wieviele Spieler?',
+        startGame: 'Spiel starten 💣',
+        howToPlay: 'Wie spielt man?',
+        tapReady: 'Ich bin bereit! 👊',
+        tapContinue: 'Weiter ➜',
+        fragment: 'Aktuelles Fragment',
+        addFirstLetter: '← Erster Buchstabe',
+        challengeBtn: '🚩 Anzweifeln!',
+        winnerIs: 'Gewonnen hat…',
+        playAgain: 'Nochmal! 🔄',
+        newGame: 'Neues Spiel',
+        challengeTitle: '🚩 Herausforderung!',
+        enterWord: 'Welches Wort meintest du?',
+        wordValid: '✅ Akzeptiert – Wort zählt!',
+        wordInvalid: '❌ Ungültig – Kein Wort!',
+        rulesTitle: '💣 Spielregeln',
+        rule1: 'Spieler fügen abwechselnd einen Buchstaben hinzu.',
+        rule2: 'Wer ein vollständiges Wort (3+ Buchstaben) bildet, verliert ein Leben 💥',
+        rule3: 'Wer zu lange braucht, verliert ebenfalls ein Leben.',
+        rule4: 'Jeder Spieler startet mit 3 Leben ❤️❤️❤️',
+        rule5: 'Anzweifeln: Du glaubst, dein Vorgänger hat kein echtes Wort im Sinn? Drücke ANZWEIFELN! Er muss sein Wort nennen.',
+        rule6: 'Wer zuletzt übrig bleibt, gewinnt! 🏆',
+        close: 'Schließen',
+        passDevice: 'Gib das Gerät an',
+        yourTurn: 'Du bist dran!',
+        secLeft: 's',
+        livesLeft: 'Leben übrig',
+        boomWord: 'BOOM! Das war ein Wort!',
+        boomTimer: 'BOOM! Zeit abgelaufen!',
+        boomLives: 'verliert ein Leben!',
+        eliminated: '💀 Ausgeschieden!',
+        defName: 'Spieler',
+      },
+      en: {
+        subtitle: 'Pass & Play · Add letters — without completing a word!',
+        numPlayers: 'How many players?',
+        startGame: 'Start Game 💣',
+        howToPlay: 'How to Play',
+        tapReady: 'Ready! 👊',
+        tapContinue: 'Continue ➜',
+        fragment: 'Current Fragment',
+        addFirstLetter: '← Add first letter',
+        challengeBtn: '🚩 Challenge!',
+        winnerIs: 'Winner is…',
+        playAgain: 'Play Again! 🔄',
+        newGame: 'New Game',
+        challengeTitle: '🚩 Challenge!',
+        enterWord: 'What word did you have in mind?',
+        wordValid: '✅ Valid — Word counts!',
+        wordInvalid: '❌ Invalid — No such word!',
+        rulesTitle: '💣 Rules',
+        rule1: 'Players take turns adding one letter to the growing fragment.',
+        rule2: 'Completing a real word (3+ letters) = BOOM! Lose a life 💥',
+        rule3: 'Running out of time also costs a life.',
+        rule4: 'Each player starts with 3 lives ❤️❤️❤️',
+        rule5: 'Challenge: Think the previous player has no real word in mind? Press CHALLENGE! They must name it.',
+        rule6: 'Last player standing wins! 🏆',
+        close: 'Close',
+        passDevice: 'Pass device to',
+        yourTurn: "It's your turn!",
+        secLeft: 's',
+        livesLeft: 'lives left',
+        boomWord: 'BOOM! That was a word!',
+        boomTimer: 'BOOM! Time ran out!',
+        boomLives: 'loses a life!',
+        eliminated: '💀 Eliminated!',
+        defName: 'Player',
+      },
+      fr: {
+        subtitle: 'Pass & Play · Ajoute des lettres — sans terminer un mot !',
+        numPlayers: 'Combien de joueurs ?',
+        startGame: 'Commencer 💣',
+        howToPlay: 'Comment jouer',
+        tapReady: 'Prêt ! 👊',
+        tapContinue: 'Continuer ➜',
+        fragment: 'Fragment actuel',
+        addFirstLetter: '← Première lettre',
+        challengeBtn: '🚩 Contester !',
+        winnerIs: 'Le vainqueur est…',
+        playAgain: 'Rejouer ! 🔄',
+        newGame: 'Nouvelle partie',
+        challengeTitle: '🚩 Contestation !',
+        enterWord: 'Quel mot avais-tu en tête ?',
+        wordValid: '✅ Valide — Mot accepté !',
+        wordInvalid: '❌ Invalide — Pas de mot !',
+        rulesTitle: '💣 Règles',
+        rule1: 'Les joueurs ajoutent une lettre à tour de rôle.',
+        rule2: 'Compléter un mot réel (3+ lettres) = BOOM ! Perd une vie 💥',
+        rule3: "Manquer de temps coûte aussi une vie.",
+        rule4: "Chaque joueur commence avec 3 vies ❤️❤️❤️",
+        rule5: "Contestation : Le joueur précédent n'a pas de mot en tête ? Conteste ! Il doit le nommer.",
+        rule6: 'Dernier survivant gagne ! 🏆',
+        close: 'Fermer',
+        passDevice: 'Passe l\'appareil à',
+        yourTurn: 'C\'est ton tour !',
+        secLeft: 's',
+        livesLeft: 'vies restantes',
+        boomWord: 'BOOM ! C\'était un mot !',
+        boomTimer: 'BOOM ! Temps écoulé !',
+        boomLives: 'perd une vie !',
+        eliminated: '💀 Éliminé !',
+        defName: 'Joueur',
+      },
+      it: {
+        subtitle: 'Pass & Play · Aggiungi lettere — senza completare una parola!',
+        numPlayers: 'Quanti giocatori?',
+        startGame: 'Inizia 💣',
+        howToPlay: 'Come si gioca',
+        tapReady: 'Pronto! 👊',
+        tapContinue: 'Continua ➜',
+        fragment: 'Frammento attuale',
+        addFirstLetter: '← Prima lettera',
+        challengeBtn: '🚩 Sfida!',
+        winnerIs: 'Vincitore…',
+        playAgain: 'Ancora! 🔄',
+        newGame: 'Nuova partita',
+        challengeTitle: '🚩 Sfida!',
+        enterWord: 'Quale parola avevi in mente?',
+        wordValid: '✅ Valido — Parola accettata!',
+        wordInvalid: '❌ Non valido — Nessuna parola!',
+        rulesTitle: '💣 Regole',
+        rule1: 'I giocatori aggiungono una lettera a turno.',
+        rule2: 'Completare una parola vera (3+ lettere) = BOOM! Perdi una vita 💥',
+        rule3: 'Esaurire il tempo costa anche una vita.',
+        rule4: 'Ogni giocatore inizia con 3 vite ❤️❤️❤️',
+        rule5: "Sfida: Il giocatore precedente non ha una parola in mente? Sfidalo! Deve nominarla.",
+        rule6: 'Ultimo sopravvissuto vince! 🏆',
+        close: 'Chiudi',
+        passDevice: 'Passa il dispositivo a',
+        yourTurn: 'È il tuo turno!',
+        secLeft: 's',
+        livesLeft: 'vite rimanenti',
+        boomWord: 'BOOM! Era una parola!',
+        boomTimer: 'BOOM! Tempo scaduto!',
+        boomLives: 'perde una vita!',
+        eliminated: '💀 Eliminato!',
+        defName: 'Giocatore',
+      },
+      es: {
+        subtitle: 'Pass & Play · Añade letras — ¡sin completar una palabra!',
+        numPlayers: '¿Cuántos jugadores?',
+        startGame: 'Empezar 💣',
+        howToPlay: 'Cómo jugar',
+        tapReady: '¡Listo! 👊',
+        tapContinue: 'Continuar ➜',
+        fragment: 'Fragmento actual',
+        addFirstLetter: '← Primera letra',
+        challengeBtn: '🚩 ¡Desafiar!',
+        winnerIs: 'El ganador es…',
+        playAgain: '¡Jugar de nuevo! 🔄',
+        newGame: 'Nueva partida',
+        challengeTitle: '🚩 ¡Desafío!',
+        enterWord: '¿Qué palabra tenías en mente?',
+        wordValid: '✅ Válido — ¡Palabra aceptada!',
+        wordInvalid: '❌ Inválido — ¡No hay tal palabra!',
+        rulesTitle: '💣 Reglas',
+        rule1: 'Los jugadores añaden una letra por turno.',
+        rule2: 'Completar una palabra real (3+ letras) = ¡BOOM! Pierde una vida 💥',
+        rule3: 'Agotar el tiempo también cuesta una vida.',
+        rule4: 'Cada jugador empieza con 3 vidas ❤️❤️❤️',
+        rule5: "Desafío: ¿El jugador anterior no tiene una palabra en mente? ¡Desafíale! Debe nombrarla.",
+        rule6: '¡El último en pie gana! 🏆',
+        close: 'Cerrar',
+        passDevice: 'Pasa el dispositivo a',
+        yourTurn: '¡Es tu turno!',
+        secLeft: 's',
+        livesLeft: 'vidas restantes',
+        boomWord: '¡BOOM! ¡Era una palabra!',
+        boomTimer: '¡BOOM! ¡Se acabó el tiempo!',
+        boomLives: 'pierde una vida!',
+        eliminated: '💀 ¡Eliminado!',
+        defName: 'Jugador',
+      }
+    };
+    const { t, lang, onLangChange, translatePage } = initI18n(TRANSLATIONS);
+
+    // ── Player Emojis ──────────────────────────────────────────────
+    const PLAYER_EMOJIS = ['🔵', '🔴', '🟡', '🟢'];
+    const PLAYER_COLORS = ['#44aaff', '#ff4444', '#ffcc00', '#44ff88'];
+
+    // ── Setup Screen ───────────────────────────────────────────────
+    let selectedCount = 2;
+    let playerNames = [];
+
+    const countBtns = document.querySelectorAll('.count-btn');
+    const playerInputs = document.getElementById('playerInputs');
+
+    function renderPlayerInputs(count) {
+      playerInputs.innerHTML = '';
+      for (let i = 0; i < count; i++) {
+        const row = document.createElement('div');
+        row.className = 'player-input-row';
+        row.innerHTML = `
+          <div class="player-emoji">${PLAYER_EMOJIS[i]}</div>
+          <input type="text" class="name-input" 
+            id="pname${i}" 
+            maxlength="12"
+            placeholder="${t('defName')} ${i + 1}"
+            value="${playerNames[i] || ''}">
+        `;
+        playerInputs.appendChild(row);
+      }
+    }
+
+    countBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        selectedCount = parseInt(btn.dataset.count);
+        countBtns.forEach(b => b.classList.toggle('active', b === btn));
+        renderPlayerInputs(selectedCount);
+      });
+    });
+
+    onLangChange(() => { renderPlayerInputs(selectedCount); translatePage(); });
+    renderPlayerInputs(selectedCount);
+
+    document.getElementById('startBtn').addEventListener('click', () => {
+      playerNames = [];
+      for (let i = 0; i < selectedCount; i++) {
+        const inp = document.getElementById(`pname${i}`);
+        playerNames.push((inp.value.trim() || `${t('defName')} ${i + 1}`));
+      }
+      startNewGame(playerNames);
+    });
+
+    document.getElementById('rulesBtn').addEventListener('click', () => {
+      translatePage();
+      document.getElementById('rulesModal').classList.add('show');
+    });
+
+    // ── Game State ─────────────────────────────────────────────────
+    let gameState = null;
+    let timerInterval = null;
+    let timerSeconds = 7;
+    let timerRemaining = 7;
+    const TURN_TIME = 7;
+
+    function startNewGame(names) {
+      gameState = initGame(names);
+      showTransition(gameState.players[0], true);
+    }
+
+    // ── Transition Screen ─────────────────────────────────────────
+    function showTransition(player, isFirst) {
+      stopTimer();
+      showScreen('transition');
+      const emoji = PLAYER_EMOJIS[player.id] || '🎯';
+      document.querySelector('#screen-transition .transition-emoji').textContent = emoji;
+      document.getElementById('transitionMsg').textContent = 
+        isFirst ? `${player.name} ${t('yourTurn')}` : `${t('passDevice')} ${player.name}!`;
+      document.getElementById('transitionSub').textContent = isFirst ? '' : `${t('yourTurn')} 👊`;
+    }
+
+    document.getElementById('tapBtn').addEventListener('click', () => {
+      showGame();
+    });
+
+    // ── Game Screen ────────────────────────────────────────────────
+    function showGame() {
+      showScreen('game');
+      renderPlayers();
+      renderFragment();
+      startTimer();
+    }
+
+    function renderPlayers() {
+      const row = document.getElementById('playersRow');
+      row.innerHTML = '';
+      gameState.players.forEach((p, i) => {
+        const div = document.createElement('div');
+        div.className = 'player-badge' +
+          (i === gameState.activePlayerIndex ? ' active' : '') +
+          (p.eliminated ? ' eliminated' : '');
+        const hearts = p.eliminated ? '💀' :
+          '❤️'.repeat(p.lives) + '🖤'.repeat(3 - p.lives);
+        div.innerHTML = `
+          <div class="p-name">${PLAYER_EMOJIS[i]} ${p.name}</div>
+          <div class="p-hearts">${hearts}</div>
+        `;
+        row.appendChild(div);
+      });
+
+      const active = gameState.players[gameState.activePlayerIndex];
+      document.getElementById('turnIndicator').textContent =
+        `${PLAYER_EMOJIS[active.id]} ${active.name}`;
+    }
+
+    function renderFragment() {
+      const display = document.getElementById('fragmentDisplay');
+      if (gameState.fragment) {
+        display.textContent = gameState.fragment.toUpperCase();
+        display.style.color = 'var(--accent)';
+      } else {
+        display.innerHTML = `<span class="fragment-empty-hint" data-i18n="addFirstLetter">${t('addFirstLetter')}</span>`;
+      }
+    }
+
+    // ── Timer ─────────────────────────────────────────────────────
+    function startTimer() {
+      timerRemaining = TURN_TIME;
+      updateTimerUI();
+      clearInterval(timerInterval);
+      timerInterval = setInterval(() => {
+        timerRemaining -= 0.1;
+        if (timerRemaining <= 0) {
+          timerRemaining = 0;
+          updateTimerUI();
+          clearInterval(timerInterval);
+          handleTimerExpired();
+        } else {
+          updateTimerUI();
+        }
+      }, 100);
+    }
+
+    function stopTimer() {
+      clearInterval(timerInterval);
+    }
+
+    function updateTimerUI() {
+      const pct = (timerRemaining / TURN_TIME) * 100;
+      const fill = document.getElementById('timerFill');
+      fill.style.width = pct + '%';
+      fill.style.background = pct > 50 ? 'var(--green)' : pct > 25 ? '#ffaa00' : 'var(--red)';
+      document.getElementById('timerText').textContent =
+        Math.ceil(timerRemaining) + t('secLeft');
+    }
+
+    function handleTimerExpired() {
+      stopTimer();
+      const boomIdx = gameState.activePlayerIndex;
+      gameState = {
+        ...gameState,
+        phase: 'boom',
+        boomPlayer: boomIdx,
+        boomReason: 'timer',
+      };
+      showBoom();
+    }
+
+    // ── Keyboard ──────────────────────────────────────────────────
+    const KB_ROWS = [
+      ['Q','W','E','R','T','Y','U','I','O','P'],
+      ['A','S','D','F','G','H','J','K','L'],
+      ['Z','X','C','V','B','N','M','⌫'],
+    ];
+
+    function buildKeyboard() {
+      const kb = document.getElementById('keyboard');
+      kb.innerHTML = '';
+      KB_ROWS.forEach(row => {
+        const rowDiv = document.createElement('div');
+        rowDiv.className = 'kb-row';
+        row.forEach(key => {
+          const btn = document.createElement('button');
+          btn.className = 'kb-key' + (key === '⌫' ? ' kb-delete' : '');
+          btn.textContent = key;
+          btn.dataset.key = key;
+          btn.addEventListener('click', () => handleKey(key));
+          rowDiv.appendChild(btn);
+        });
+        kb.appendChild(rowDiv);
+      });
+    }
+    buildKeyboard();
+
+    function handleKey(key) {
+      if (gameState.phase !== 'playing') return;
+      stopTimer();
+      if (key === '⌫') {
+        // backspace — only if fragment is not empty
+        if (gameState.fragment.length > 0) {
+          gameState = { ...gameState, fragment: gameState.fragment.slice(0, -1) };
+          renderFragment();
+          startTimer();
+        }
+        return;
+      }
+      gameState = addLetter(gameState, key);
+      if (gameState.phase === 'boom') {
+        showBoom();
+      } else {
+        const winner = getWinner(gameState);
+        if (winner) {
+          showGameOver(winner);
+        } else {
+          showTransition(gameState.players[gameState.activePlayerIndex], false);
+        }
+      }
+    }
+
+    // Physical keyboard support
+    document.addEventListener('keydown', e => {
+      if (gameState?.phase !== 'playing') return;
+      const key = e.key.toUpperCase();
+      if (/^[A-Z]$/.test(key)) {
+        const btn = document.querySelector(`.kb-key[data-key="${key}"]`);
+        if (btn) { btn.classList.add('pressed'); setTimeout(() => btn.classList.remove('pressed'), 150); }
+        handleKey(key);
+      } else if (e.key === 'Backspace') {
+        handleKey('⌫');
+      }
+    });
+
+    // ── Challenge ─────────────────────────────────────────────────
+    document.getElementById('challengeBtn').addEventListener('click', () => {
+      if (gameState.phase !== 'playing') return;
+      if (!gameState.fragment) return; // can't challenge on empty fragment
+      stopTimer();
+      gameState = startChallenge(gameState);
+      showChallengeScreen();
+    });
+
+    function showChallengeScreen() {
+      showScreen('challenge');
+      const challenger = gameState.players[gameState.challengerIndex];
+      const challenged = gameState.players[gameState.challengedIndex];
+      document.getElementById('challengeFragment').textContent =
+        gameState.fragment.toUpperCase();
+      document.getElementById('challengePrompt').textContent =
+        `${PLAYER_EMOJIS[challenger.id]} ${challenger.name} → ${PLAYER_EMOJIS[challenged.id]} ${challenged.name}`;
+      document.getElementById('wordInput').value = '';
+      document.getElementById('wordInput').focus();
+      translatePage();
+    }
+
+    document.getElementById('validBtn').addEventListener('click', () => {
+      handleChallengeResult(true);
+    });
+    document.getElementById('invalidBtn').addEventListener('click', () => {
+      handleChallengeResult(false);
+    });
+
+    function handleChallengeResult(isValid) {
+      const word = document.getElementById('wordInput').value.trim().toLowerCase();
+      // Check if word starts with fragment (basic validation)
+      const actuallyValid = isValid && word.startsWith(gameState.fragment.toLowerCase());
+      gameState = resolveChallenge(gameState, word, actuallyValid);
+      const winner = getWinner(gameState);
+      if (winner) {
+        showGameOver(winner);
+      } else {
+        const loserIdx = actuallyValid ? gameState.challengerIndex ?? 
+          (gameState.activePlayerIndex === 0 ? 1 : 0)
+          : gameState.challengedIndex ?? 0;
+        // Just go to next turn transition
+        showTransition(gameState.players[gameState.activePlayerIndex], false);
+      }
+    }
+
+    // ── Boom Screen ────────────────────────────────────────────────
+    function showBoom() {
+      showScreen('boom');
+      stopTimer();
+      const boomPlayer = gameState.players[gameState.boomPlayer];
+      const isBoomWord = gameState.boomReason === 'word';
+
+      document.getElementById('boomWord').textContent =
+        isBoomWord ? gameState.fragment.toUpperCase() : '⏰';
+      document.getElementById('boomMsg').textContent =
+        `${PLAYER_EMOJIS[boomPlayer.id]} ${boomPlayer.name} ${t('boomLives')}`;
+      document.getElementById('boomSub').textContent =
+        isBoomWord ? t('boomWord') : t('boomTimer');
+
+      // Apply boom to calculate new lives
+      const tempState = applyBoom(gameState);
+      const updatedPlayer = tempState.players[gameState.boomPlayer];
+      gameState = tempState;
+
+      if (updatedPlayer.eliminated) {
+        document.getElementById('livesLeft').textContent = t('eliminated');
+      } else {
+        document.getElementById('livesLeft').textContent =
+          '❤️'.repeat(updatedPlayer.lives) + '🖤'.repeat(3 - updatedPlayer.lives);
+      }
+    }
+
+    document.getElementById('boomContinueBtn').addEventListener('click', () => {
+      const winner = getWinner(gameState);
+      if (winner) {
+        showGameOver(winner);
+      } else {
+        showTransition(gameState.players[gameState.activePlayerIndex], false);
+      }
+    });
+
+    // ── Game Over ─────────────────────────────────────────────────
+    function showGameOver(winner) {
+      stopTimer();
+      showScreen('gameover');
+      document.getElementById('winnerName').textContent =
+        `${PLAYER_EMOJIS[winner.id]} ${winner.name}`;
+
+      const scores = document.getElementById('finalScores');
+      scores.innerHTML = '';
+      gameState.players.forEach((p, i) => {
+        const row = document.createElement('div');
+        row.className = 'final-score-row';
+        const hearts = p.eliminated ? '💀 0' : `❤️ ${p.lives}`;
+        row.innerHTML = `<span>${PLAYER_EMOJIS[i]} ${p.name}</span><span>${hearts}</span>`;
+        if (p === winner) row.style.color = 'var(--accent)';
+        scores.appendChild(row);
+      });
+      translatePage();
+    }
+
+    document.getElementById('playAgainBtn').addEventListener('click', () => {
+      startNewGame(gameState.players.map(p => p.name));
+    });
+    document.getElementById('backSetupBtn').addEventListener('click', () => {
+      stopTimer();
+      showScreen('setup');
+    });
+
+    // ── Helpers ────────────────────────────────────────────────────
+    function showScreen(name) {
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      document.getElementById(`screen-${name}`).classList.add('active');
+      translatePage();
+    }
+  </script>
+</body>
+</html>
