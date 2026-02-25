@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Pixel Logic – Daily Game 013</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bg:#0a0a1a;--surface:#151530;--border:#2a2a4a;
+  --accent1:#ff4444;--accent2:#ff8c00;--accent3:#ffd700;
+  --filled:#ff8c00;--marked:#2a2a4a;--cell-bg:#1a1a35;
+  --success:#4caf50;
+}
+body{background:var(--bg);color:#eee;font-family:system-ui,sans-serif;min-height:100vh;display:flex;flex-direction:column;overflow-x:hidden;-webkit-tap-highlight-color:transparent;}
+.back-bar{width:100%;background:var(--bg);padding:0.5rem 1rem;border-bottom:1px solid #333;display:flex;justify-content:space-between;align-items:center;}
+.back-bar a{color:#ffcc00;text-decoration:none;font-size:0.9rem;}
+.back-bar a:hover{text-decoration:underline;}
+.lang-bar{display:flex;gap:0.3rem;}
+.lang-btn{background:none;border:2px solid transparent;border-radius:6px;font-size:1.2rem;cursor:pointer;padding:2px 4px;transition:border-color .2s;}
+.lang-btn.active{border-color:#ffcc00;}
+
+.screen{display:none;flex:1;flex-direction:column;align-items:center;padding:1.5rem;text-align:center;}
+.screen.active{display:flex;}
+
+/* PUZZLE SELECT */
+#select h1{font-size:2.2rem;margin-bottom:0.25rem;background:linear-gradient(135deg,var(--accent1),var(--accent2),var(--accent3));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+#select .tagline{color:#888;font-size:0.9rem;margin-bottom:1.5rem;}
+.puzzle-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:1rem;width:100%;max-width:600px;}
+.puzzle-card{background:var(--surface);border:2px solid var(--border);border-radius:12px;padding:1rem;cursor:pointer;transition:all .2s;text-align:center;}
+.puzzle-card:hover{border-color:#ffcc00;transform:translateY(-2px);}
+.puzzle-card .pz-icon{font-size:2rem;margin-bottom:0.3rem;}
+.puzzle-card .pz-name{font-weight:700;font-size:1rem;margin-bottom:0.2rem;}
+.puzzle-card .pz-size{color:#888;font-size:0.8rem;}
+.puzzle-card .pz-done{color:var(--success);font-size:0.8rem;margin-top:0.3rem;}
+
+/* GAME */
+#game{padding:1rem;justify-content:flex-start;padding-top:1rem;}
+.game-header{display:flex;justify-content:space-between;align-items:center;width:100%;max-width:500px;margin-bottom:0.75rem;}
+.game-title{font-size:1.2rem;font-weight:700;}
+.game-stats{display:flex;gap:1rem;font-size:0.9rem;}
+.stat{display:flex;align-items:center;gap:0.3rem;}
+.stat-icon{font-size:1.1rem;}
+.stat-val{font-weight:700;color:#ffcc00;}
+.btn-back-game{background:none;border:none;color:#ffcc00;cursor:pointer;font-size:0.9rem;padding:0.3rem 0;}
+
+.board-wrapper{position:relative;display:flex;justify-content:center;align-items:flex-start;margin-bottom:1rem;}
+.board-container{display:grid;gap:0;user-select:none;-webkit-user-select:none;}
+
+/* Clue cells */
+.clue-cell{display:flex;align-items:center;justify-content:center;font-size:0.7rem;font-weight:600;color:#aaa;padding:1px;line-height:1.1;}
+.clue-cell.row-clue{justify-content:flex-end;padding-right:4px;flex-direction:row;gap:3px;}
+.clue-cell.col-clue{flex-direction:column;justify-content:flex-end;padding-bottom:3px;gap:1px;}
+.clue-cell .done{color:#555;text-decoration:line-through;}
+
+/* Grid cells */
+.grid-cell{background:var(--cell-bg);border:1px solid var(--border);cursor:pointer;position:relative;transition:background .1s;}
+.grid-cell:hover{background:#252545;}
+.grid-cell.filled{background:var(--filled);border-color:var(--filled);}
+.grid-cell.marked::after{content:'✕';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#666;font-weight:900;font-size:0.7em;}
+.grid-cell.mistake{background:#ff4444;border-color:#ff4444;animation:shake .3s;}
+.grid-cell.row-start{border-left:2px solid #555;}
+.grid-cell.col-start{border-top:2px solid #555;}
+
+/* Thicker lines every 5 */
+.grid-cell.thick-left{border-left:2px solid #666;}
+.grid-cell.thick-top{border-top:2px solid #666;}
+
+.mode-toggle{display:flex;gap:0.5rem;margin-bottom:0.5rem;}
+.mode-btn{padding:0.4rem 1rem;border:2px solid var(--border);background:var(--surface);color:#eee;border-radius:8px;cursor:pointer;font-size:0.9rem;transition:all .2s;}
+.mode-btn.active{border-color:#ffcc00;color:#ffcc00;}
+
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-3px)}75%{transform:translateX(3px)}}
+
+/* SUCCESS OVERLAY */
+.success-overlay{position:fixed;inset:0;background:rgba(10,10,26,0.92);display:none;flex-direction:column;align-items:center;justify-content:center;z-index:100;gap:1rem;padding:2rem;}
+.success-overlay.active{display:flex;}
+.success-overlay h2{font-size:2rem;background:linear-gradient(135deg,var(--success),#00bcd4);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.success-overlay .result-icon{font-size:4rem;animation:bounce 1.5s infinite;}
+.success-stats{display:flex;gap:2rem;font-size:1.1rem;}
+.success-stats .label{color:#888;font-size:0.8rem;}
+.success-stats .value{font-size:1.5rem;font-weight:700;color:#ffcc00;}
+.btn-primary{padding:0.75rem 2.5rem;background:linear-gradient(135deg,var(--accent1),var(--accent2));border:none;color:#fff;font-size:1.1rem;font-weight:700;border-radius:12px;cursor:pointer;transition:transform .15s;}
+.btn-primary:hover{transform:scale(1.05);}
+
+/* Mini preview in puzzle card */
+.mini-grid{display:inline-grid;gap:1px;margin:0.3rem auto;}
+.mini-cell{width:4px;height:4px;border-radius:1px;}
+.mini-cell.on{background:var(--filled);}
+.mini-cell.off{background:var(--border);}
+
+@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+@media(max-width:400px){
+  .clue-cell{font-size:0.6rem;}
+  #select h1{font-size:1.6rem;}
+}
+</style>
+</head>
+<body>
+<div class="back-bar">
+  <a href="/" data-i18n="back">← Zurück zu den Spielen</a>
+  <div class="lang-bar" id="langBar"></div>
+</div>
+
+<div class="screen active" id="select">
+  <h1>🧩 Pixel Logic</h1>
+  <p class="tagline" data-i18n="tagline">Fülle das Raster nach den Zahlenhinweisen</p>
+  <div class="puzzle-grid" id="puzzleGrid"></div>
+</div>
+
+<div class="screen" id="game">
+  <div class="game-header">
+    <div>
+      <button class="btn-back-game" id="btnBackSelect" data-i18n="backToPuzzles">← Rätsel</button>
+      <span class="game-title" id="gameTitle"></span>
+    </div>
+    <div class="game-stats">
+      <div class="stat"><span class="stat-icon">⏱</span><span class="stat-val" id="timer">00:00</span></div>
+      <div class="stat"><span class="stat-icon">❌</span><span class="stat-val" id="mistakes">0</span></div>
+    </div>
+  </div>
+  <div class="mode-toggle">
+    <button class="mode-btn active" id="modeFill" data-i18n="fill">Füllen</button>
+    <button class="mode-btn" id="modeMark" data-i18n="mark">Markieren ✕</button>
+  </div>
+  <div class="board-wrapper">
+    <div class="board-container" id="board"></div>
+  </div>
+</div>
+
+<div class="success-overlay" id="successOverlay">
+  <div class="result-icon">🎉</div>
+  <h2 data-i18n="solved">Gelöst!</h2>
+  <div class="success-stats">
+    <div><div class="label" data-i18n="time">Zeit</div><div class="value" id="finalTime">00:00</div></div>
+    <div><div class="label" data-i18n="mistakes">Fehler</div><div class="value" id="finalMistakes">0</div></div>
+  </div>
+  <button class="btn-primary" id="btnNext" data-i18n="nextPuzzle">Nächstes Rätsel</button>
+</div>
+
+<script src="/shared/i18n.js"></script>
+<script type="module">
+import { deriveClues, isSolved, countMistakes } from './logic.js';
+
+// ===== PUZZLES =====
+const PUZZLES = [
+  { id:'heart', name:{de:'Herz',en:'Heart',it:'Cuore',es:'Corazón',fr:'Cœur'}, size:5, solution:[
+    [0,1,0,1,0],
+    [1,1,1,1,1],
+    [1,1,1,1,1],
+    [0,1,1,1,0],
+    [0,0,1,0,0]
+  ]},
+  { id:'star', name:{de:'Stern',en:'Star',it:'Stella',es:'Estrella',fr:'Étoile'}, size:5, solution:[
+    [0,0,1,0,0],
+    [0,1,1,1,0],
+    [1,1,1,1,1],
+    [0,1,0,1,0],
+    [0,1,0,1,0]
+  ]},
+  { id:'arrow', name:{de:'Pfeil',en:'Arrow',it:'Freccia',es:'Flecha',fr:'Flèche'}, size:5, solution:[
+    [0,0,1,0,0],
+    [0,1,1,0,0],
+    [1,1,1,1,1],
+    [0,1,1,0,0],
+    [0,0,1,0,0]
+  ]},
+  { id:'house', name:{de:'Haus',en:'House',it:'Casa',es:'Casa',fr:'Maison'}, size:7, solution:[
+    [0,0,0,1,0,0,0],
+    [0,0,1,1,1,0,0],
+    [0,1,1,1,1,1,0],
+    [1,1,1,1,1,1,1],
+    [1,1,0,1,0,1,1],
+    [1,1,0,1,0,1,1],
+    [1,1,1,1,1,1,1]
+  ]},
+  { id:'smiley', name:{de:'Smiley',en:'Smiley',it:'Faccina',es:'Carita',fr:'Smiley'}, size:7, solution:[
+    [0,0,1,1,1,0,0],
+    [0,1,0,0,0,1,0],
+    [1,0,1,0,1,0,1],
+    [1,0,0,0,0,0,1],
+    [1,0,1,0,1,0,1],
+    [0,1,0,1,0,1,0],
+    [0,0,1,1,1,0,0]
+  ]},
+  { id:'cup', name:{de:'Tasse',en:'Cup',it:'Tazza',es:'Taza',fr:'Tasse'}, size:7, solution:[
+    [0,1,1,1,1,1,0],
+    [0,1,1,1,1,1,0],
+    [0,1,1,1,1,1,1],
+    [0,1,1,1,1,1,1],
+    [0,1,1,1,1,1,0],
+    [0,0,1,1,1,0,0],
+    [0,1,1,1,1,1,0]
+  ]},
+  { id:'anchor', name:{de:'Anker',en:'Anchor',it:'Ancora',es:'Ancla',fr:'Ancre'}, size:10, solution:[
+    [0,0,0,0,1,1,0,0,0,0],
+    [0,0,0,0,1,1,0,0,0,0],
+    [0,0,0,1,1,1,1,0,0,0],
+    [0,0,0,0,1,1,0,0,0,0],
+    [0,0,0,0,1,1,0,0,0,0],
+    [1,1,0,0,1,1,0,0,1,1],
+    [1,1,1,0,1,1,0,1,1,1],
+    [0,1,1,1,1,1,1,1,1,0],
+    [0,0,1,1,1,1,1,1,0,0],
+    [0,0,0,1,1,1,1,0,0,0]
+  ]}
+].map(p => ({...p, solution: p.solution.map(r => r.map(Boolean))}));
+
+// ===== I18N =====
+const TRANSLATIONS = {
+  de: { back:'← Zurück zu den Spielen', tagline:'Fülle das Raster nach den Zahlenhinweisen', backToPuzzles:'← Rätsel', fill:'Füllen', mark:'Markieren ✕', solved:'Gelöst!', time:'Zeit', mistakes:'Fehler', nextPuzzle:'Nächstes Rätsel' },
+  en: { back:'← Back to Games', tagline:'Fill the grid using the number clues', backToPuzzles:'← Puzzles', fill:'Fill', mark:'Mark ✕', solved:'Solved!', time:'Time', mistakes:'Mistakes', nextPuzzle:'Next Puzzle' },
+  it: { back:'← Torna ai Giochi', tagline:'Riempi la griglia seguendo gli indizi numerici', backToPuzzles:'← Puzzle', fill:'Riempi', mark:'Segna ✕', solved:'Risolto!', time:'Tempo', mistakes:'Errori', nextPuzzle:'Prossimo Puzzle' },
+  es: { back:'← Volver a los Juegos', tagline:'Rellena la cuadrícula con las pistas numéricas', backToPuzzles:'← Puzzles', fill:'Rellenar', mark:'Marcar ✕', solved:'¡Resuelto!', time:'Tiempo', mistakes:'Errores', nextPuzzle:'Siguiente Puzzle' },
+  fr: { back:'← Retour aux Jeux', tagline:'Remplissez la grille avec les indices numériques', backToPuzzles:'← Puzzles', fill:'Remplir', mark:'Marquer ✕', solved:'Résolu !', time:'Temps', mistakes:'Erreurs', nextPuzzle:'Puzzle suivant' }
+};
+const { t, lang, onLangChange } = initI18n(TRANSLATIONS);
+
+// ===== STATE =====
+let currentPuzzle = null;
+let userGrid = [];
+let mode = 'fill'; // 'fill' or 'mark'
+let timerInterval = null;
+let startTime = 0;
+let mistakeCount = 0;
+let solved = false;
+let isPointerDown = false;
+let pointerAction = null; // 'fill', 'unfill', 'mark', 'unmark'
+
+const $ = s => document.querySelector(s);
+const $$ = s => document.querySelectorAll(s);
+
+// ===== SCREENS =====
+function showScreen(id) {
+  $$('.screen').forEach(s => s.classList.remove('active'));
+  $(`#${id}`).classList.add('active');
+}
+
+// ===== PUZZLE SELECT =====
+function renderPuzzleSelect() {
+  const grid = $('#puzzleGrid');
+  grid.innerHTML = '';
+  PUZZLES.forEach((p, i) => {
+    const card = document.createElement('div');
+    card.className = 'puzzle-card';
+    const n = p.name[lang()] || p.name.en;
+    // Mini preview
+    let miniHTML = `<div class="mini-grid" style="grid-template-columns:repeat(${p.size},5px);">`;
+    p.solution.forEach(row => row.forEach(cell => {
+      miniHTML += `<div class="mini-cell ${cell ? 'on' : 'off'}"></div>`;
+    }));
+    miniHTML += '</div>';
+    const done = localStorage.getItem(`pl-done-${p.id}`) ? `<div class="pz-done">✓</div>` : '';
+    card.innerHTML = `<div class="pz-icon">${miniHTML}</div><div class="pz-name">${n}</div><div class="pz-size">${p.size}×${p.size}</div>${done}`;
+    card.onclick = () => startPuzzle(i);
+    grid.appendChild(card);
+  });
+}
+
+// ===== GAME =====
+function startPuzzle(index) {
+  currentPuzzle = PUZZLES[index];
+  const sz = currentPuzzle.size;
+  userGrid = Array.from({length:sz}, () => Array(sz).fill(null)); // null=empty, true=filled, 'x'=marked
+  mistakeCount = 0;
+  solved = false;
+  mode = 'fill';
+  $('#modeFill').classList.add('active');
+  $('#modeMark').classList.remove('active');
+  $('#mistakes').textContent = '0';
+  $('#successOverlay').classList.remove('active');
+  
+  const n = currentPuzzle.name[lang()] || currentPuzzle.name.en;
+  $('#gameTitle').textContent = n;
+  
+  renderBoard();
+  showScreen('game');
+  startTimer();
+}
+
+function renderBoard() {
+  const p = currentPuzzle;
+  const { rowClues, colClues } = deriveClues(p.solution);
+  const sz = p.size;
+  
+  // Max clue lengths for sizing
+  const maxRowClue = Math.max(...rowClues.map(c => c.length));
+  const maxColClue = Math.max(...colClues.map(c => c.length));
+  
+  // Cell size based on grid size and viewport
+  const maxBoardWidth = Math.min(window.innerWidth - 32, 480);
+  const cellSize = Math.min(Math.floor((maxBoardWidth) / (sz + maxRowClue)), sz <= 5 ? 48 : sz <= 7 ? 38 : 30);
+  
+  const board = $('#board');
+  const totalCols = maxRowClue + sz;
+  const totalRows = maxColClue + sz;
+  board.style.gridTemplateColumns = `repeat(${maxRowClue}, ${cellSize}px) repeat(${sz}, ${cellSize}px)`;
+  board.style.gridTemplateRows = `repeat(${maxColClue}, ${cellSize}px) repeat(${sz}, ${cellSize}px)`;
+  board.innerHTML = '';
+  
+  // Top-left empty corner
+  for (let r = 0; r < maxColClue; r++) {
+    for (let c = 0; c < maxRowClue; c++) {
+      const cell = document.createElement('div');
+      cell.className = 'clue-cell';
+      board.appendChild(cell);
+    }
+    // Column clues
+    for (let c = 0; c < sz; c++) {
+      const cell = document.createElement('div');
+      cell.className = 'clue-cell col-clue';
+      cell.style.fontSize = `${Math.max(cellSize * 0.35, 9)}px`;
+      const clue = colClues[c];
+      const offset = maxColClue - clue.length;
+      if (r >= offset) {
+        const val = clue[r - offset];
+        const span = document.createElement('span');
+        span.textContent = val;
+        span.dataset.col = c;
+        span.dataset.clueIdx = r - offset;
+        cell.appendChild(span);
+      }
+      board.appendChild(cell);
+    }
+  }
+  
+  // Row clues + grid cells
+  for (let r = 0; r < sz; r++) {
+    const clue = rowClues[r];
+    const offset = maxRowClue - clue.length;
+    for (let c = 0; c < maxRowClue; c++) {
+      const cell = document.createElement('div');
+      cell.className = 'clue-cell row-clue';
+      cell.style.fontSize = `${Math.max(cellSize * 0.35, 9)}px`;
+      if (c >= offset) {
+        const span = document.createElement('span');
+        span.textContent = clue[c - offset];
+        span.dataset.row = r;
+        span.dataset.clueIdx = c - offset;
+        cell.appendChild(span);
+      }
+      board.appendChild(cell);
+    }
+    for (let c = 0; c < sz; c++) {
+      const cell = document.createElement('div');
+      cell.className = 'grid-cell';
+      cell.dataset.r = r;
+      cell.dataset.c = c;
+      cell.style.width = cellSize + 'px';
+      cell.style.height = cellSize + 'px';
+      if (c % 5 === 0 && c > 0) cell.classList.add('thick-left');
+      if (r % 5 === 0 && r > 0) cell.classList.add('thick-top');
+      // Pointer events
+      cell.addEventListener('pointerdown', onCellPointerDown);
+      cell.addEventListener('pointerenter', onCellPointerEnter);
+      cell.addEventListener('contextmenu', e => e.preventDefault());
+      board.appendChild(cell);
+    }
+  }
+  
+  updateCellClasses();
+  updateClueHighlights();
+}
+
+function onCellPointerDown(e) {
+  e.preventDefault();
+  if (solved) return;
+  isPointerDown = true;
+  const r = +e.target.dataset.r, c = +e.target.dataset.c;
+  const isRightClick = e.button === 2;
+  const effectiveMode = isRightClick ? 'mark' : mode;
+  
+  if (effectiveMode === 'fill') {
+    pointerAction = userGrid[r][c] === true ? 'unfill' : 'fill';
+  } else {
+    pointerAction = userGrid[r][c] === 'x' ? 'unmark' : 'mark';
+  }
+  applyAction(r, c);
+  e.target.releasePointerCapture(e.pointerId);
+}
+
+function onCellPointerEnter(e) {
+  if (!isPointerDown || solved) return;
+  const r = +e.target.dataset.r, c = +e.target.dataset.c;
+  applyAction(r, c);
+}
+
+document.addEventListener('pointerup', () => { isPointerDown = false; pointerAction = null; });
+
+function applyAction(r, c) {
+  const prev = userGrid[r][c];
+  if (pointerAction === 'fill') {
+    if (prev === true) return;
+    userGrid[r][c] = true;
+    // Check if this is a mistake
+    if (!currentPuzzle.solution[r][c]) {
+      mistakeCount++;
+      $('#mistakes').textContent = mistakeCount;
+      const cell = $(`.grid-cell[data-r="${r}"][data-c="${c}"]`);
+      cell.classList.add('mistake');
+      setTimeout(() => {
+        userGrid[r][c] = null;
+        cell.classList.remove('mistake','filled');
+        updateClueHighlights();
+      }, 500);
+      return;
+    }
+  } else if (pointerAction === 'unfill') {
+    if (prev !== true) return;
+    userGrid[r][c] = null;
+  } else if (pointerAction === 'mark') {
+    if (prev === 'x') return;
+    if (prev === true) return; // don't mark filled cells
+    userGrid[r][c] = 'x';
+  } else if (pointerAction === 'unmark') {
+    if (prev !== 'x') return;
+    userGrid[r][c] = null;
+  }
+  
+  updateCellClasses();
+  updateClueHighlights();
+  
+  // Check win
+  const boolGrid = userGrid.map(row => row.map(c => c === true));
+  if (isSolved(boolGrid, currentPuzzle.solution)) {
+    solved = true;
+    clearInterval(timerInterval);
+    localStorage.setItem(`pl-done-${currentPuzzle.id}`, '1');
+    setTimeout(() => showSuccess(), 300);
+  }
+}
+
+function updateCellClasses() {
+  const sz = currentPuzzle.size;
+  for (let r = 0; r < sz; r++) {
+    for (let c = 0; c < sz; c++) {
+      const cell = $(`.grid-cell[data-r="${r}"][data-c="${c}"]`);
+      if (!cell) continue;
+      cell.classList.toggle('filled', userGrid[r][c] === true);
+      cell.classList.toggle('marked', userGrid[r][c] === 'x');
+    }
+  }
+}
+
+function updateClueHighlights() {
+  const { rowClues, colClues } = deriveClues(currentPuzzle.solution);
+  const sz = currentPuzzle.size;
+  
+  // Check each row
+  for (let r = 0; r < sz; r++) {
+    const userLine = userGrid[r].map(c => c === true);
+    const userGroups = computeUserGroups(userLine);
+    const clue = rowClues[r];
+    const spans = document.querySelectorAll(`.row-clue span[data-row="${r}"]`);
+    spans.forEach(s => {
+      const idx = +s.dataset.clueIdx;
+      s.classList.toggle('done', isClueGroupDone(clue, userGroups, idx));
+    });
+  }
+  // Check each column
+  for (let c = 0; c < sz; c++) {
+    const userLine = [];
+    for (let r = 0; r < sz; r++) userLine.push(userGrid[r][c] === true);
+    const userGroups = computeUserGroups(userLine);
+    const clue = colClues[c];
+    const spans = document.querySelectorAll(`.col-clue span[data-col="${c}"]`);
+    spans.forEach(s => {
+      const idx = +s.dataset.clueIdx;
+      s.classList.toggle('done', isClueGroupDone(clue, userGroups, idx));
+    });
+  }
+}
+
+function computeUserGroups(line) {
+  const groups = [];
+  let count = 0;
+  for (const cell of line) {
+    if (cell) count++;
+    else { if (count > 0) groups.push(count); count = 0; }
+  }
+  if (count > 0) groups.push(count);
+  return groups;
+}
+
+function isClueGroupDone(clue, userGroups, idx) {
+  // Simple: if user groups match clue groups up to this point
+  if (userGroups.length < idx + 1) return false;
+  // All groups must match for line to be complete
+  if (userGroups.length !== clue.length) return false;
+  for (let i = 0; i < clue.length; i++) {
+    if (userGroups[i] !== clue[i]) return false;
+  }
+  return true;
+}
+
+// ===== TIMER =====
+function startTimer() {
+  clearInterval(timerInterval);
+  startTime = Date.now();
+  timerInterval = setInterval(() => {
+    const elapsed = Math.floor((Date.now() - startTime) / 1000);
+    const m = String(Math.floor(elapsed / 60)).padStart(2, '0');
+    const s = String(elapsed % 60).padStart(2, '0');
+    $('#timer').textContent = `${m}:${s}`;
+  }, 200);
+}
+
+// ===== SUCCESS =====
+function showSuccess() {
+  const elapsed = Math.floor((Date.now() - startTime) / 1000);
+  const m = String(Math.floor(elapsed / 60)).padStart(2, '0');
+  const s = String(elapsed % 60).padStart(2, '0');
+  $('#finalTime').textContent = `${m}:${s}`;
+  $('#finalMistakes').textContent = mistakeCount;
+  $('#successOverlay').classList.add('active');
+}
+
+// ===== MODE TOGGLE =====
+$('#modeFill').onclick = () => { mode='fill'; $('#modeFill').classList.add('active'); $('#modeMark').classList.remove('active'); };
+$('#modeMark').onclick = () => { mode='mark'; $('#modeMark').classList.add('active'); $('#modeFill').classList.remove('active'); };
+
+// ===== NAVIGATION =====
+$('#btnBackSelect').onclick = () => { clearInterval(timerInterval); showScreen('select'); renderPuzzleSelect(); };
+$('#btnNext').onclick = () => {
+  $('#successOverlay').classList.remove('active');
+  const idx = PUZZLES.indexOf(currentPuzzle);
+  const next = (idx + 1) % PUZZLES.length;
+  startPuzzle(next);
+};
+
+// ===== LONG PRESS FOR MARK (mobile) =====
+let longPressTimer = null;
+document.addEventListener('touchstart', e => {
+  if (!e.target.classList.contains('grid-cell')) return;
+  longPressTimer = setTimeout(() => {
+    mode = 'mark';
+    $('#modeMark').classList.add('active');
+    $('#modeFill').classList.remove('active');
+  }, 400);
+}, {passive:true});
+document.addEventListener('touchend', () => { clearTimeout(longPressTimer); }, {passive:true});
+document.addEventListener('touchmove', () => { clearTimeout(longPressTimer); }, {passive:true});
+
+// ===== INIT =====
+onLangChange(() => { renderPuzzleSelect(); if(currentPuzzle) { const n = currentPuzzle.name[lang()]||currentPuzzle.name.en; $('#gameTitle').textContent = n; }});
+renderPuzzleSelect();
+
+// Resize handler
+window.addEventListener('resize', () => { if(currentPuzzle && !solved) renderBoard(); });
+</script>
+</body>
+</html>

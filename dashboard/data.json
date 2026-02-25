@@ -1,6 +1,20 @@
 {
   "games": [
     {
+      "id": "day-013-pixel-logic",
+      "name": "Pixel Logic",
+      "description": "Nonogram-Rätsel! Fülle das Raster anhand der Zahlenhinweise und enthülle versteckte Pixelbilder. 7 Rätsel von einfach bis knifflig.",
+      "date": "2026-02-25",
+      "tags": [
+        "puzzle",
+        "brain-teaser",
+        "single-player"
+      ],
+      "howToPlay": "Die Zahlen an den Rändern verraten, wie viele Zellen in jeder Reihe/Spalte gefüllt sind. Klicke zum Füllen, Rechtsklick zum Markieren.",
+      "whyFun": "Logisches Denken trifft Pixel-Art. Jedes gelöste Rätsel enthüllt ein kleines Bild — wie Malen nach Zahlen, nur mit Köpfchen.",
+      "ratings": []
+    },
+    {
       "id": "day-010-type-blitz",
       "name": "Type Blitz ⚡",
       "name_de": "Tipp-Blitz ⚡",
