@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Laser Maze</title>
+<script src="/shared/i18n.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  .back-bar {
+    width: 100%;
+    background: #0a0a1a;
+    padding: 0.5rem 1rem;
+    border-bottom: 1px solid #333;
+  }
+  .back-bar a {
+    color: #ffcc00;
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-family: system-ui, sans-serif;
+  }
+  .back-bar a:hover { text-decoration: underline; }
+
+  body {
+    background: #05050f;
+    color: #e0e0ff;
+    font-family: system-ui, -apple-system, sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  #game-container {
+    width: 100%;
+    max-width: 520px;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  /* Header */
+  .game-title {
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: #ff4444;
+    text-shadow: 0 0 20px #ff000088;
+    letter-spacing: 2px;
+  }
+
+  /* Level bar */
+  .level-bar {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    font-size: 0.9rem;
+    color: #aaa;
+  }
+  .level-dots {
+    display: flex;
+    gap: 4px;
+  }
+  .level-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: #333;
+    border: 1px solid #555;
+    transition: all 0.3s;
+  }
+  .level-dot.done { background: #00ff88; border-color: #00ff88; }
+  .level-dot.active { background: #ff4444; border-color: #ff4444; box-shadow: 0 0 6px #ff4444; }
+
+  /* Mirror info */
+  .mirror-info {
+    display: flex;
+    gap: 1rem;
+    font-size: 0.85rem;
+    color: #ccc;
+  }
+  .mirror-count {
+    background: #1a1a2e;
+    border: 1px solid #333;
+    border-radius: 6px;
+    padding: 0.3rem 0.7rem;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .mirror-count .mc-num {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #ffcc00;
+  }
+
+  /* Grid canvas wrapper */
+  #canvas-wrapper {
+    position: relative;
+    touch-action: none;
+  }
+
+  canvas {
+    display: block;
+    border-radius: 8px;
+    cursor: pointer;
+    border: 2px solid #222;
+  }
+
+  /* Controls */
+  .controls {
+    display: flex;
+    gap: 0.75rem;
+  }
+  .btn {
+    background: #1a1a2e;
+    border: 1px solid #444;
+    color: #e0e0ff;
+    padding: 0.5rem 1.1rem;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn:hover { background: #252540; border-color: #666; }
+  .btn:active { transform: scale(0.97); }
+  .btn-danger { border-color: #cc3333; color: #ff6666; }
+  .btn-danger:hover { background: #2a0a0a; }
+
+  /* Instructions */
+  .instructions {
+    font-size: 0.8rem;
+    color: #888;
+    text-align: center;
+    max-width: 400px;
+    line-height: 1.4;
+  }
+
+  /* Modal overlay */
+  .modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.85);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal.active { display: flex; }
+  .modal-box {
+    background: #0e0e2a;
+    border: 2px solid #ff4444;
+    border-radius: 12px;
+    padding: 2rem;
+    max-width: 340px;
+    width: 90%;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+  .modal-box h2 { font-size: 1.5rem; color: #ff4444; }
+  .modal-box p { color: #aaa; font-size: 0.9rem; line-height: 1.5; }
+  .modal-box .big-emoji { font-size: 3rem; }
+
+  /* Win modal */
+  .win-modal .modal-box {
+    border-color: #00ff88;
+  }
+  .win-modal .modal-box h2 { color: #00ff88; }
+
+  /* Game complete */
+  .complete-modal .modal-box {
+    border-color: #ffcc00;
+  }
+  .complete-modal .modal-box h2 { color: #ffcc00; }
+</style>
+</head>
+<body>
+<div class="back-bar"><a href="/">← <span data-i18n="back">Zurück</span></a></div>
+
+<div id="game-container">
+  <div class="game-title">⚡ LASER MAZE</div>
+
+  <div class="level-bar">
+    <span data-i18n="level">Level</span>
+    <div class="level-dots" id="level-dots"></div>
+  </div>
+
+  <div class="mirror-info">
+    <div class="mirror-count">
+      <span>🪞</span>
+      <span class="mc-num" id="mirrors-left">0</span>
+      <span data-i18n="mirrorsLeft">übrig</span>
+    </div>
+    <div class="mirror-count" style="gap:8px;">
+      <span style="font-size:1rem;opacity:0.7;">click = /</span>
+      <span style="font-size:1rem;opacity:0.7;">2× = \</span>
+      <span style="font-size:1rem;opacity:0.7;">3× = ✕</span>
+    </div>
+  </div>
+
+  <div id="canvas-wrapper">
+    <canvas id="grid-canvas"></canvas>
+  </div>
+
+  <div class="controls">
+    <button class="btn btn-danger" id="btn-clear" data-i18n="clearAll">Alles löschen</button>
+    <button class="btn" id="btn-hint" data-i18n="hint">💡 Hinweis</button>
+  </div>
+
+  <div class="instructions" data-i18n="instructions">
+    Klicke auf eine leere Zelle um einen Spiegel zu setzen. Leite den Laserstrahl zu allen Zielen!
+  </div>
+</div>
+
+<!-- Start Modal -->
+<div class="modal active" id="start-modal">
+  <div class="modal-box">
+    <div class="big-emoji">⚡</div>
+    <h2>LASER MAZE</h2>
+    <p data-i18n="startDesc">Platziere Spiegel, um den Laserstrahl zu den leuchtenden Zielen zu lenken. Klicken = /, nochmal = \, 3× = entfernen.</p>
+    <button class="btn" id="btn-start" data-i18n="startBtn" style="font-size:1.1rem;padding:0.7rem 2rem;">SPIELEN</button>
+  </div>
+</div>
+
+<!-- Level Win Modal -->
+<div class="modal win-modal" id="win-modal">
+  <div class="modal-box">
+    <div class="big-emoji">✅</div>
+    <h2 data-i18n="levelClear">Level geschafft!</h2>
+    <p id="win-msg"></p>
+    <button class="btn" id="btn-next" style="font-size:1rem;padding:0.6rem 1.5rem;" data-i18n="nextLevel">Nächstes Level →</button>
+  </div>
+</div>
+
+<!-- Game Complete Modal -->
+<div class="modal complete-modal" id="complete-modal">
+  <div class="modal-box">
+    <div class="big-emoji">🏆</div>
+    <h2 data-i18n="allClear">Alle Level gelöst!</h2>
+    <p data-i18n="allClearDesc">Beeindruckend! Du hast alle 5 Laser-Rätsel geknackt. Licht am Ende des Tunnels!</p>
+    <button class="btn" id="btn-restart" style="font-size:1rem;padding:0.6rem 1.5rem;" data-i18n="playAgain">Nochmal spielen</button>
+  </div>
+</div>
+
+<script type="module">
+import { reflect, step, traceLaser, checkWin, LEVELS } from './game-logic.js';
+
+// ─── i18n ─────────────────────────────────────────────────────────────────────
+const TRANSLATIONS = {
+  de: {
+    back: 'Zurück',
+    level: 'Level',
+    mirrorsLeft: 'übrig',
+    clearAll: 'Alles löschen',
+    hint: '💡 Hinweis',
+    instructions: 'Klicke auf eine leere Zelle um einen Spiegel zu setzen. Leite den Laserstrahl zu allen Zielen!',
+    startDesc: 'Platziere Spiegel, um den Laserstrahl zu den leuchtenden Zielen zu lenken. Klicken = /, nochmal = \\, 3× = entfernen.',
+    startBtn: 'SPIELEN',
+    levelClear: 'Level geschafft! 🎉',
+    nextLevel: 'Nächstes Level →',
+    allClear: 'Alle Level gelöst! 🏆',
+    allClearDesc: 'Beeindruckend! Du hast alle 5 Laser-Rätsel geknackt.',
+    playAgain: 'Nochmal spielen',
+    winMirrorsUsed: 'Spiegel verwendet',
+    hintMsg: 'Tipp: Versuche den Strahl zuerst in Richtung des nächsten Ziels zu lenken.',
+  },
+  en: {
+    back: 'Back',
+    level: 'Level',
+    mirrorsLeft: 'left',
+    clearAll: 'Clear all',
+    hint: '💡 Hint',
+    instructions: 'Click an empty cell to place a mirror. Guide the laser to all targets!',
+    startDesc: 'Place mirrors to redirect the laser beam to the glowing targets. Click = /, again = \\, 3× = remove.',
+    startBtn: 'PLAY',
+    levelClear: 'Level cleared! 🎉',
+    nextLevel: 'Next level →',
+    allClear: 'All levels solved! 🏆',
+    allClearDesc: 'Impressive! You cracked all 5 laser puzzles.',
+    playAgain: 'Play again',
+    winMirrorsUsed: 'mirrors used',
+    hintMsg: 'Tip: Try to route the beam towards the nearest target first.',
+  },
+  fr: {
+    back: 'Retour',
+    level: 'Niveau',
+    mirrorsLeft: 'restants',
+    clearAll: 'Tout effacer',
+    hint: '💡 Indice',
+    instructions: 'Clique sur une cellule vide pour poser un miroir. Guide le laser vers toutes les cibles !',
+    startDesc: 'Place des miroirs pour rediriger le rayon laser vers les cibles. Clic = /, encore = \\, 3× = supprimer.',
+    startBtn: 'JOUER',
+    levelClear: 'Niveau réussi ! 🎉',
+    nextLevel: 'Niveau suivant →',
+    allClear: 'Tous les niveaux résolus ! 🏆',
+    allClearDesc: 'Impressionnant ! Tu as résolu les 5 puzzles laser.',
+    playAgain: 'Rejouer',
+    winMirrorsUsed: 'miroirs utilisés',
+    hintMsg: 'Conseil : Essaie de diriger le rayon vers la cible la plus proche.',
+  },
+  it: {
+    back: 'Indietro',
+    level: 'Livello',
+    mirrorsLeft: 'rimasti',
+    clearAll: 'Cancella tutto',
+    hint: '💡 Suggerimento',
+    instructions: 'Clicca su una cella vuota per posizionare uno specchio. Guida il laser verso tutti i bersagli!',
+    startDesc: 'Posiziona specchi per reindirizzare il raggio laser verso i bersagli. Clic = /, ancora = \\, 3× = rimuovi.',
+    startBtn: 'GIOCA',
+    levelClear: 'Livello completato! 🎉',
+    nextLevel: 'Livello successivo →',
+    allClear: 'Tutti i livelli risolti! 🏆',
+    allClearDesc: 'Impressionante! Hai risolto tutti e 5 i puzzle laser.',
+    playAgain: 'Rigioca',
+    winMirrorsUsed: 'specchi usati',
+    hintMsg: 'Suggerimento: Prova a dirigere il raggio verso il bersaglio più vicino.',
+  },
+  es: {
+    back: 'Volver',
+    level: 'Nivel',
+    mirrorsLeft: 'restantes',
+    clearAll: 'Borrar todo',
+    hint: '💡 Pista',
+    instructions: '¡Haz clic en una celda vacía para colocar un espejo. ¡Guía el láser hacia todos los objetivos!',
+    startDesc: 'Coloca espejos para redirigir el rayo láser hacia los objetivos. Clic = /, otra vez = \\, 3× = eliminar.',
+    startBtn: 'JUGAR',
+    levelClear: '¡Nivel superado! 🎉',
+    nextLevel: 'Siguiente nivel →',
+    allClear: '¡Todos los niveles resueltos! 🏆',
+    allClearDesc: '¡Impresionante! Resolviste los 5 puzzles de láser.',
+    playAgain: 'Jugar de nuevo',
+    winMirrorsUsed: 'espejos usados',
+    hintMsg: 'Consejo: Intenta dirigir el rayo hacia el objetivo más cercano primero.',
+  },
+};
+const { t, translatePage } = initI18n(TRANSLATIONS);
+
+// ─── State ────────────────────────────────────────────────────────────────────
+let currentLevel = 0;
+let placedMirrors = new Map(); // "row,col" → '/' | '\'
+let laserPath = [];
+let hitTargets = new Set();
+let animFrame = 0;
+
+// ─── Canvas setup ─────────────────────────────────────────────────────────────
+const canvas = document.getElementById('grid-canvas');
+const ctx = canvas.getContext('2d');
+
+const CELL = 54; // cell size in pixels
+const PAD = 18;  // padding around grid for source arrow
+
+function canvasSize(n) { return n * CELL + PAD * 2; }
+
+function setupCanvas(n) {
+  const size = canvasSize(n);
+  canvas.width = size;
+  canvas.height = size;
+  canvas.style.width = Math.min(size, window.innerWidth - 32) + 'px';
+  canvas.style.height = 'auto';
+}
+
+// ─── Draw helpers ──────────────────────────────────────────────────────────────
+function cellX(col) { return PAD + col * CELL; }
+function cellY(row) { return PAD + row * CELL; }
+function cellCX(col) { return cellX(col) + CELL / 2; }
+function cellCY(row) { return cellY(row) + CELL / 2; }
+
+function drawGrid(n) {
+  // Background
+  ctx.fillStyle = '#0a0a1a';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // Grid lines
+  ctx.strokeStyle = '#1e1e3a';
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= n; i++) {
+    ctx.beginPath();
+    ctx.moveTo(PAD + i * CELL, PAD);
+    ctx.lineTo(PAD + i * CELL, PAD + n * CELL);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(PAD, PAD + i * CELL);
+    ctx.lineTo(PAD + n * CELL, PAD + i * CELL);
+    ctx.stroke();
+  }
+}
+
+function drawSource(source, n) {
+  const { row, col, dir } = source;
+  const cx = cellCX(col);
+  const cy = cellCY(row);
+
+  // Arrow outside grid pointing inward
+  ctx.save();
+  ctx.strokeStyle = '#ff4444';
+  ctx.fillStyle = '#ff4444';
+  ctx.lineWidth = 3;
+  ctx.shadowColor = '#ff4444';
+  ctx.shadowBlur = 12;
+
+  let ax, ay, bx, by;
+  if (dir === 'right') { ax = PAD - 14; ay = cy; bx = PAD - 3; by = cy; }
+  else if (dir === 'left') { ax = PAD + n * CELL + 14; ay = cy; bx = PAD + n * CELL + 3; by = cy; }
+  else if (dir === 'down') { ax = cx; ay = PAD - 14; bx = cx; by = PAD - 3; }
+  else { ax = cx; ay = PAD + n * CELL + 14; bx = cx; by = PAD + n * CELL + 3; }
+
+  ctx.beginPath();
+  ctx.moveTo(ax, ay);
+  ctx.lineTo(bx, by);
+  ctx.stroke();
+
+  // Arrowhead
+  const ang = Math.atan2(by - ay, bx - ax);
+  ctx.beginPath();
+  ctx.moveTo(bx, by);
+  ctx.lineTo(bx - 8 * Math.cos(ang - 0.5), by - 8 * Math.sin(ang - 0.5));
+  ctx.lineTo(bx - 8 * Math.cos(ang + 0.5), by - 8 * Math.sin(ang + 0.5));
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+}
+
+function drawTargets(targets, hitTargets) {
+  for (const key of targets) {
+    const [r, c] = key.split(',').map(Number);
+    const hit = hitTargets.has(key);
+    const cx = cellCX(c);
+    const cy = cellCY(r);
+
+    ctx.save();
+    if (hit) {
+      ctx.shadowColor = '#00ff88';
+      ctx.shadowBlur = 20;
+      ctx.strokeStyle = '#00ff88';
+      ctx.fillStyle = '#00ff8822';
+    } else {
+      ctx.shadowColor = '#ffcc00';
+      ctx.shadowBlur = 14;
+      ctx.strokeStyle = '#ffcc00';
+      ctx.fillStyle = '#ffcc0011';
+    }
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(cx, cy, CELL * 0.32, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    // Target crosshair
+    const r2 = CELL * 0.16;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(cx - r2, cy); ctx.lineTo(cx + r2, cy);
+    ctx.moveTo(cx, cy - r2); ctx.lineTo(cx, cy + r2);
+    ctx.stroke();
+    ctx.restore();
+  }
+}
+
+function drawLaserBeam(path) {
+  if (path.length < 2) return;
+
+  ctx.save();
+  ctx.strokeStyle = '#ff4444';
+  ctx.lineWidth = 2.5;
+  ctx.shadowColor = '#ff0000';
+  ctx.shadowBlur = 10;
+  ctx.globalAlpha = 0.85;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+
+  ctx.beginPath();
+  ctx.moveTo(cellCX(path[0].col), cellCY(path[0].row));
+  for (let i = 1; i < path.length; i++) {
+    ctx.lineTo(cellCX(path[i].col), cellCY(path[i].row));
+  }
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawMirrors(mirrors) {
+  for (const [key, type] of mirrors) {
+    const [r, c] = key.split(',').map(Number);
+    const x = cellX(c);
+    const y = cellY(r);
+    const m = 6;
+
+    ctx.save();
+    ctx.strokeStyle = '#66aaff';
+    ctx.lineWidth = 3;
+    ctx.shadowColor = '#4488ff';
+    ctx.shadowBlur = 8;
+    ctx.lineCap = 'round';
+
+    ctx.beginPath();
+    if (type === '/') {
+      ctx.moveTo(x + CELL - m, y + m);
+      ctx.lineTo(x + m, y + CELL - m);
+    } else {
+      ctx.moveTo(x + m, y + m);
+      ctx.lineTo(x + CELL - m, y + CELL - m);
+    }
+    ctx.stroke();
+    ctx.restore();
+  }
+}
+
+// ─── Game Logic ───────────────────────────────────────────────────────────────
+function getLevelData() {
+  const lvl = LEVELS[currentLevel];
+  return {
+    ...lvl,
+    targetSet: new Set(lvl.targets.map(([r, c]) => `${r},${c}`)),
+  };
+}
+
+function updateLaser() {
+  const lvl = getLevelData();
+  const result = traceLaser(lvl.gridSize, lvl.source, placedMirrors, lvl.targetSet);
+  laserPath = result.path;
+  hitTargets = result.hitTargets;
+}
+
+function mirrorsUsed() { return placedMirrors.size; }
+
+function updateUI() {
+  const lvl = getLevelData();
+  const rem = lvl.availableMirrors - mirrorsUsed();
+  document.getElementById('mirrors-left').textContent = Math.max(0, rem);
+
+  // Level dots
+  const dots = document.getElementById('level-dots');
+  dots.innerHTML = '';
+  for (let i = 0; i < LEVELS.length; i++) {
+    const dot = document.createElement('div');
+    dot.className = 'level-dot' + (i < currentLevel ? ' done' : i === currentLevel ? ' active' : '');
+    dots.appendChild(dot);
+  }
+}
+
+function render() {
+  const lvl = getLevelData();
+  updateLaser();
+  drawGrid(lvl.gridSize);
+  drawLaserBeam(laserPath);
+  drawTargets(lvl.targetSet, hitTargets);
+  drawMirrors(placedMirrors);
+  drawSource(lvl.source, lvl.gridSize);
+  updateUI();
+
+  // Check win
+  if (checkWin(hitTargets, lvl.targetSet)) {
+    setTimeout(showWin, 350);
+  }
+}
+
+// ─── User Interaction ─────────────────────────────────────────────────────────
+canvas.addEventListener('click', (e) => {
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = canvas.width / rect.width;
+  const scaleY = canvas.height / rect.height;
+  const mx = (e.clientX - rect.left) * scaleX;
+  const my = (e.clientY - rect.top) * scaleY;
+
+  const col = Math.floor((mx - PAD) / CELL);
+  const row = Math.floor((my - PAD) / CELL);
+
+  const lvl = getLevelData();
+  if (row < 0 || row >= lvl.gridSize || col < 0 || col >= lvl.gridSize) return;
+
+  // Can't place on target
+  if (lvl.targetSet.has(`${row},${col}`)) return;
+
+  const key = `${row},${col}`;
+  const current = placedMirrors.get(key);
+
+  if (!current) {
+    // Place '/' if mirrors available
+    if (mirrorsUsed() >= lvl.availableMirrors) return;
+    placedMirrors.set(key, '/');
+  } else if (current === '/') {
+    placedMirrors.set(key, '\\');
+  } else {
+    placedMirrors.delete(key);
+  }
+
+  render();
+});
+
+document.getElementById('btn-clear').addEventListener('click', () => {
+  placedMirrors.clear();
+  render();
+});
+
+document.getElementById('btn-hint').addEventListener('click', () => {
+  // Show a temporary hint overlay on canvas
+  const hint = t('hintMsg');
+  showToast(hint);
+});
+
+function showToast(msg) {
+  let toast = document.getElementById('toast');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'toast';
+    toast.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#1a1a2e;border:1px solid #444;color:#ccc;padding:0.7rem 1.2rem;border-radius:8px;font-size:0.85rem;max-width:300px;text-align:center;z-index:200;transition:opacity 0.3s;';
+    document.body.appendChild(toast);
+  }
+  toast.textContent = msg;
+  toast.style.opacity = '1';
+  clearTimeout(toast._timeout);
+  toast._timeout = setTimeout(() => { toast.style.opacity = '0'; }, 2500);
+}
+
+// ─── Modals ───────────────────────────────────────────────────────────────────
+function showWin() {
+  if (document.getElementById('win-modal').classList.contains('active')) return;
+  if (document.getElementById('complete-modal').classList.contains('active')) return;
+
+  if (currentLevel >= LEVELS.length - 1) {
+    document.getElementById('complete-modal').classList.add('active');
+  } else {
+    const used = mirrorsUsed();
+    document.getElementById('win-msg').textContent = `${used} ${t('winMirrorsUsed')} 🪞`;
+    document.getElementById('win-modal').classList.add('active');
+  }
+}
+
+document.getElementById('btn-start').addEventListener('click', () => {
+  document.getElementById('start-modal').classList.remove('active');
+  startLevel(0);
+});
+
+document.getElementById('btn-next').addEventListener('click', () => {
+  document.getElementById('win-modal').classList.remove('active');
+  startLevel(currentLevel + 1);
+});
+
+document.getElementById('btn-restart').addEventListener('click', () => {
+  document.getElementById('complete-modal').classList.remove('active');
+  startLevel(0);
+});
+
+function startLevel(n) {
+  currentLevel = n;
+  placedMirrors.clear();
+  const lvl = getLevelData();
+  setupCanvas(lvl.gridSize);
+  render();
+}
+
+// ─── Init ──────────────────────────────────────────────────────────────────────
+startLevel(0);
+translatePage();
+</script>
+</body>
+</html>
