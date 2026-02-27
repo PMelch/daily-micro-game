@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Codebreaker Duel</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #0a0a1a; color: #fff; font-family: system-ui, sans-serif; min-height: 100vh; display: flex; flex-direction: column; }
+  .back-bar { width: 100%; background: #0a0a1a; padding: 0.5rem 1rem; border-bottom: 1px solid #333; }
+  .back-bar a { color: #ffcc00; text-decoration: none; font-size: 0.9rem; }
+  .back-bar a:hover { text-decoration: underline; }
+
+  #app { flex: 1; display: flex; flex-direction: column; align-items: center; padding: 1rem; max-width: 500px; margin: 0 auto; width: 100%; }
+
+  h1 { font-size: 1.6rem; color: #ffcc00; margin-bottom: 0.25rem; text-align: center; }
+  .subtitle { color: #aaa; font-size: 0.85rem; margin-bottom: 1.2rem; text-align: center; }
+
+  /* SCREENS */
+  .screen { width: 100%; display: none; flex-direction: column; align-items: center; gap: 0.8rem; }
+  .screen.active { display: flex; }
+
+  /* Setup screen */
+  .setup-card { background: #111; border: 1px solid #333; border-radius: 12px; padding: 1.5rem; width: 100%; }
+  .setup-card h2 { color: #ffcc00; margin-bottom: 1rem; font-size: 1.1rem; text-align: center; }
+  .player-count { display: flex; gap: 0.5rem; justify-content: center; margin-bottom: 1rem; }
+  .count-btn { background: #1a1a2e; border: 2px solid #333; color: #fff; border-radius: 8px; padding: 0.4rem 0.9rem; cursor: pointer; font-size: 1rem; transition: all 0.15s; }
+  .count-btn.active { border-color: #ffcc00; color: #ffcc00; }
+  .name-inputs { display: flex; flex-direction: column; gap: 0.6rem; }
+  .name-input { background: #1a1a2e; border: 1px solid #333; border-radius: 8px; padding: 0.6rem 0.8rem; color: #fff; font-size: 1rem; width: 100%; }
+  .name-input:focus { outline: none; border-color: #ffcc00; }
+
+  /* Buttons */
+  .btn { background: #ffcc00; color: #000; border: none; border-radius: 10px; padding: 0.75rem 1.5rem; font-size: 1rem; font-weight: bold; cursor: pointer; transition: all 0.15s; width: 100%; }
+  .btn:hover { background: #ffd740; transform: translateY(-1px); }
+  .btn:active { transform: translateY(0); }
+  .btn-secondary { background: #1a1a2e; color: #ffcc00; border: 2px solid #333; }
+  .btn-secondary:hover { border-color: #ffcc00; background: #252545; }
+
+  /* Transition screen */
+  .transition-card { background: #1a1a2e; border: 2px solid #ffcc00; border-radius: 16px; padding: 2rem; text-align: center; width: 100%; }
+  .transition-card h2 { font-size: 1.4rem; margin-bottom: 0.5rem; color: #ffcc00; }
+  .transition-card p { color: #aaa; font-size: 0.95rem; line-height: 1.5; }
+  .cover-warning { background: #ff4444; color: #fff; border-radius: 8px; padding: 0.6rem; font-size: 0.85rem; margin-top: 0.8rem; }
+
+  /* Code setter screen */
+  .phase-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 2px; color: #888; }
+  .player-label { font-size: 1.3rem; font-weight: bold; color: #ffcc00; margin-bottom: 0.5rem; }
+
+  .color-palette { display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap; margin: 0.5rem 0; }
+  .color-swatch { width: 44px; height: 44px; border-radius: 50%; cursor: pointer; border: 3px solid transparent; transition: all 0.15s; box-shadow: 0 2px 8px rgba(0,0,0,0.4); }
+  .color-swatch.selected { border-color: #fff; transform: scale(1.15); }
+  .color-swatch:hover { transform: scale(1.1); }
+
+  .code-slots { display: flex; gap: 0.6rem; justify-content: center; margin: 0.5rem 0; }
+  .code-slot { width: 52px; height: 52px; border-radius: 10px; border: 2px solid #333; background: #111; cursor: pointer; transition: all 0.15s; display: flex; align-items: center; justify-content: center; }
+  .code-slot:hover { border-color: #555; }
+
+  /* Guess board */
+  .board { width: 100%; display: flex; flex-direction: column; gap: 0.4rem; }
+  .board-row { display: flex; align-items: center; gap: 0.4rem; }
+  .board-slot { width: 40px; height: 40px; border-radius: 8px; border: 2px solid #222; background: #111; flex-shrink: 0; }
+  .board-slot.active-slot { border-color: #555; background: #1a1a2e; cursor: pointer; }
+  .board-slot.active-slot:hover { border-color: #888; }
+
+  .pegs { display: grid; grid-template-columns: 1fr 1fr; gap: 3px; padding: 4px; margin-left: auto; flex-shrink: 0; }
+  .peg { width: 14px; height: 14px; border-radius: 50%; background: #222; }
+  .peg.black { background: #111; border: 2px solid #666; }
+  .peg.white { background: #eee; }
+
+  .row-num { width: 20px; text-align: center; color: #555; font-size: 0.8rem; flex-shrink: 0; }
+
+  /* Current guess row highlight */
+  .board-row.current .board-slot { border-color: #555; }
+
+  /* Guess palette (smaller) */
+  .guess-palette { display: flex; gap: 0.4rem; justify-content: center; flex-wrap: wrap; margin: 0.3rem 0; }
+  .guess-swatch { width: 38px; height: 38px; border-radius: 50%; cursor: pointer; border: 3px solid transparent; transition: all 0.15s; box-shadow: 0 2px 6px rgba(0,0,0,0.4); }
+  .guess-swatch.selected { border-color: #fff; transform: scale(1.15); }
+  .guess-swatch:hover { transform: scale(1.08); }
+
+  .current-guess { display: flex; gap: 0.5rem; justify-content: center; margin: 0.4rem 0; }
+  .cg-slot { width: 44px; height: 44px; border-radius: 8px; border: 2px solid #444; background: #1a1a2e; cursor: pointer; }
+  .cg-slot:hover { border-color: #888; }
+
+  /* Result screen */
+  .result-card { background: #111; border: 2px solid #333; border-radius: 16px; padding: 1.5rem; width: 100%; text-align: center; }
+  .result-card h2 { font-size: 1.5rem; color: #ffcc00; margin-bottom: 0.5rem; }
+  .score-row { display: flex; justify-content: space-around; margin: 1rem 0; }
+  .score-item { display: flex; flex-direction: column; align-items: center; gap: 0.3rem; }
+  .score-num { font-size: 2rem; font-weight: bold; color: #ffcc00; }
+  .score-name { font-size: 0.85rem; color: #aaa; }
+  .winner-text { font-size: 1.1rem; color: #4ade80; font-weight: bold; margin: 0.5rem 0; }
+
+  /* Colors */
+  .c-red { background: #ef4444; }
+  .c-blue { background: #3b82f6; }
+  .c-green { background: #22c55e; }
+  .c-yellow { background: #eab308; }
+  .c-orange { background: #f97316; }
+  .c-white { background: #e5e7eb; border: 1px solid #555; }
+
+  .hint-text { font-size: 0.8rem; color: #888; text-align: center; }
+  .attempts-left { font-size: 0.85rem; color: #aaa; }
+  .attempts-left span { color: #ffcc00; font-weight: bold; }
+
+  .reveal-code { display: flex; gap: 0.5rem; justify-content: center; margin: 0.5rem 0; }
+  .reveal-slot { width: 42px; height: 42px; border-radius: 8px; }
+</style>
+</head>
+<body>
+<div class="back-bar"><a href="/">← Back to Games</a></div>
+<div id="app">
+  <h1>🔐 Codebreaker</h1>
+  <p class="subtitle" data-i18n="subtitle">Knack den Code deines Gegners!</p>
+
+  <!-- SETUP SCREEN -->
+  <div id="screen-setup" class="screen active">
+    <div class="setup-card">
+      <h2 data-i18n="setup_title">Spieler einrichten</h2>
+      <div class="name-inputs" id="name-inputs"></div>
+    </div>
+    <button class="btn" id="start-btn" data-i18n="start_game">Spiel starten</button>
+  </div>
+
+  <!-- TRANSITION: SETTER -->
+  <div id="screen-transition-set" class="screen">
+    <div class="transition-card">
+      <h2 id="trans-set-name">Spieler 1</h2>
+      <p data-i18n="trans_set_msg">Wähle deinen Geheimcode! Dein Gegner soll nicht sehen!</p>
+      <div class="cover-warning" data-i18n="cover_screen">📵 Lass den anderen NICHT zuschauen!</div>
+    </div>
+    <button class="btn" id="trans-set-btn" data-i18n="im_ready">Ich bin bereit!</button>
+  </div>
+
+  <!-- CODE SETTER SCREEN -->
+  <div id="screen-set-code" class="screen">
+    <div class="phase-label" data-i18n="phase_set">PHASE: CODE SETZEN</div>
+    <div class="player-label" id="setter-label">Spieler 1</div>
+    <p class="hint-text" data-i18n="set_hint">Wähle 4 Farben für deinen Geheimcode</p>
+    <div class="code-slots" id="code-slots"></div>
+    <div class="color-palette" id="color-palette"></div>
+    <button class="btn" id="confirm-code-btn" data-i18n="confirm_code" disabled>Code bestätigen</button>
+    <button class="btn btn-secondary" id="random-code-btn" data-i18n="random_code">Zufälliger Code</button>
+  </div>
+
+  <!-- TRANSITION: GUESSER -->
+  <div id="screen-transition-guess" class="screen">
+    <div class="transition-card">
+      <h2 id="trans-guess-name">Spieler 2</h2>
+      <p data-i18n="trans_guess_msg">Jetzt musst du den Geheimcode knacken!</p>
+    </div>
+    <button class="btn" id="trans-guess-btn" data-i18n="lets_go">Los geht's!</button>
+  </div>
+
+  <!-- GUESSING SCREEN -->
+  <div id="screen-guess" class="screen">
+    <div class="phase-label" data-i18n="phase_guess">PHASE: CODE KNACKEN</div>
+    <div class="player-label" id="guesser-label">Spieler 2</div>
+    <p class="attempts-left"><span id="attempts-num">8</span> <span data-i18n="attempts_left">Versuche übrig</span></p>
+    <div class="board" id="guess-board"></div>
+    <p class="hint-text" data-i18n="guess_hint">Wähle eine Farbe, dann klicke auf einen Slot</p>
+    <div class="guess-palette" id="guess-palette"></div>
+    <div class="current-guess" id="current-guess"></div>
+    <button class="btn" id="submit-guess-btn" data-i18n="submit_guess" disabled>Raten!</button>
+  </div>
+
+  <!-- ROUND RESULT SCREEN -->
+  <div id="screen-round-result" class="screen">
+    <div class="transition-card">
+      <h2 id="round-result-title">Runde beendet!</h2>
+      <p id="round-result-msg"></p>
+      <div class="reveal-code" id="reveal-code"></div>
+      <p id="round-score-msg" style="margin-top:0.5rem;color:#aaa;font-size:0.9rem;"></p>
+    </div>
+    <button class="btn" id="next-round-btn">Weiter</button>
+  </div>
+
+  <!-- FINAL RESULT SCREEN -->
+  <div id="screen-final" class="screen">
+    <div class="result-card">
+      <h2 data-i18n="game_over">Spiel beendet!</h2>
+      <div class="score-row" id="final-scores"></div>
+      <div class="winner-text" id="final-winner"></div>
+    </div>
+    <button class="btn" id="play-again-btn" data-i18n="play_again">Nochmal spielen</button>
+  </div>
+</div>
+
+<script src="/shared/i18n.js"></script>
+<script>
+const TRANSLATIONS = {
+  de: {
+    subtitle: 'Knack den Code deines Gegners!',
+    setup_title: 'Spieler einrichten',
+    start_game: 'Spiel starten',
+    player_name: 'Spieler',
+    trans_set_msg: 'Wähle deinen Geheimcode! Dein Gegner soll nicht sehen!',
+    cover_screen: '📵 Lass den anderen NICHT zuschauen!',
+    im_ready: 'Ich bin bereit!',
+    phase_set: 'PHASE: CODE SETZEN',
+    set_hint: 'Wähle 4 Farben für deinen Geheimcode',
+    confirm_code: 'Code bestätigen',
+    random_code: 'Zufälliger Code',
+    trans_guess_msg: 'Jetzt musst du den Geheimcode knacken!',
+    lets_go: "Los geht's!",
+    phase_guess: 'PHASE: CODE KNACKEN',
+    attempts_left: 'Versuche übrig',
+    guess_hint: 'Wähle eine Farbe, dann klicke auf einen Slot',
+    submit_guess: 'Raten!',
+    game_over: 'Spiel beendet!',
+    play_again: 'Nochmal spielen',
+    cracked_in: 'Code geknackt in',
+    attempts: 'Versuchen',
+    failed: 'Code nicht geknackt!',
+    round_score: 'Punkte in dieser Runde:',
+    winner_is: 'Gewinner',
+    tie: 'Unentschieden! 🤝',
+    wins: 'gewinnt! 🏆',
+    set_your_code: 'setzt den Geheimcode',
+    cracks_code: 'knackt den Code',
+    next_round: 'Nächste Runde',
+    final_round: 'Spiel beendet!',
+    black_pegs: '⬛ = richtige Farbe + Position',
+    white_pegs: '⬜ = richtige Farbe, falsche Position',
+  },
+  en: {
+    subtitle: 'Crack your opponent\'s code!',
+    setup_title: 'Set up players',
+    start_game: 'Start game',
+    player_name: 'Player',
+    trans_set_msg: 'Choose your secret code! Don\'t let your opponent see!',
+    cover_screen: '📵 Don\'t let the others watch!',
+    im_ready: 'I\'m ready!',
+    phase_set: 'PHASE: SET CODE',
+    set_hint: 'Choose 4 colors for your secret code',
+    confirm_code: 'Confirm code',
+    random_code: 'Random code',
+    trans_guess_msg: 'Now crack the secret code!',
+    lets_go: "Let's go!",
+    phase_guess: 'PHASE: CRACK THE CODE',
+    attempts_left: 'attempts left',
+    guess_hint: 'Select a color, then tap a slot',
+    submit_guess: 'Submit guess!',
+    game_over: 'Game over!',
+    play_again: 'Play again',
+    cracked_in: 'Code cracked in',
+    attempts: 'attempts',
+    failed: 'Code not cracked!',
+    round_score: 'Score this round:',
+    winner_is: 'Winner',
+    tie: 'It\'s a tie! 🤝',
+    wins: 'wins! 🏆',
+    set_your_code: 'sets the secret code',
+    cracks_code: 'cracks the code',
+    next_round: 'Next round',
+    final_round: 'Game over!',
+    black_pegs: '⬛ = right color + position',
+    white_pegs: '⬜ = right color, wrong position',
+  },
+  fr: {
+    subtitle: 'Déchiffre le code de ton adversaire !',
+    setup_title: 'Configurer les joueurs',
+    start_game: 'Démarrer',
+    player_name: 'Joueur',
+    trans_set_msg: 'Choisis ton code secret ! Ne laisse pas ton adversaire regarder !',
+    cover_screen: '📵 Ne laisse pas les autres regarder !',
+    im_ready: 'Je suis prêt !',
+    phase_set: 'PHASE : DÉFINIR LE CODE',
+    set_hint: 'Choisis 4 couleurs pour ton code secret',
+    confirm_code: 'Confirmer le code',
+    random_code: 'Code aléatoire',
+    trans_guess_msg: 'Maintenant déchiffre le code secret !',
+    lets_go: "C'est parti !",
+    phase_guess: 'PHASE : DÉCHIFFRER LE CODE',
+    attempts_left: 'tentatives restantes',
+    guess_hint: 'Sélectionne une couleur, puis touche un emplacement',
+    submit_guess: 'Soumettre !',
+    game_over: 'Jeu terminé !',
+    play_again: 'Rejouer',
+    cracked_in: 'Code déchiffré en',
+    attempts: 'tentatives',
+    failed: 'Code non déchiffré !',
+    round_score: 'Score ce tour :',
+    winner_is: 'Gagnant',
+    tie: 'Égalité ! 🤝',
+    wins: 'gagne ! 🏆',
+    set_your_code: 'définit le code secret',
+    cracks_code: 'déchiffre le code',
+    next_round: 'Tour suivant',
+    final_round: 'Jeu terminé !',
+    black_pegs: '⬛ = bonne couleur + position',
+    white_pegs: '⬜ = bonne couleur, mauvaise position',
+  },
+  it: {
+    subtitle: 'Decifra il codice del tuo avversario!',
+    setup_title: 'Configura i giocatori',
+    start_game: 'Inizia',
+    player_name: 'Giocatore',
+    trans_set_msg: 'Scegli il tuo codice segreto! Non fare vedere al tuo avversario!',
+    cover_screen: '📵 Non lasciare guardare gli altri!',
+    im_ready: 'Sono pronto!',
+    phase_set: 'FASE: IMPOSTA IL CODICE',
+    set_hint: 'Scegli 4 colori per il tuo codice segreto',
+    confirm_code: 'Conferma codice',
+    random_code: 'Codice casuale',
+    trans_guess_msg: 'Ora decifra il codice segreto!',
+    lets_go: 'Andiamo!',
+    phase_guess: 'FASE: DECIFRA IL CODICE',
+    attempts_left: 'tentativi rimasti',
+    guess_hint: 'Seleziona un colore, poi tocca uno slot',
+    submit_guess: 'Indovina!',
+    game_over: 'Gioco finito!',
+    play_again: 'Gioca ancora',
+    cracked_in: 'Codice decifrato in',
+    attempts: 'tentativi',
+    failed: 'Codice non decifrato!',
+    round_score: 'Punteggio questo turno:',
+    winner_is: 'Vincitore',
+    tie: 'Pareggio! 🤝',
+    wins: 'vince! 🏆',
+    set_your_code: 'imposta il codice segreto',
+    cracks_code: 'decifra il codice',
+    next_round: 'Turno successivo',
+    final_round: 'Gioco finito!',
+    black_pegs: '⬛ = colore + posizione corretti',
+    white_pegs: '⬜ = colore giusto, posizione sbagliata',
+  },
+  es: {
+    subtitle: '¡Descifra el código de tu rival!',
+    setup_title: 'Configurar jugadores',
+    start_game: 'Iniciar juego',
+    player_name: 'Jugador',
+    trans_set_msg: '¡Elige tu código secreto! ¡No dejes que tu rival vea!',
+    cover_screen: '📵 ¡No dejes que los demás miren!',
+    im_ready: '¡Estoy listo!',
+    phase_set: 'FASE: ESTABLECER CÓDIGO',
+    set_hint: 'Elige 4 colores para tu código secreto',
+    confirm_code: 'Confirmar código',
+    random_code: 'Código aleatorio',
+    trans_guess_msg: '¡Ahora descifra el código secreto!',
+    lets_go: '¡Vamos!',
+    phase_guess: 'FASE: DESCIFRAR EL CÓDIGO',
+    attempts_left: 'intentos restantes',
+    guess_hint: 'Selecciona un color, luego toca una ranura',
+    submit_guess: '¡Adivinar!',
+    game_over: '¡Juego terminado!',
+    play_again: 'Jugar de nuevo',
+    cracked_in: 'Código descifrado en',
+    attempts: 'intentos',
+    failed: '¡Código no descifrado!',
+    round_score: 'Puntuación este turno:',
+    winner_is: 'Ganador',
+    tie: '¡Empate! 🤝',
+    wins: '¡gana! 🏆',
+    set_your_code: 'establece el código secreto',
+    cracks_code: 'descifra el código',
+    next_round: 'Siguiente ronda',
+    final_round: '¡Juego terminado!',
+    black_pegs: '⬛ = color + posición correctos',
+    white_pegs: '⬜ = color correcto, posición incorrecta',
+  }
+};
+
+const { t, translatePage, onLangChange } = initI18n(TRANSLATIONS);
+
+// ---- Game constants ----
+const COLORS = ['red','blue','green','yellow','orange','white'];
+const COLOR_CLASSES = { red:'c-red', blue:'c-blue', green:'c-green', yellow:'c-yellow', orange:'c-orange', white:'c-white' };
+const MAX_ATTEMPTS = 8;
+const CODE_LEN = 4;
+
+// ---- Game state ----
+let players = [];
+let scores = []; // attempts used per player per round (null = failed)
+let currentRound = 0; // which player's round: 0 or 1
+let secretCode = [];
+let guessHistory = [];
+let currentGuess = new Array(CODE_LEN).fill(null);
+let selectedColor = null;
+
+// ---- Helpers ----
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function makeColorEl(cls, size, onClick) {
+  const el = document.createElement('div');
+  el.style.width = size + 'px';
+  el.style.height = size + 'px';
+  el.style.borderRadius = '50%';
+  el.className = cls;
+  if (onClick) el.addEventListener('click', onClick);
+  return el;
+}
+
+function checkGuess(secret, guess) {
+  let blacks = 0;
+  const secretLeft = [], guessLeft = [];
+  for (let i = 0; i < CODE_LEN; i++) {
+    if (secret[i] === guess[i]) blacks++;
+    else { secretLeft.push(secret[i]); guessLeft.push(guess[i]); }
+  }
+  let whites = 0;
+  for (const g of guessLeft) {
+    const idx = secretLeft.indexOf(g);
+    if (idx !== -1) { whites++; secretLeft.splice(idx, 1); }
+  }
+  return { blacks, whites };
+}
+
+// ---- SETUP SCREEN ----
+function initSetup() {
+  const nameInputs = document.getElementById('name-inputs');
+  nameInputs.innerHTML = '';
+  for (let i = 0; i < 2; i++) {
+    const inp = document.createElement('input');
+    inp.className = 'name-input';
+    inp.type = 'text';
+    inp.placeholder = `${t('player_name')} ${i + 1}`;
+    inp.value = '';
+    nameInputs.appendChild(inp);
+  }
+}
+
+document.getElementById('start-btn').addEventListener('click', () => {
+  const inputs = document.querySelectorAll('.name-input');
+  players = Array.from(inputs).map((inp, i) => inp.value.trim() || `${t('player_name')} ${i + 1}`);
+  scores = [null, null];
+  currentRound = 0;
+  startRound(0);
+});
+
+// ---- ROUND FLOW ----
+function startRound(playerIdx) {
+  currentRound = playerIdx;
+  secretCode = [];
+  guessHistory = [];
+  currentGuess = new Array(CODE_LEN).fill(null);
+  selectedColor = null;
+
+  // Show transition for setter
+  const setterName = players[playerIdx];
+  document.getElementById('trans-set-name').textContent = setterName;
+  document.getElementById('trans-set-name').dataset.playerIdx = playerIdx;
+  showScreen('screen-transition-set');
+}
+
+document.getElementById('trans-set-btn').addEventListener('click', () => {
+  showSetCodeScreen();
+});
+
+function showSetCodeScreen() {
+  const playerIdx = currentRound;
+  document.getElementById('setter-label').textContent = players[playerIdx];
+
+  // Build code slots
+  const slotsEl = document.getElementById('code-slots');
+  slotsEl.innerHTML = '';
+  for (let i = 0; i < CODE_LEN; i++) {
+    const slot = document.createElement('div');
+    slot.className = 'code-slot';
+    slot.dataset.idx = i;
+    slot.addEventListener('click', () => {
+      if (selectedColor) {
+        secretCode[i] = selectedColor;
+        renderCodeSlots();
+        checkConfirmEnabled();
+      }
+    });
+    slotsEl.appendChild(slot);
+  }
+
+  // Build color palette
+  const palette = document.getElementById('color-palette');
+  palette.innerHTML = '';
+  COLORS.forEach(color => {
+    const sw = document.createElement('div');
+    sw.className = `color-swatch ${COLOR_CLASSES[color]}`;
+    sw.addEventListener('click', () => {
+      selectedColor = color;
+      document.querySelectorAll('#color-palette .color-swatch').forEach(s => s.classList.remove('selected'));
+      sw.classList.add('selected');
+    });
+    palette.appendChild(sw);
+  });
+
+  secretCode = new Array(CODE_LEN).fill(null);
+  renderCodeSlots();
+  checkConfirmEnabled();
+  showScreen('screen-set-code');
+}
+
+function renderCodeSlots() {
+  const slots = document.querySelectorAll('#code-slots .code-slot');
+  slots.forEach((slot, i) => {
+    slot.innerHTML = '';
+    if (secretCode[i]) {
+      const circle = document.createElement('div');
+      circle.style.cssText = `width:38px;height:38px;border-radius:8px;`;
+      circle.className = COLOR_CLASSES[secretCode[i]];
+      slot.appendChild(circle);
+    }
+  });
+}
+
+function checkConfirmEnabled() {
+  const valid = secretCode.filter(c => c !== null).length === CODE_LEN;
+  document.getElementById('confirm-code-btn').disabled = !valid;
+}
+
+document.getElementById('confirm-code-btn').addEventListener('click', () => {
+  // Show transition for guesser
+  const guesserIdx = currentRound === 0 ? 1 : 0;
+  document.getElementById('trans-guess-name').textContent = players[guesserIdx];
+  showScreen('screen-transition-guess');
+});
+
+document.getElementById('random-code-btn').addEventListener('click', () => {
+  secretCode = Array.from({ length: CODE_LEN }, () => COLORS[Math.floor(Math.random() * COLORS.length)]);
+  renderCodeSlots();
+  checkConfirmEnabled();
+});
+
+document.getElementById('trans-guess-btn').addEventListener('click', () => {
+  showGuessScreen();
+});
+
+// ---- GUESSING SCREEN ----
+function showGuessScreen() {
+  const guesserIdx = currentRound === 0 ? 1 : 0;
+  document.getElementById('guesser-label').textContent = players[guesserIdx];
+  guessHistory = [];
+  currentGuess = new Array(CODE_LEN).fill(null);
+  selectedColor = null;
+  renderBoard();
+  renderGuessPalette();
+  renderCurrentGuess();
+  updateAttemptsLabel();
+  showScreen('screen-guess');
+}
+
+function renderBoard() {
+  const board = document.getElementById('guess-board');
+  board.innerHTML = '';
+
+  for (let i = 0; i < MAX_ATTEMPTS; i++) {
+    const row = document.createElement('div');
+    row.className = 'board-row';
+    if (i === guessHistory.length) row.classList.add('current');
+
+    const num = document.createElement('div');
+    num.className = 'row-num';
+    num.textContent = i + 1;
+    row.appendChild(num);
+
+    for (let j = 0; j < CODE_LEN; j++) {
+      const slot = document.createElement('div');
+      slot.className = 'board-slot';
+      if (i < guessHistory.length) {
+        // Past guess
+        const g = guessHistory[i].guess[j];
+        if (g) {
+          slot.style.backgroundColor = g === 'white' ? '#e5e7eb' : g;
+          if (g === 'white') slot.style.border = '1px solid #555';
+        }
+      } else if (i === guessHistory.length) {
+        // Current guess row - clickable
+        slot.classList.add('active-slot');
+        slot.dataset.slot = j;
+        if (currentGuess[j]) {
+          slot.style.backgroundColor = currentGuess[j] === 'white' ? '#e5e7eb' : currentGuess[j];
+          if (currentGuess[j] === 'white') slot.style.border = '1px solid #555';
+        }
+        slot.addEventListener('click', () => {
+          if (selectedColor) {
+            currentGuess[j] = selectedColor;
+            renderBoard();
+            renderCurrentGuess();
+            checkSubmitEnabled();
+          }
+        });
+      }
+      row.appendChild(slot);
+    }
+
+    // Pegs
+    const pegs = document.createElement('div');
+    pegs.className = 'pegs';
+    if (i < guessHistory.length) {
+      const { blacks, whites } = guessHistory[i].feedback;
+      for (let p = 0; p < CODE_LEN; p++) {
+        const peg = document.createElement('div');
+        peg.className = 'peg';
+        if (p < blacks) peg.classList.add('black');
+        else if (p < blacks + whites) peg.classList.add('white');
+        pegs.appendChild(peg);
+      }
+    } else {
+      for (let p = 0; p < CODE_LEN; p++) {
+        const peg = document.createElement('div'); peg.className = 'peg'; pegs.appendChild(peg);
+      }
+    }
+    row.appendChild(pegs);
+    board.appendChild(row);
+  }
+}
+
+function renderGuessPalette() {
+  const palette = document.getElementById('guess-palette');
+  palette.innerHTML = '';
+  COLORS.forEach(color => {
+    const sw = document.createElement('div');
+    sw.className = `guess-swatch ${COLOR_CLASSES[color]}`;
+    sw.addEventListener('click', () => {
+      selectedColor = color;
+      document.querySelectorAll('#guess-palette .guess-swatch').forEach(s => s.classList.remove('selected'));
+      sw.classList.add('selected');
+    });
+    palette.appendChild(sw);
+  });
+}
+
+function renderCurrentGuess() {
+  // Handled by renderBoard now
+}
+
+function checkSubmitEnabled() {
+  const valid = currentGuess.filter(c => c !== null).length === CODE_LEN;
+  document.getElementById('submit-guess-btn').disabled = !valid;
+}
+
+function updateAttemptsLabel() {
+  document.getElementById('attempts-num').textContent = MAX_ATTEMPTS - guessHistory.length;
+}
+
+document.getElementById('submit-guess-btn').addEventListener('click', () => {
+  if (currentGuess.some(c => !c)) return;
+
+  const feedback = checkGuess(secretCode, currentGuess);
+  guessHistory.push({ guess: [...currentGuess], feedback });
+  currentGuess = new Array(CODE_LEN).fill(null);
+  selectedColor = null;
+  document.querySelectorAll('#guess-palette .guess-swatch').forEach(s => s.classList.remove('selected'));
+  document.getElementById('submit-guess-btn').disabled = true;
+
+  renderBoard();
+  updateAttemptsLabel();
+
+  if (feedback.blacks === CODE_LEN) {
+    // Cracked!
+    endRound(true, guessHistory.length);
+  } else if (guessHistory.length >= MAX_ATTEMPTS) {
+    // Failed
+    endRound(false, null);
+  }
+});
+
+// ---- END OF ROUND ----
+function endRound(cracked, attemptsUsed) {
+  scores[currentRound === 0 ? 1 : 0] = cracked ? attemptsUsed : null;
+
+  const guesserIdx = currentRound === 0 ? 1 : 0;
+  const guesserName = players[guesserIdx];
+
+  if (cracked) {
+    document.getElementById('round-result-title').textContent = `🎉 ${guesserName}`;
+    document.getElementById('round-result-msg').textContent = `${t('cracked_in')} ${attemptsUsed} ${t('attempts')}!`;
+  } else {
+    document.getElementById('round-result-title').textContent = `💀 ${guesserName}`;
+    document.getElementById('round-result-msg').textContent = t('failed');
+  }
+
+  // Show secret code
+  const revealEl = document.getElementById('reveal-code');
+  revealEl.innerHTML = '';
+  secretCode.forEach(c => {
+    const div = document.createElement('div');
+    div.className = `reveal-slot ${COLOR_CLASSES[c]}`;
+    revealEl.appendChild(div);
+  });
+
+  const nextBtn = document.getElementById('next-round-btn');
+  if (currentRound === 0) {
+    // First round done, do second
+    nextBtn.textContent = `${players[1]} ${t('set_your_code')} →`;
+    nextBtn.onclick = () => startRound(1);
+  } else {
+    // Both rounds done
+    nextBtn.textContent = t('final_round');
+    nextBtn.onclick = () => showFinalResult();
+  }
+
+  showScreen('screen-round-result');
+}
+
+// ---- FINAL RESULT ----
+function showFinalResult() {
+  // scores[0] = attempts for player 0 as guesser (round where player 1 set code)
+  // scores[1] = attempts for player 1 as guesser (round where player 0 set code)
+  const scoresEl = document.getElementById('final-scores');
+  scoresEl.innerHTML = '';
+
+  players.forEach((name, i) => {
+    const item = document.createElement('div');
+    item.className = 'score-item';
+    const num = document.createElement('div');
+    num.className = 'score-num';
+    num.textContent = scores[i] !== null ? scores[i] : '✗';
+    const label = document.createElement('div');
+    label.className = 'score-name';
+    label.textContent = name;
+    item.appendChild(num);
+    item.appendChild(label);
+    scoresEl.appendChild(item);
+  });
+
+  const winnerEl = document.getElementById('final-winner');
+  const s0 = scores[0], s1 = scores[1];
+
+  if (s0 === null && s1 === null) {
+    winnerEl.textContent = `😅 ${t('tie')}`;
+  } else if (s0 === null) {
+    winnerEl.textContent = `${players[1]} ${t('wins')}`;
+  } else if (s1 === null) {
+    winnerEl.textContent = `${players[0]} ${t('wins')}`;
+  } else if (s0 < s1) {
+    winnerEl.textContent = `${players[0]} ${t('wins')}`;
+  } else if (s1 < s0) {
+    winnerEl.textContent = `${players[1]} ${t('wins')}`;
+  } else {
+    winnerEl.textContent = t('tie');
+  }
+
+  showScreen('screen-final');
+}
+
+document.getElementById('play-again-btn').addEventListener('click', () => {
+  scores = [null, null];
+  initSetup();
+  showScreen('screen-setup');
+  translatePage();
+});
+
+// ---- Init ----
+onLangChange(() => {
+  translatePage();
+  initSetup();
+});
+
+initSetup();
+translatePage();
+</script>
+</body>
+</html>
