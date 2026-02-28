@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sync or Sink 🌊</title>
+<script src="/shared/i18n.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+.back-bar{width:100%;background:#0a0a1a;padding:0.5rem 1rem;border-bottom:1px solid #333;}
+.back-bar a{color:#ffcc00;text-decoration:none;font-size:0.9rem;font-family:system-ui,sans-serif;}
+.back-bar a:hover{text-decoration:underline;}
+body{background:#0a0a1a;color:#fff;font-family:system-ui,sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;}
+h1{font-size:2rem;margin:1rem 0 0.25rem;text-align:center;}
+.subtitle{color:#aaa;font-size:0.95rem;margin-bottom:1.5rem;text-align:center;}
+.screen{width:100%;max-width:480px;padding:1rem;display:none;flex-direction:column;align-items:center;gap:1rem;}
+.screen.active{display:flex;}
+
+/* Inputs */
+input[type=text]{background:#1a1a2e;border:1px solid #444;color:#fff;padding:0.75rem 1rem;border-radius:8px;font-size:1rem;width:100%;}
+input::placeholder{color:#666;}
+button{background:#ffcc00;color:#0a0a1a;border:none;border-radius:8px;padding:0.75rem 1.5rem;font-size:1rem;font-weight:700;cursor:pointer;width:100%;transition:transform 0.1s,background 0.2s;}
+button:hover{background:#ffd740;}
+button:active{transform:scale(0.97);}
+button.secondary{background:#1a1a2e;color:#ffcc00;border:1px solid #ffcc00;}
+button.secondary:hover{background:#2a2a3e;}
+.btn-row{display:flex;gap:0.5rem;width:100%;}
+.btn-row button{flex:1;}
+
+/* Code display */
+.room-code{font-size:3rem;font-weight:900;letter-spacing:0.3em;color:#ffcc00;text-align:center;text-shadow:0 0 20px rgba(255,204,0,0.5);}
+.code-label{color:#aaa;font-size:0.85rem;text-transform:uppercase;letter-spacing:0.1em;}
+
+/* Player list */
+.player-list{width:100%;display:flex;flex-direction:column;gap:0.5rem;}
+.player-item{background:#1a1a2e;border-radius:8px;padding:0.6rem 1rem;display:flex;align-items:center;gap:0.5rem;}
+.player-item .crown{color:#ffcc00;}
+.host-badge{font-size:0.7rem;background:#ffcc00;color:#0a0a1a;border-radius:4px;padding:1px 5px;margin-left:auto;}
+
+/* Round / Sync */
+.round-info{color:#aaa;font-size:0.85rem;}
+.sync-btn{width:220px;height:220px;border-radius:50%;background:radial-gradient(circle at 40% 35%,#4af,#07f);border:6px solid #29f;font-size:2rem;font-weight:900;color:#fff;box-shadow:0 0 40px rgba(0,160,255,0.4),inset 0 2px 8px rgba(255,255,255,0.2);cursor:pointer;transition:transform 0.08s,box-shadow 0.1s;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:4px;user-select:none;-webkit-tap-highlight-color:transparent;}
+.sync-btn:active,.sync-btn.pressed{transform:scale(0.93);box-shadow:0 0 60px rgba(0,255,200,0.7),inset 0 2px 8px rgba(255,255,255,0.3);background:radial-gradient(circle at 40% 35%,#0f8,#09f);}
+.sync-btn.disabled{background:radial-gradient(circle at 40% 35%,#555,#333);border-color:#444;cursor:default;box-shadow:none;}
+.sync-btn .btn-label{font-size:0.75rem;font-weight:400;opacity:0.8;}
+
+/* Countdown */
+.countdown-big{font-size:8rem;font-weight:900;color:#ffcc00;text-shadow:0 0 30px rgba(255,204,0,0.6);animation:pulse 0.5s ease-in-out;}
+@keyframes pulse{0%{transform:scale(0.8);opacity:0}100%{transform:scale(1);opacity:1}}
+
+/* Press indicator */
+.press-dots{display:flex;gap:0.75rem;margin:0.5rem 0;}
+.press-dot{width:20px;height:20px;border-radius:50%;background:#333;transition:background 0.3s;}
+.press-dot.lit{background:#0f8;box-shadow:0 0 8px #0f8;}
+
+/* Result */
+.grade-display{font-size:5rem;font-weight:900;text-align:center;}
+.grade-S,.grade-A{color:#0f8;}
+.grade-B{color:#ffcc00;}
+.grade-C{color:#f80;}
+.grade-D,.grade-F{color:#f44;}
+.sync-score{font-size:2rem;font-weight:700;text-align:center;}
+.spread-info{color:#aaa;font-size:0.9rem;text-align:center;}
+.score-table{width:100%;border-collapse:collapse;}
+.score-table td,.score-table th{padding:0.4rem 0.75rem;text-align:left;}
+.score-table th{color:#aaa;font-size:0.8rem;text-transform:uppercase;}
+.score-table td:last-child{text-align:right;font-weight:700;color:#ffcc00;}
+
+/* Wave animation for active round */
+.wave-ring{width:260px;height:260px;border-radius:50%;border:3px solid rgba(0,160,255,0.3);position:absolute;animation:ripple 2s infinite;}
+.wave-ring:nth-child(2){animation-delay:0.5s;}
+.wave-ring:nth-child(3){animation-delay:1s;}
+@keyframes ripple{0%{transform:scale(0.8);opacity:0.6}100%{transform:scale(1.5);opacity:0}}
+.btn-wrapper{position:relative;display:flex;align-items:center;justify-content:center;width:260px;height:260px;}
+
+/* Leaderboard */
+.lb-item{display:flex;align-items:center;gap:0.75rem;padding:0.5rem 0;}
+.lb-rank{font-size:1.5rem;width:2rem;text-align:center;}
+.lb-name{flex:1;font-size:1.1rem;}
+.lb-score{font-weight:700;color:#ffcc00;font-size:1.1rem;}
+
+.error-msg{color:#f44;font-size:0.9rem;text-align:center;}
+.info-msg{color:#aaa;font-size:0.9rem;text-align:center;}
+</style>
+</head>
+<body>
+<div class="back-bar"><a href="/">← Back to Games</a></div>
+
+<!-- ENTRY SCREEN -->
+<div id="screen-entry" class="screen active">
+  <h1>🌊 Sync or Sink</h1>
+  <p class="subtitle" data-i18n="subtitle">Drückt alle GLEICHZEITIG!</p>
+  <input id="player-name" type="text" data-i18n-placeholder="name_placeholder" maxlength="20">
+  <button id="btn-create" data-i18n="create_room">Raum erstellen</button>
+  <div class="btn-row">
+    <input id="room-code-input" type="text" data-i18n-placeholder="room_code_ph" maxlength="4" style="text-transform:uppercase;letter-spacing:0.2em;font-weight:700;width:auto;flex:1;">
+    <button id="btn-join" class="secondary" data-i18n="join_room" style="width:auto;">Beitreten</button>
+  </div>
+  <p id="entry-error" class="error-msg"></p>
+</div>
+
+<!-- LOBBY SCREEN -->
+<div id="screen-lobby" class="screen">
+  <h1>🌊 Sync or Sink</h1>
+  <p class="code-label" data-i18n="room_code_label">Raum-Code</p>
+  <div class="room-code" id="lobby-code">----</div>
+  <p class="info-msg" data-i18n="share_code">Teile diesen Code mit deinen Mitspielern!</p>
+  <p class="info-msg" id="lobby-status"></p>
+  <div class="player-list" id="player-list"></div>
+  <button id="btn-start" data-i18n="start_game" style="display:none;">Spiel starten</button>
+  <p class="info-msg" id="waiting-host"></p>
+</div>
+
+<!-- COUNTDOWN SCREEN -->
+<div id="screen-countdown" class="screen">
+  <p class="info-msg" data-i18n="get_ready">Bereit machen...</p>
+  <div class="countdown-big" id="countdown-num">3</div>
+  <p class="info-msg" data-i18n="countdown_sub">Drückt den Knopf GLEICHZEITIG!</p>
+</div>
+
+<!-- ACTIVE ROUND SCREEN -->
+<div id="screen-round" class="screen">
+  <p class="round-info" id="round-label"></p>
+  <div class="btn-wrapper">
+    <div class="wave-ring"></div>
+    <div class="wave-ring"></div>
+    <div class="wave-ring"></div>
+    <button class="sync-btn" id="sync-btn">
+      <span data-i18n="sync_now">SYNC!</span>
+      <span class="btn-label" data-i18n="sync_sub">Jetzt drücken</span>
+    </button>
+  </div>
+  <div class="press-dots" id="press-dots"></div>
+  <p class="info-msg" id="press-info"></p>
+</div>
+
+<!-- ROUND RESULT SCREEN -->
+<div id="screen-result" class="screen">
+  <p class="round-info" id="result-round-label"></p>
+  <div class="grade-display" id="result-grade"></div>
+  <div class="sync-score" id="result-score"></div>
+  <p class="spread-info" id="result-spread"></p>
+  <table class="score-table">
+    <thead><tr><th data-i18n="player">Spieler</th><th style="text-align:right" data-i18n="score">Punkte</th></tr></thead>
+    <tbody id="score-rows"></tbody>
+  </table>
+  <button id="btn-next" data-i18n="next_round" style="display:none;">Nächste Runde</button>
+  <p class="info-msg" id="waiting-next" data-i18n="host_starts_next" style="display:none;">Host startet nächste Runde...</p>
+</div>
+
+<!-- GAME OVER SCREEN -->
+<div id="screen-gameover" class="screen">
+  <h1 data-i18n="game_over">Game Over!</h1>
+  <p class="subtitle" data-i18n="final_results">Endresultat</p>
+  <div id="leaderboard"></div>
+  <button id="btn-again" data-i18n="play_again" style="display:none;">Nochmal!</button>
+  <p class="info-msg" id="waiting-again" data-i18n="host_restarts" style="display:none;">Host kann neu starten...</p>
+</div>
+
+<script>
+const TRANSLATIONS = {
+  de: {
+    subtitle: 'Drückt alle GLEICHZEITIG!',
+    name_placeholder: 'Dein Name',
+    room_code_ph: 'Code',
+    create_room: 'Raum erstellen',
+    join_room: 'Beitreten',
+    room_code_label: 'Raum-Code',
+    share_code: 'Teile diesen Code mit deinen Mitspielern!',
+    start_game: 'Spiel starten',
+    get_ready: 'Bereit machen...',
+    countdown_sub: 'Drückt den Knopf GLEICHZEITIG!',
+    sync_now: 'SYNC!',
+    sync_sub: 'Jetzt drücken',
+    player: 'Spieler',
+    score: 'Punkte',
+    next_round: 'Nächste Runde →',
+    host_starts_next: 'Host startet nächste Runde...',
+    game_over: '🏆 Game Over!',
+    final_results: 'Endresultat',
+    play_again: '🔄 Nochmal!',
+    host_restarts: 'Host kann Nochmal drücken...',
+    round_of: 'Runde {r} von {t}',
+    pressed_count: '{n} von {t} gedrückt',
+    all_pressed: 'Alle haben gedrückt!',
+    missed: 'Hat nicht gedrückt',
+    spread_ms: 'Zeitdifferenz: {ms}ms',
+    perfect: 'PERFEKTE SYNCHRONISATION!',
+    grade_s: 'Unglaublich! 🤯',
+    grade_a: 'Großartig! 🎉',
+    grade_b: 'Gut! 👍',
+    grade_c: 'OK 😅',
+    grade_d: 'Fast! 😬',
+    grade_f: 'Übt noch... 💀',
+    sync_score: 'Sync-Score: {n}',
+    you_host: 'Du bist der Host!',
+    waiting_players: '{n} Spieler bereit',
+  },
+  en: {
+    subtitle: 'Everyone press at the SAME TIME!',
+    name_placeholder: 'Your name',
+    room_code_ph: 'Code',
+    create_room: 'Create Room',
+    join_room: 'Join',
+    room_code_label: 'Room Code',
+    share_code: 'Share this code with your friends!',
+    start_game: 'Start Game',
+    get_ready: 'Get ready...',
+    countdown_sub: 'Press the button at the SAME TIME!',
+    sync_now: 'SYNC!',
+    sync_sub: 'Press now',
+    player: 'Player',
+    score: 'Score',
+    next_round: 'Next Round →',
+    host_starts_next: 'Host is starting the next round...',
+    game_over: '🏆 Game Over!',
+    final_results: 'Final Results',
+    play_again: '🔄 Play Again!',
+    host_restarts: 'Host can restart...',
+    round_of: 'Round {r} of {t}',
+    pressed_count: '{n} of {t} pressed',
+    all_pressed: 'Everyone pressed!',
+    missed: 'Did not press',
+    spread_ms: 'Time spread: {ms}ms',
+    perfect: 'PERFECT SYNC!',
+    grade_s: 'Unbelievable! 🤯',
+    grade_a: 'Amazing! 🎉',
+    grade_b: 'Good! 👍',
+    grade_c: 'OK 😅',
+    grade_d: 'Almost! 😬',
+    grade_f: 'Keep practicing... 💀',
+    sync_score: 'Sync Score: {n}',
+    you_host: 'You are the host!',
+    waiting_players: '{n} players ready',
+  },
+  fr: {
+    subtitle: 'Appuyez tous EN MÊME TEMPS !',
+    name_placeholder: 'Votre nom',
+    room_code_ph: 'Code',
+    create_room: 'Créer la salle',
+    join_room: 'Rejoindre',
+    room_code_label: 'Code de salle',
+    share_code: 'Partagez ce code avec vos amis !',
+    start_game: 'Commencer',
+    get_ready: 'Préparez-vous...',
+    countdown_sub: 'Appuyez le bouton EN MÊME TEMPS !',
+    sync_now: 'SYNC !',
+    sync_sub: 'Appuyez maintenant',
+    player: 'Joueur',
+    score: 'Score',
+    next_round: 'Tour suivant →',
+    host_starts_next: "L'hôte lance le prochain tour...",
+    game_over: '🏆 Fin de partie !',
+    final_results: 'Résultats finaux',
+    play_again: '🔄 Rejouer !',
+    host_restarts: "L'hôte peut redémarrer...",
+    round_of: 'Tour {r} sur {t}',
+    pressed_count: '{n} sur {t} ont appuyé',
+    all_pressed: 'Tout le monde a appuyé !',
+    missed: "N'a pas appuyé",
+    spread_ms: 'Écart de temps : {ms}ms',
+    perfect: 'SYNCHRONISATION PARFAITE !',
+    grade_s: 'Incroyable ! 🤯',
+    grade_a: 'Fantastique ! 🎉',
+    grade_b: 'Bien ! 👍',
+    grade_c: 'OK 😅',
+    grade_d: 'Presque ! 😬',
+    grade_f: 'Continuez à pratiquer... 💀',
+    sync_score: 'Score de sync : {n}',
+    you_host: 'Vous êtes l\'hôte !',
+    waiting_players: '{n} joueurs prêts',
+  },
+  it: {
+    subtitle: 'Premete tutti CONTEMPORANEAMENTE!',
+    name_placeholder: 'Il tuo nome',
+    room_code_ph: 'Codice',
+    create_room: 'Crea stanza',
+    join_room: 'Entra',
+    room_code_label: 'Codice stanza',
+    share_code: 'Condividi questo codice con i tuoi amici!',
+    start_game: 'Inizia gioco',
+    get_ready: 'Preparatevi...',
+    countdown_sub: 'Premete il pulsante CONTEMPORANEAMENTE!',
+    sync_now: 'SYNC!',
+    sync_sub: 'Premi ora',
+    player: 'Giocatore',
+    score: 'Punti',
+    next_round: 'Round successivo →',
+    host_starts_next: "L'host avvia il prossimo round...",
+    game_over: '🏆 Fine partita!',
+    final_results: 'Risultati finali',
+    play_again: '🔄 Di nuovo!',
+    host_restarts: "L'host può ricominciare...",
+    round_of: 'Round {r} di {t}',
+    pressed_count: '{n} di {t} hanno premuto',
+    all_pressed: 'Tutti hanno premuto!',
+    missed: 'Non ha premuto',
+    spread_ms: 'Differenza di tempo: {ms}ms',
+    perfect: 'SINCRONIZZAZIONE PERFETTA!',
+    grade_s: 'Incredibile! 🤯',
+    grade_a: 'Fantastico! 🎉',
+    grade_b: 'Bravo! 👍',
+    grade_c: 'OK 😅',
+    grade_d: 'Quasi! 😬',
+    grade_f: 'Continuate ad allenarvi... 💀',
+    sync_score: 'Punteggio sync: {n}',
+    you_host: 'Sei l\'host!',
+    waiting_players: '{n} giocatori pronti',
+  },
+  es: {
+    subtitle: '¡Presionen todos AL MISMO TIEMPO!',
+    name_placeholder: 'Tu nombre',
+    room_code_ph: 'Código',
+    create_room: 'Crear sala',
+    join_room: 'Unirse',
+    room_code_label: 'Código de sala',
+    share_code: '¡Comparte este código con tus amigos!',
+    start_game: 'Iniciar juego',
+    get_ready: 'Preparados...',
+    countdown_sub: '¡Presionen el botón AL MISMO TIEMPO!',
+    sync_now: '¡SYNC!',
+    sync_sub: 'Presiona ahora',
+    player: 'Jugador',
+    score: 'Puntos',
+    next_round: 'Siguiente ronda →',
+    host_starts_next: 'El host inicia la siguiente ronda...',
+    game_over: '🏆 ¡Game Over!',
+    final_results: 'Resultados finales',
+    play_again: '🔄 ¡Otra vez!',
+    host_restarts: 'El host puede reiniciar...',
+    round_of: 'Ronda {r} de {t}',
+    pressed_count: '{n} de {t} presionaron',
+    all_pressed: '¡Todos presionaron!',
+    missed: 'No presionó',
+    spread_ms: 'Diferencia de tiempo: {ms}ms',
+    perfect: '¡SINCRONIZACIÓN PERFECTA!',
+    grade_s: '¡Increíble! 🤯',
+    grade_a: '¡Genial! 🎉',
+    grade_b: '¡Bien! 👍',
+    grade_c: 'OK 😅',
+    grade_d: '¡Casi! 😬',
+    grade_f: 'Sigan practicando... 💀',
+    sync_score: 'Puntuación sync: {n}',
+    you_host: '¡Eres el host!',
+    waiting_players: '{n} jugadores listos',
+  },
+};
+
+const { t, translatePage } = initI18n(TRANSLATIONS);
+
+// --- State ---
+let ws = null;
+let myId = null;
+let isHost = false;
+let roomCode = null;
+let players = [];
+let totalRounds = 5;
+let hasPressedThisRound = false;
+
+const WS_URL = 'wss://day-017-sync-or-sink.lab.gogerl.com';
+
+// --- Screens ---
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + id).classList.add('active');
+  translatePage();
+}
+
+// --- Entry ---
+document.getElementById('btn-create').addEventListener('click', () => {
+  const name = document.getElementById('player-name').value.trim() || 'Host';
+  connect(() => ws.send(JSON.stringify({ type: 'create_room', name })));
+});
+
+document.getElementById('btn-join').addEventListener('click', () => {
+  const name = document.getElementById('player-name').value.trim() || 'Player';
+  const code = document.getElementById('room-code-input').value.trim().toUpperCase();
+  if (!code || code.length !== 4) {
+    document.getElementById('entry-error').textContent = '4-letter room code required';
+    return;
+  }
+  connect(() => ws.send(JSON.stringify({ type: 'join_room', code, name })));
+});
+
+function connect(onOpen) {
+  document.getElementById('entry-error').textContent = '';
+  ws = new WebSocket(WS_URL);
+  ws.onopen = onOpen;
+  ws.onerror = () => {
+    document.getElementById('entry-error').textContent = 'Connection failed. Try again.';
+  };
+  ws.onmessage = (e) => handleMessage(JSON.parse(e.data));
+}
+
+// --- Message Handler ---
+function handleMessage(msg) {
+  switch (msg.type) {
+    case 'joined':
+      myId = msg.playerId;
+      isHost = msg.isHost;
+      roomCode = msg.code;
+      document.getElementById('lobby-code').textContent = msg.code;
+      showScreen('lobby');
+      break;
+
+    case 'lobby':
+      players = msg.players;
+      renderLobby(msg);
+      break;
+
+    case 'error':
+      document.getElementById('entry-error').textContent = msg.message;
+      break;
+
+    case 'game_starting':
+      totalRounds = msg.totalRounds;
+      showScreen('countdown');
+      startCountdown(3, () => {});
+      break;
+
+    case 'round_start':
+      hasPressedThisRound = false;
+      showRound(msg.round, msg.totalRounds);
+      break;
+
+    case 'press_update':
+      updatePressDots(msg.pressCount, msg.total);
+      break;
+
+    case 'round_result':
+      players = msg.players;
+      showRoundResult(msg);
+      break;
+
+    case 'next_round_starting':
+      showScreen('countdown');
+      startCountdown(3, () => {});
+      break;
+
+    case 'game_over':
+      showGameOver(msg);
+      break;
+  }
+}
+
+// --- Lobby ---
+function renderLobby(msg) {
+  const list = document.getElementById('player-list');
+  list.innerHTML = '';
+  msg.players.forEach(p => {
+    const div = document.createElement('div');
+    div.className = 'player-item';
+    div.innerHTML = `${p.id === msg.hostId ? '<span class="crown">👑</span>' : '<span>👤</span>'} <span>${escHtml(p.name)}</span>${p.id === msg.hostId ? '<span class="host-badge">HOST</span>' : ''}`;
+    list.appendChild(div);
+  });
+
+  const startBtn = document.getElementById('btn-start');
+  const waitingHost = document.getElementById('waiting-host');
+  if (isHost) {
+    startBtn.style.display = msg.players.length >= 2 ? 'block' : 'none';
+    waitingHost.textContent = msg.players.length < 2 ? t('waiting_players').replace('{n}', msg.players.length) : '';
+  } else {
+    startBtn.style.display = 'none';
+    waitingHost.textContent = '⏳ Waiting for host to start...';
+  }
+}
+
+document.getElementById('btn-start').addEventListener('click', () => {
+  ws.send(JSON.stringify({ type: 'start_game' }));
+});
+
+// --- Countdown ---
+function startCountdown(from, cb) {
+  const el = document.getElementById('countdown-num');
+  let n = from;
+  el.textContent = n;
+  el.style.animation = 'none';
+  void el.offsetWidth;
+  el.style.animation = '';
+  const iv = setInterval(() => {
+    n--;
+    if (n <= 0) {
+      clearInterval(iv);
+      el.textContent = '🌊';
+      setTimeout(cb, 400);
+    } else {
+      el.textContent = n;
+      el.style.animation = 'none';
+      void el.offsetWidth;
+      el.style.animation = 'pulse 0.5s ease-in-out';
+    }
+  }, 1000);
+}
+
+// --- Round ---
+function showRound(round, total) {
+  showScreen('round');
+  const lbl = t('round_of').replace('{r}', round).replace('{t}', total);
+  document.getElementById('round-label').textContent = lbl;
+
+  const btn = document.getElementById('sync-btn');
+  btn.className = 'sync-btn';
+  hasPressedThisRound = false;
+  document.getElementById('press-info').textContent = '';
+
+  // Reset dots
+  const dots = document.getElementById('press-dots');
+  dots.innerHTML = '';
+  players.forEach(() => {
+    const d = document.createElement('div');
+    d.className = 'press-dot';
+    dots.appendChild(d);
+  });
+}
+
+document.getElementById('sync-btn').addEventListener('click', () => {
+  if (hasPressedThisRound) return;
+  hasPressedThisRound = true;
+  const btn = document.getElementById('sync-btn');
+  btn.classList.add('pressed');
+  btn.classList.add('disabled');
+  ws.send(JSON.stringify({ type: 'press' }));
+  document.getElementById('press-info').textContent = '✅ Gedrückt!';
+});
+
+function updatePressDots(count, total) {
+  const dots = document.querySelectorAll('.press-dot');
+  for (let i = 0; i < dots.length; i++) {
+    dots[i].classList.toggle('lit', i < count);
+  }
+  const allPressedText = t('pressed_count').replace('{n}', count).replace('{t}', total);
+  document.getElementById('press-info').textContent = count === total ? t('all_pressed') : allPressedText;
+}
+
+// --- Round Result ---
+function showRoundResult(msg) {
+  showScreen('result');
+  const { result, round, players: pls, state } = msg;
+
+  const lbl = t('round_of').replace('{r}', round).replace('{t}', totalRounds);
+  document.getElementById('result-round-label').textContent = lbl;
+
+  const gradeEl = document.getElementById('result-grade');
+  gradeEl.textContent = result.grade;
+  gradeEl.className = 'grade-display grade-' + result.grade;
+
+  const scoreText = t('sync_score').replace('{n}', result.syncScore);
+  document.getElementById('result-score').textContent = scoreText;
+
+  const spreadEl = document.getElementById('result-spread');
+  if (result.spreadMs !== null) {
+    spreadEl.textContent = t('spread_ms').replace('{ms}', result.spreadMs);
+  } else {
+    spreadEl.textContent = t('grade_f');
+  }
+
+  const tbody = document.getElementById('score-rows');
+  tbody.innerHTML = '';
+  pls.forEach(p => {
+    const missed = result.missedPlayers.includes(p.id);
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${escHtml(p.name)}${missed ? ' <span style="color:#f44;font-size:0.8rem">✗</span>' : ' ✓'}</td><td>${p.score}</td>`;
+    tbody.appendChild(tr);
+  });
+
+  const nextBtn = document.getElementById('btn-next');
+  const waitNext = document.getElementById('waiting-next');
+  if (state !== 'finished') {
+    if (isHost) {
+      nextBtn.style.display = 'block';
+      waitNext.style.display = 'none';
+    } else {
+      nextBtn.style.display = 'none';
+      waitNext.style.display = 'block';
+    }
+  } else {
+    nextBtn.style.display = 'none';
+    waitNext.style.display = 'none';
+  }
+}
+
+document.getElementById('btn-next').addEventListener('click', () => {
+  ws.send(JSON.stringify({ type: 'next_round' }));
+  document.getElementById('btn-next').style.display = 'none';
+});
+
+// --- Game Over ---
+function showGameOver(msg) {
+  showScreen('gameover');
+  const lb = document.getElementById('leaderboard');
+  lb.innerHTML = '';
+  const ranks = ['🥇','🥈','🥉'];
+  msg.leaderboard.forEach((p, i) => {
+    const div = document.createElement('div');
+    div.className = 'lb-item';
+    div.innerHTML = `<span class="lb-rank">${ranks[i] || (i+1)+'.'}</span><span class="lb-name">${escHtml(p.name)}</span><span class="lb-score">${p.score}</span>`;
+    lb.appendChild(div);
+  });
+
+  const againBtn = document.getElementById('btn-again');
+  const waitAgain = document.getElementById('waiting-again');
+  if (isHost) {
+    againBtn.style.display = 'block';
+    waitAgain.style.display = 'none';
+  } else {
+    againBtn.style.display = 'none';
+    waitAgain.style.display = 'block';
+  }
+}
+
+document.getElementById('btn-again').addEventListener('click', () => {
+  ws.send(JSON.stringify({ type: 'play_again' }));
+});
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+</script>
+</body>
+</html>
