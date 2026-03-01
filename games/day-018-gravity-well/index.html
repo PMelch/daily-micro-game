@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gravity Well</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #06060f; color: #e0e0ff; font-family: system-ui, sans-serif; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
+    .back-bar { width: 100%; background: #0a0a1a; padding: 0.5rem 1rem; border-bottom: 1px solid #333; }
+    .back-bar a { color: #ffcc00; text-decoration: none; font-size: 0.9rem; font-family: system-ui, sans-serif; }
+    .back-bar a:hover { text-decoration: underline; }
+
+    #game-container { display: flex; flex-direction: column; align-items: center; padding: 0.5rem; width: 100%; max-width: 560px; gap: 0.5rem; }
+
+    #hud { display: flex; justify-content: space-between; width: 100%; font-size: 0.85rem; color: #aaa; padding: 0 0.25rem; }
+    #hud span { color: #ffcc00; font-weight: bold; }
+
+    #canvas-wrap { position: relative; width: 100%; }
+    canvas { width: 100%; border: 1px solid #2a2a4a; border-radius: 8px; background: #08081a; display: block; cursor: crosshair; touch-action: none; }
+
+    #controls { display: flex; gap: 0.5rem; width: 100%; }
+    button.ctrl { flex: 1; padding: 0.65rem; border: none; border-radius: 6px; font-size: 0.9rem; cursor: pointer; font-weight: bold; transition: opacity 0.15s; }
+    button.ctrl:disabled { opacity: 0.4; cursor: default; }
+    #btn-launch { background: #22c55e; color: #000; }
+    #btn-clear  { background: #334; color: #ffcc00; border: 1px solid #ffcc00; }
+    #btn-undo   { background: #334; color: #aad; border: 1px solid #558; }
+
+    #well-selector { display: flex; gap: 0.5rem; width: 100%; flex-wrap: wrap; }
+    .well-btn { flex: 1; min-width: 80px; padding: 0.5rem; border-radius: 6px; border: 2px solid transparent; font-size: 0.8rem; cursor: pointer; background: #1a1a2e; color: #ccc; text-align: center; transition: border-color 0.15s; }
+    .well-btn.selected { border-color: #7c3aed; color: #fff; }
+    .well-btn .well-icon { font-size: 1.3rem; display: block; }
+
+    #msg { font-size: 0.85rem; color: #888; text-align: center; min-height: 1.2em; }
+
+    /* Overlay */
+    #overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; gap: 1rem; padding: 2rem; }
+    #overlay h1 { font-size: 2rem; color: #ffcc00; }
+    #overlay p  { color: #bbb; text-align: center; max-width: 340px; line-height: 1.5; }
+    #overlay .score { font-size: 3rem; }
+    #overlay button { padding: 0.75rem 2rem; background: #7c3aed; color: #fff; border: none; border-radius: 8px; font-size: 1rem; cursor: pointer; font-weight: bold; }
+    #level-badge { font-size: 0.85rem; color: #7c3aed; background: #1a0a2e; padding: 0.25rem 0.75rem; border-radius: 12px; border: 1px solid #7c3aed; }
+  </style>
+</head>
+<body>
+<div class="back-bar"><a href="/">← <span data-i18n="back">Zurück</span></a></div>
+
+<div id="game-container">
+  <div id="hud">
+    <div id="level-badge">Level <span id="hud-level">1</span> / <span id="hud-total">5</span></div>
+    <div><span data-i18n="wells">Brunnen</span>: <span id="hud-wells">3</span></div>
+    <div><span data-i18n="stars">⭐</span> <span id="hud-stars">—</span></div>
+  </div>
+  <div id="canvas-wrap">
+    <canvas id="game-canvas" width="540" height="400"></canvas>
+  </div>
+  <div id="well-selector">
+    <div class="well-btn selected" data-type="attractor" title="">
+      <span class="well-icon">🌀</span>
+      <span data-i18n="attractor">Attraktor</span>
+    </div>
+    <div class="well-btn" data-type="repulsor" title="">
+      <span class="well-icon">💥</span>
+      <span data-i18n="repulsor">Repulsor</span>
+    </div>
+  </div>
+  <div id="controls">
+    <button class="ctrl" id="btn-undo" data-i18n="undo">↩ Rückgängig</button>
+    <button class="ctrl" id="btn-clear" data-i18n="clear">🗑 Leeren</button>
+    <button class="ctrl" id="btn-launch" data-i18n="launch">▶ Starten</button>
+  </div>
+  <div id="msg" data-i18n="msg-place"></div>
+</div>
+
+<div id="overlay">
+  <h1>🌌 Gravity Well</h1>
+  <p data-i18n="intro"></p>
+  <div style="display:flex;gap:1rem;font-size:0.85rem;color:#888;margin-top:0.5rem;">
+    <span>🌀 = <span data-i18n="attr-desc"></span></span>
+    <span>💥 = <span data-i18n="rep-desc"></span></span>
+  </div>
+  <button id="btn-start" data-i18n="start">Los geht's!</button>
+</div>
+
+<script src="/shared/i18n.js"></script>
+<script src="physics.js"></script>
+<script>
+const TRANSLATIONS = {
+  de: {
+    back: 'Zurück',
+    wells: 'Brunnen',
+    stars: '⭐',
+    attractor: 'Attraktor',
+    repulsor: 'Repulsor',
+    undo: '↩ Rückgängig',
+    clear: '🗑 Leeren',
+    launch: '▶ Starten',
+    stop: '⏹ Stop',
+    'msg-place': 'Klicke, um Gravitationsbrunnen zu setzen.',
+    'msg-running': 'Ball in Bewegung…',
+    'msg-well-limit': 'Maximale Brunnenanzahl erreicht!',
+    intro: 'Setze Gravitationsbrunnen auf dem Spielfeld, um den Ball zum goldenen Stern zu lenken. Weniger Brunnen = mehr Sterne!',
+    'attr-desc': 'zieht an',
+    'rep-desc': 'stößt ab',
+    start: 'Los geht\'s!',
+    win: '⭐ Level geschafft!',
+    lose: '💫 Ball verloren!',
+    next: 'Weiter →',
+    retry: '↩ Nochmal',
+    complete: '🏆 Alle Level gemeistert!',
+    'total-stars': 'Sterne gesamt',
+    restart: 'Neu starten',
+    'used-wells': 'Brunnen genutzt',
+  },
+  en: {
+    back: 'Back',
+    wells: 'Wells',
+    stars: '⭐',
+    attractor: 'Attractor',
+    repulsor: 'Repulsor',
+    undo: '↩ Undo',
+    clear: '🗑 Clear',
+    launch: '▶ Launch',
+    stop: '⏹ Stop',
+    'msg-place': 'Click to place gravity wells.',
+    'msg-running': 'Ball in motion…',
+    'msg-well-limit': 'Maximum wells reached!',
+    intro: 'Place gravity wells on the field to guide the ball to the golden star. Fewer wells = more stars!',
+    'attr-desc': 'pulls in',
+    'rep-desc': 'pushes away',
+    start: 'Let\'s go!',
+    win: '⭐ Level complete!',
+    lose: '💫 Ball lost!',
+    next: 'Next →',
+    retry: '↩ Retry',
+    complete: '🏆 All levels done!',
+    'total-stars': 'Total stars',
+    restart: 'Restart',
+    'used-wells': 'Wells used',
+  },
+  fr: {
+    back: 'Retour',
+    wells: 'Puits',
+    stars: '⭐',
+    attractor: 'Attracteur',
+    repulsor: 'Répulseur',
+    undo: '↩ Annuler',
+    clear: '🗑 Effacer',
+    launch: '▶ Lancer',
+    stop: '⏹ Stop',
+    'msg-place': 'Clique pour placer des puits de gravité.',
+    'msg-running': 'Balle en mouvement…',
+    'msg-well-limit': 'Nombre max de puits atteint!',
+    intro: 'Place des puits de gravité pour guider la balle vers l\'étoile dorée. Moins de puits = plus d\'étoiles!',
+    'attr-desc': 'attire',
+    'rep-desc': 'repousse',
+    start: 'C\'est parti!',
+    win: '⭐ Niveau réussi!',
+    lose: '💫 Balle perdue!',
+    next: 'Suivant →',
+    retry: '↩ Réessayer',
+    complete: '🏆 Tous les niveaux terminés!',
+    'total-stars': 'Étoiles totales',
+    restart: 'Recommencer',
+    'used-wells': 'Puits utilisés',
+  },
+  it: {
+    back: 'Indietro',
+    wells: 'Pozzi',
+    stars: '⭐',
+    attractor: 'Attrattore',
+    repulsor: 'Repulsore',
+    undo: '↩ Annulla',
+    clear: '🗑 Cancella',
+    launch: '▶ Lancia',
+    stop: '⏹ Stop',
+    'msg-place': 'Clicca per posizionare pozzi di gravità.',
+    'msg-running': 'Palla in movimento…',
+    'msg-well-limit': 'Numero massimo di pozzi raggiunto!',
+    intro: 'Posiziona pozzi di gravità per guidare la palla verso la stella dorata. Meno pozzi = più stelle!',
+    'attr-desc': 'attrae',
+    'rep-desc': 'respinge',
+    start: 'Andiamo!',
+    win: '⭐ Livello completato!',
+    lose: '💫 Palla persa!',
+    next: 'Avanti →',
+    retry: '↩ Riprova',
+    complete: '🏆 Tutti i livelli completati!',
+    'total-stars': 'Stelle totali',
+    restart: 'Ricomincia',
+    'used-wells': 'Pozzi usati',
+  },
+  es: {
+    back: 'Volver',
+    wells: 'Pozos',
+    stars: '⭐',
+    attractor: 'Atractor',
+    repulsor: 'Repulsor',
+    undo: '↩ Deshacer',
+    clear: '🗑 Limpiar',
+    launch: '▶ Lanzar',
+    stop: '⏹ Parar',
+    'msg-place': 'Haz clic para colocar pozos de gravedad.',
+    'msg-running': 'Bola en movimiento…',
+    'msg-well-limit': '¡Número máximo de pozos alcanzado!',
+    intro: 'Coloca pozos de gravedad para guiar la bola hasta la estrella dorada. ¡Menos pozos = más estrellas!',
+    'attr-desc': 'atrae',
+    'rep-desc': 'repele',
+    start: '¡Vamos!',
+    win: '⭐ ¡Nivel superado!',
+    lose: '💫 ¡Bola perdida!',
+    next: 'Siguiente →',
+    retry: '↩ Reintentar',
+    complete: '🏆 ¡Todos los niveles completados!',
+    'total-stars': 'Estrellas totales',
+    restart: 'Reiniciar',
+    'used-wells': 'Pozos usados',
+  }
+};
+
+const { t, onLangChange } = initI18n(TRANSLATIONS);
+
+// ── Levels ──────────────────────────────────────────────────────────────────
+// All coords normalized 0..1 — scaled to canvas at render time.
+const LEVELS = [
+  { // Level 1 – simple: ball left, target right, just 1 well to pull it
+    ball:   { x: 0.1,  y: 0.5,  vx: 80,  vy: 0 },
+    target: { x: 0.88, y: 0.5 },
+    maxWells: 1,
+    hint: null,
+  },
+  { // Level 2 – ball shoots up, target is down-right, need to bend path
+    ball:   { x: 0.1,  y: 0.85, vx: 120, vy: -60 },
+    target: { x: 0.85, y: 0.75 },
+    maxWells: 2,
+  },
+  { // Level 3 – ball goes right but target is top-right, needs lift
+    ball:   { x: 0.1,  y: 0.6,  vx: 100, vy: 0 },
+    target: { x: 0.88, y: 0.18 },
+    maxWells: 2,
+    obstacles: [{ x: 0.5, y: 0.55, r: 0.07 }],
+  },
+  { // Level 4 – tricky: target behind a wall gap
+    ball:   { x: 0.08, y: 0.5,  vx: 90,  vy: -30 },
+    target: { x: 0.88, y: 0.22 },
+    maxWells: 3,
+    obstacles: [{ x: 0.5, y: 0.6, r: 0.09 }],
+  },
+  { // Level 5 – hard: needs precise placement
+    ball:   { x: 0.12, y: 0.82, vx: 60,  vy: -120 },
+    target: { x: 0.88, y: 0.82 },
+    maxWells: 2,
+    obstacles: [
+      { x: 0.35, y: 0.5, r: 0.07 },
+      { x: 0.65, y: 0.5, r: 0.07 },
+    ],
+  },
+];
+
+// ── State ────────────────────────────────────────────────────────────────────
+const canvas = document.getElementById('game-canvas');
+const ctx    = canvas.getContext('2d');
+const W = canvas.width, H = canvas.height;
+
+let currentLevel = 0;
+let totalStars   = 0;
+let wells        = [];
+let wellType     = 'attractor';
+let running      = false;
+let animId       = null;
+let trail        = [];
+let ballState    = null;
+let lastTime     = null;
+let levelResult  = null; // 'win' | 'lose'
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+function lvl() { return LEVELS[currentLevel]; }
+function scalePos(norm) { return { x: norm.x * W, y: norm.y * H }; }
+function scaleR(r) { return r * Math.min(W, H); }
+function getInitBall() {
+  const l = lvl();
+  return { pos: [l.ball.x * W, l.ball.y * H], vel: [l.ball.vx, l.ball.vy] };
+}
+function starsForWells(used, max) {
+  if (used <= 1) return 3;
+  if (used <= max - 1) return 2;
+  return 1;
+}
+
+// ── Render ───────────────────────────────────────────────────────────────────
+function drawBg() {
+  ctx.fillStyle = '#08081a';
+  ctx.fillRect(0, 0, W, H);
+  // subtle grid
+  ctx.strokeStyle = 'rgba(80,80,160,0.12)';
+  ctx.lineWidth = 1;
+  for (let x = 0; x < W; x += 40) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); }
+  for (let y = 0; y < H; y += 40) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
+}
+
+function drawObstacles() {
+  const obs = lvl().obstacles || [];
+  for (const o of obs) {
+    const cx = o.x * W, cy = o.y * H, r = scaleR(o.r);
+    const g = ctx.createRadialGradient(cx, cy, r * 0.3, cx, cy, r);
+    g.addColorStop(0, '#334');
+    g.addColorStop(1, '#111');
+    ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.fillStyle = g; ctx.fill();
+    ctx.strokeStyle = '#445'; ctx.lineWidth = 2; ctx.stroke();
+    // X mark
+    ctx.strokeStyle = '#f66'; ctx.lineWidth = 2;
+    const s = r * 0.45;
+    ctx.beginPath(); ctx.moveTo(cx - s, cy - s); ctx.lineTo(cx + s, cy + s); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx + s, cy - s); ctx.lineTo(cx - s, cy + s); ctx.stroke();
+  }
+}
+
+function drawWells() {
+  for (const w of wells) {
+    const isAttr = w.strength > 0;
+    const r = 18;
+    const g = ctx.createRadialGradient(w.pos[0], w.pos[1], 2, w.pos[0], w.pos[1], r * 2);
+    g.addColorStop(0, isAttr ? 'rgba(124,58,237,0.9)' : 'rgba(239,68,68,0.9)');
+    g.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.beginPath(); ctx.arc(w.pos[0], w.pos[1], r * 2, 0, Math.PI * 2);
+    ctx.fillStyle = g; ctx.fill();
+
+    ctx.beginPath(); ctx.arc(w.pos[0], w.pos[1], r, 0, Math.PI * 2);
+    ctx.fillStyle = isAttr ? '#7c3aed' : '#dc2626';
+    ctx.fill();
+    ctx.strokeStyle = isAttr ? '#c4b5fd' : '#fca5a5';
+    ctx.lineWidth = 2; ctx.stroke();
+
+    // spiral arms
+    ctx.save(); ctx.translate(w.pos[0], w.pos[1]);
+    for (let i = 0; i < 3; i++) {
+      ctx.rotate(Math.PI * 2 / 3);
+      ctx.strokeStyle = isAttr ? 'rgba(196,181,253,0.4)' : 'rgba(252,165,165,0.4)';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      for (let a = 0; a < Math.PI; a += 0.1) {
+        const rr = 20 + a * 12;
+        const dir = isAttr ? 1 : -1;
+        ctx.lineTo(Math.cos(a * dir) * rr, Math.sin(a * dir) * rr);
+      }
+      ctx.stroke();
+    }
+    ctx.restore();
+
+    // label
+    ctx.fillStyle = '#fff'; ctx.font = 'bold 11px system-ui'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(isAttr ? '🌀' : '💥', w.pos[0], w.pos[1]);
+  }
+}
+
+function drawTarget() {
+  const tp = scalePos(lvl().target);
+  const r  = 18;
+  // pulsate
+  const pulse = 1 + 0.15 * Math.sin(Date.now() / 300);
+  const g = ctx.createRadialGradient(tp.x, tp.y, 2, tp.x, tp.y, r * 2.5 * pulse);
+  g.addColorStop(0, 'rgba(251,191,36,0.9)');
+  g.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.beginPath(); ctx.arc(tp.x, tp.y, r * 2.5 * pulse, 0, Math.PI * 2);
+  ctx.fillStyle = g; ctx.fill();
+
+  ctx.beginPath(); ctx.arc(tp.x, tp.y, r, 0, Math.PI * 2);
+  ctx.fillStyle = '#fbbf24'; ctx.fill();
+  ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
+  ctx.fillStyle = '#000'; ctx.font = 'bold 14px system-ui'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText('★', tp.x, tp.y);
+}
+
+function drawBall(pos) {
+  const [x, y] = pos;
+  const g = ctx.createRadialGradient(x - 3, y - 3, 1, x, y, 12);
+  g.addColorStop(0, '#a5f3fc');
+  g.addColorStop(1, '#0ea5e9');
+  ctx.beginPath(); ctx.arc(x, y, 10, 0, Math.PI * 2);
+  ctx.fillStyle = g; ctx.fill();
+  ctx.strokeStyle = '#7dd3fc'; ctx.lineWidth = 1.5; ctx.stroke();
+}
+
+function drawTrail() {
+  for (let i = 1; i < trail.length; i++) {
+    const alpha = i / trail.length;
+    ctx.beginPath();
+    ctx.moveTo(trail[i-1][0], trail[i-1][1]);
+    ctx.lineTo(trail[i][0], trail[i][1]);
+    ctx.strokeStyle = `rgba(125,211,252,${alpha * 0.4})`;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  }
+}
+
+function drawLaunchArrow() {
+  if (running) return;
+  const l = lvl();
+  const bx = l.ball.x * W, by = l.ball.y * H;
+  const speed = Math.sqrt(l.ball.vx ** 2 + l.ball.vy ** 2);
+  const nx = l.ball.vx / speed, ny = l.ball.vy / speed;
+  const len = 40;
+  ctx.strokeStyle = 'rgba(125,211,252,0.6)'; ctx.lineWidth = 2;
+  ctx.setLineDash([5, 5]);
+  ctx.beginPath(); ctx.moveTo(bx, by); ctx.lineTo(bx + nx * len, by + ny * len); ctx.stroke();
+  ctx.setLineDash([]);
+  // arrowhead
+  const ex = bx + nx * len, ey = by + ny * len;
+  const ax = -ny, ay = nx;
+  ctx.fillStyle = 'rgba(125,211,252,0.6)';
+  ctx.beginPath(); ctx.moveTo(ex, ey); ctx.lineTo(ex - nx * 8 + ax * 5, ey - ny * 8 + ay * 5);
+  ctx.lineTo(ex - nx * 8 - ax * 5, ey - ny * 8 - ay * 5); ctx.closePath(); ctx.fill();
+}
+
+function render() {
+  drawBg();
+  drawObstacles();
+  drawTrail();
+  drawWells();
+  drawTarget();
+  const pos = running && ballState ? ballState.pos : [lvl().ball.x * W, lvl().ball.y * H];
+  drawBall(pos);
+  drawLaunchArrow();
+}
+
+// ── Physics Loop ─────────────────────────────────────────────────────────────
+function physicsLoop(ts) {
+  if (!running) return;
+  if (!lastTime) lastTime = ts;
+  const dt = Math.min((ts - lastTime) / 1000, 0.033);
+  lastTime = ts;
+
+  const STEPS = 4;
+  const subDt = dt / STEPS;
+  for (let s = 0; s < STEPS; s++) {
+    ballState = stepSimulation(ballState, wells, subDt);
+    trail.push([...ballState.pos]);
+    if (trail.length > 200) trail.shift();
+
+    // Check obstacle collision
+    const obs = lvl().obstacles || [];
+    for (const o of obs) {
+      const ox = o.x * W, oy = o.y * H, or_ = scaleR(o.r) + 10;
+      if (checkCollision(ballState.pos, [ox, oy], or_)) {
+        endRun('lose');
+        return;
+      }
+    }
+
+    if (checkCollision(ballState.pos, [lvl().target.x * W, lvl().target.y * H], 22)) {
+      endRun('win');
+      return;
+    }
+    if (isOutOfBounds(ballState.pos, W, H, 30)) {
+      endRun('lose');
+      return;
+    }
+  }
+
+  render();
+  animId = requestAnimationFrame(physicsLoop);
+}
+
+function endRun(result) {
+  running = false;
+  cancelAnimationFrame(animId);
+  lastTime = null;
+  render();
+
+  if (result === 'win') {
+    const stars = starsForWells(wells.length, lvl().maxWells);
+    totalStars += stars;
+    showResult(true, stars);
+  } else {
+    showResult(false, 0);
+  }
+}
+
+// ── UI ────────────────────────────────────────────────────────────────────────
+function updateHUD() {
+  document.getElementById('hud-level').textContent = currentLevel + 1;
+  document.getElementById('hud-total').textContent = LEVELS.length;
+  document.getElementById('hud-wells').textContent = `${wells.length}/${lvl().maxWells}`;
+  document.getElementById('hud-stars').textContent = totalStars;
+}
+
+function setMsg(key, raw) {
+  const el = document.getElementById('msg');
+  el.textContent = raw || t(key);
+}
+
+function loadLevel() {
+  wells = [];
+  trail = [];
+  running = false;
+  ballState = getInitBall();
+  levelResult = null;
+  cancelAnimationFrame(animId);
+  lastTime = null;
+  updateHUD();
+  render();
+  setMsg('msg-place');
+  document.getElementById('btn-launch').textContent = t('launch');
+  document.getElementById('btn-launch').disabled = false;
+}
+
+function showResult(win, stars) {
+  const ov = document.getElementById('overlay');
+  ov.innerHTML = '';
+  ov.style.display = 'flex';
+
+  const h = document.createElement('h1');
+  h.textContent = win ? t('win') : t('lose');
+  ov.appendChild(h);
+
+  if (win) {
+    const sc = document.createElement('div');
+    sc.className = 'score';
+    sc.textContent = '⭐'.repeat(stars);
+    ov.appendChild(sc);
+    const info = document.createElement('p');
+    info.textContent = `${t('used-wells')}: ${wells.length}`;
+    ov.appendChild(info);
+  } else {
+    const info = document.createElement('p');
+    info.textContent = t('retry');
+    ov.appendChild(info);
+  }
+
+  const btn = document.createElement('button');
+  if (win && currentLevel < LEVELS.length - 1) {
+    btn.textContent = t('next');
+    btn.onclick = () => { currentLevel++; ov.style.display = 'none'; loadLevel(); };
+  } else if (win) {
+    // Game complete
+    const done = document.createElement('p');
+    done.textContent = `${t('total-stars')}: ${totalStars} / ${LEVELS.length * 3}`;
+    ov.appendChild(done);
+    btn.textContent = t('restart');
+    btn.onclick = () => { currentLevel = 0; totalStars = 0; ov.style.display = 'none'; loadLevel(); };
+  } else {
+    btn.textContent = t('retry');
+    btn.onclick = () => { ov.style.display = 'none'; loadLevel(); };
+  }
+  ov.appendChild(btn);
+}
+
+// ── Event Listeners ───────────────────────────────────────────────────────────
+document.getElementById('btn-launch').addEventListener('click', () => {
+  if (running) {
+    running = false;
+    cancelAnimationFrame(animId);
+    lastTime = null;
+    document.getElementById('btn-launch').textContent = t('launch');
+    render();
+    return;
+  }
+  running = true;
+  ballState = getInitBall();
+  trail = [];
+  lastTime = null;
+  document.getElementById('btn-launch').textContent = t('stop');
+  animId = requestAnimationFrame(physicsLoop);
+  setMsg('msg-running');
+});
+
+document.getElementById('btn-clear').addEventListener('click', () => {
+  if (running) return;
+  wells = [];
+  trail = [];
+  updateHUD(); render();
+});
+
+document.getElementById('btn-undo').addEventListener('click', () => {
+  if (running) return;
+  wells.pop();
+  updateHUD(); render();
+});
+
+document.querySelectorAll('.well-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.well-btn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    wellType = btn.dataset.type;
+  });
+});
+
+function canvasClick(e) {
+  if (running) return;
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = W / rect.width, scaleY = H / rect.height;
+  const x = (e.clientX - rect.left) * scaleX;
+  const y = (e.clientY - rect.top)  * scaleY;
+  if (wells.length >= lvl().maxWells) { setMsg('msg-well-limit'); return; }
+  wells.push({ pos: [x, y], strength: wellType === 'attractor' ? 1 : -1 });
+  updateHUD(); render(); setMsg('msg-place');
+}
+
+canvas.addEventListener('click', canvasClick);
+canvas.addEventListener('touchend', e => {
+  e.preventDefault();
+  const t = e.changedTouches[0];
+  canvasClick({ clientX: t.clientX, clientY: t.clientY });
+}, { passive: false });
+
+// ── Start ─────────────────────────────────────────────────────────────────────
+document.getElementById('btn-start').addEventListener('click', () => {
+  document.getElementById('overlay').style.display = 'none';
+  loadLevel();
+});
+
+onLangChange(() => {
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    el.textContent = t(el.getAttribute('data-i18n'));
+  });
+  document.getElementById('btn-launch').textContent = running ? t('stop') : t('launch');
+});
+
+// start idle render loop for pulsing target
+function idleRender() {
+  if (!running) render();
+  requestAnimationFrame(idleRender);
+}
+requestAnimationFrame(idleRender);
+</script>
+</body>
+</html>
