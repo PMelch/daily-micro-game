@@ -1,0 +1,986 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ballpark! 🎯</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #0d0d2b;
+      color: #f0f0f0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    .back-bar {
+      width: 100%;
+      background: #0a0a1a;
+      padding: 0.5rem 1rem;
+      border-bottom: 1px solid #333;
+    }
+    .back-bar a {
+      color: #ffcc00;
+      text-decoration: none;
+      font-size: 0.9rem;
+      font-family: system-ui, sans-serif;
+    }
+    .back-bar a:hover { text-decoration: underline; }
+
+    .screen {
+      flex: 1;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+      text-align: center;
+    }
+    .screen.active { display: flex; }
+
+    h1 { font-size: 2.4rem; color: #ffcc00; margin-bottom: 0.3rem; }
+    h2 { font-size: 1.6rem; color: #ffcc00; margin-bottom: 1rem; }
+    .subtitle { color: #aaa; font-size: 1rem; margin-bottom: 1.5rem; }
+
+    /* ─── SETUP ─── */
+    .setup-box {
+      background: #1a1a3a;
+      border: 1px solid #333;
+      border-radius: 16px;
+      padding: 2rem;
+      width: 100%;
+      max-width: 420px;
+    }
+    .player-count-row {
+      display: flex;
+      gap: 0.75rem;
+      justify-content: center;
+      margin: 1rem 0 1.5rem;
+    }
+    .count-btn {
+      width: 56px; height: 56px;
+      border-radius: 50%;
+      border: 2px solid #555;
+      background: #0d0d2b;
+      color: #f0f0f0;
+      font-size: 1.4rem;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .count-btn.selected { border-color: #ffcc00; color: #ffcc00; background: #2a2a0a; }
+
+    .name-fields { display: flex; flex-direction: column; gap: 0.75rem; }
+    .name-field {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .player-badge {
+      width: 34px; height: 34px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: bold; font-size: 0.85rem;
+      flex-shrink: 0;
+    }
+    .name-field input {
+      flex: 1;
+      background: #0d0d2b;
+      border: 1px solid #444;
+      border-radius: 8px;
+      padding: 0.6rem 1rem;
+      color: #f0f0f0;
+      font-size: 1rem;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .name-field input:focus { border-color: #ffcc00; }
+
+    .btn-primary {
+      background: #ffcc00;
+      color: #0d0d2b;
+      border: none;
+      border-radius: 12px;
+      padding: 0.85rem 2.5rem;
+      font-size: 1.1rem;
+      font-weight: bold;
+      cursor: pointer;
+      margin-top: 1.5rem;
+      transition: transform 0.1s, opacity 0.1s;
+    }
+    .btn-primary:hover { opacity: 0.9; transform: scale(1.02); }
+    .btn-primary:active { transform: scale(0.98); }
+
+    /* ─── PASS SCREEN ─── */
+    .pass-avatar {
+      font-size: 5rem;
+      margin-bottom: 1rem;
+    }
+    .pass-name {
+      font-size: 2rem;
+      font-weight: bold;
+      color: #ffcc00;
+      margin-bottom: 0.5rem;
+    }
+    .pass-instruction {
+      color: #aaa;
+      font-size: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    /* ─── QUESTION ─── */
+    .round-badge {
+      background: #2a2a4a;
+      border: 1px solid #444;
+      border-radius: 8px;
+      padding: 0.3rem 1rem;
+      font-size: 0.85rem;
+      color: #aaa;
+      margin-bottom: 1.5rem;
+    }
+    .question-text {
+      font-size: 1.3rem;
+      line-height: 1.5;
+      max-width: 400px;
+      margin-bottom: 2rem;
+      color: #f0f0f0;
+    }
+    .guess-input-wrap {
+      position: relative;
+      width: 100%;
+      max-width: 320px;
+    }
+    .guess-input {
+      width: 100%;
+      background: #1a1a3a;
+      border: 2px solid #444;
+      border-radius: 12px;
+      padding: 1rem 1.5rem;
+      font-size: 1.8rem;
+      text-align: center;
+      color: #ffcc00;
+      outline: none;
+      font-weight: bold;
+      transition: border-color 0.15s;
+    }
+    .guess-input:focus { border-color: #ffcc00; }
+    .guess-unit {
+      position: absolute;
+      right: 1rem;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #aaa;
+      font-size: 0.9rem;
+    }
+    .player-hint {
+      font-size: 0.85rem;
+      color: #888;
+      margin-top: 0.75rem;
+    }
+    .guess-btn {
+      background: #ffcc00;
+      color: #0d0d2b;
+      border: none;
+      border-radius: 12px;
+      padding: 0.85rem 2.5rem;
+      font-size: 1.1rem;
+      font-weight: bold;
+      cursor: pointer;
+      margin-top: 1.5rem;
+      transition: transform 0.1s, opacity 0.1s;
+    }
+    .guess-btn:hover { opacity: 0.9; transform: scale(1.02); }
+    .guess-btn:disabled { opacity: 0.4; cursor: default; transform: none; }
+
+    /* ─── REVEAL ─── */
+    .reveal-answer {
+      font-size: 1rem;
+      color: #aaa;
+      margin-bottom: 0.5rem;
+    }
+    .reveal-number {
+      font-size: 3rem;
+      font-weight: bold;
+      color: #ffcc00;
+      margin-bottom: 2rem;
+    }
+    .guess-bars {
+      width: 100%;
+      max-width: 420px;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      margin-bottom: 2rem;
+    }
+    .guess-bar {
+      background: #1a1a3a;
+      border-radius: 12px;
+      padding: 0.75rem 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      border: 1px solid #333;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.3s;
+    }
+    .guess-bar.winner { border-color: #ffcc00; background: #2a2a0a; }
+    .guess-bar.second { border-color: #aaa; background: #1e1e3a; }
+    .bar-fill {
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      background: linear-gradient(90deg, rgba(255,204,0,0.08), transparent);
+      pointer-events: none;
+    }
+    .bar-player {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      min-width: 120px;
+    }
+    .bar-badge {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.75rem;
+      font-weight: bold;
+      flex-shrink: 0;
+    }
+    .bar-name { font-size: 0.9rem; font-weight: bold; }
+    .bar-guess {
+      flex: 1;
+      text-align: right;
+      font-size: 1rem;
+      color: #f0f0f0;
+    }
+    .bar-points {
+      font-size: 0.85rem;
+      font-weight: bold;
+      min-width: 40px;
+      text-align: right;
+    }
+    .bar-rank {
+      font-size: 1.2rem;
+      min-width: 24px;
+    }
+
+    /* ─── SCOREBOARD ─── */
+    .score-list {
+      width: 100%;
+      max-width: 360px;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      margin-bottom: 2rem;
+    }
+    .score-row {
+      background: #1a1a3a;
+      border-radius: 12px;
+      padding: 1rem 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      border: 1px solid #333;
+    }
+    .score-row.rank-1 { border-color: #ffcc00; background: #2a2a0a; }
+    .score-row.rank-2 { border-color: #aaa; }
+    .score-row.rank-3 { border-color: #cd7f32; }
+    .score-rank { font-size: 1.5rem; min-width: 36px; }
+    .score-badge {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: bold;
+    }
+    .score-name { flex: 1; font-size: 1rem; font-weight: bold; }
+    .score-points {
+      font-size: 1.5rem;
+      font-weight: bold;
+      color: #ffcc00;
+    }
+
+    /* ─── PLAYER COLORS ─── */
+    .player-color-0 { background: #e74c3c; }
+    .player-color-1 { background: #3498db; }
+    .player-color-2 { background: #2ecc71; }
+    .player-color-3 { background: #9b59b6; }
+
+    /* ─── PROGRESS DOTS ─── */
+    .progress-dots {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 1.5rem;
+    }
+    .dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      background: #333;
+      transition: background 0.2s;
+    }
+    .dot.done { background: #ffcc00; }
+    .dot.current { background: #fff; }
+
+    /* ─── WAITING INDICATOR ─── */
+    .waiting-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+      margin: 1rem 0;
+    }
+    .waiting-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.9rem;
+    }
+    .waiting-dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      background: #444;
+    }
+    .waiting-dot.done { background: #2ecc71; }
+
+    /* ─── QUESTION MARK BIG ─── */
+    .big-q {
+      font-size: 5rem;
+      margin-bottom: 1rem;
+    }
+
+    /* ─── FOOTER FUN ─── */
+    .fun-text {
+      color: #aaa;
+      font-size: 0.85rem;
+      max-width: 320px;
+      line-height: 1.5;
+    }
+
+    /* ─── ANIMATION ─── */
+    @keyframes pop-in {
+      from { transform: scale(0.7); opacity: 0; }
+      to   { transform: scale(1); opacity: 1; }
+    }
+    .pop-in { animation: pop-in 0.3s ease-out; }
+
+    @keyframes pulse-glow {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(255,204,0,0); }
+      50% { box-shadow: 0 0 16px 4px rgba(255,204,0,0.3); }
+    }
+    .winner { animation: pulse-glow 1.5s ease-in-out infinite; }
+  </style>
+</head>
+<body>
+
+<div class="back-bar">
+  <a href="/">← <span data-i18n="back">Zurück</span></a>
+</div>
+
+<!-- SETUP SCREEN -->
+<div id="screen-setup" class="screen active">
+  <h1>🎯 Ballpark!</h1>
+  <p class="subtitle" data-i18n="subtitle">Wer trifft am nächsten? Schätze Zahlen, schlage deine Freunde!</p>
+  <div class="setup-box">
+    <p style="color:#aaa;margin-bottom:0.5rem" data-i18n="how_many_players">Wie viele Spieler?</p>
+    <div class="player-count-row" id="count-btns">
+      <button class="count-btn selected" data-count="2">2</button>
+      <button class="count-btn" data-count="3">3</button>
+      <button class="count-btn" data-count="4">4</button>
+    </div>
+    <div class="name-fields" id="name-fields"></div>
+    <button class="btn-primary" id="start-btn" data-i18n="start_game">Spiel starten!</button>
+  </div>
+</div>
+
+<!-- PASS SCREEN (hand device to player) -->
+<div id="screen-pass" class="screen">
+  <div class="pass-avatar" id="pass-avatar">🎯</div>
+  <div class="pass-name" id="pass-name">Spieler 1</div>
+  <div class="pass-instruction" data-i18n="pass_instruction">Gib das Gerät an diesen Spieler!</div>
+  <button class="btn-primary" id="pass-ready-btn" data-i18n="im_ready">Ich bin bereit!</button>
+</div>
+
+<!-- QUESTION SCREEN -->
+<div id="screen-question" class="screen">
+  <div class="round-badge">
+    <span data-i18n="round">Runde</span> <span id="round-num">1</span> / <span id="round-total">7</span>
+  </div>
+  <div class="progress-dots" id="progress-dots"></div>
+  <div class="big-q">🤔</div>
+  <div class="question-text" id="question-text"></div>
+  <div class="player-hint" id="player-hint"></div>
+  <div class="guess-input-wrap">
+    <input type="number" id="guess-input" class="guess-input" placeholder="????" min="0" />
+    <span class="guess-unit" id="guess-unit"></span>
+  </div>
+  <button class="btn-primary guess-btn" id="submit-guess-btn" data-i18n="submit_guess">Meine Schätzung!</button>
+</div>
+
+<!-- REVEAL SCREEN -->
+<div id="screen-reveal" class="screen">
+  <div class="round-badge">
+    <span data-i18n="round">Runde</span> <span id="reveal-round-num">1</span>
+  </div>
+  <div class="reveal-answer" data-i18n="correct_answer">Richtige Antwort:</div>
+  <div class="reveal-number" id="reveal-number"></div>
+  <div class="guess-bars" id="guess-bars"></div>
+  <button class="btn-primary" id="next-round-btn">→</button>
+</div>
+
+<!-- FINAL SCREEN -->
+<div id="screen-final" class="screen">
+  <div class="big-q pop-in">🏆</div>
+  <h2 data-i18n="final_title">Ergebnis</h2>
+  <div class="score-list" id="score-list"></div>
+  <button class="btn-primary" id="play-again-btn" data-i18n="play_again">Nochmal spielen!</button>
+  <p class="fun-text" style="margin-top:1rem" data-i18n="fun_text">Statistik: Schätzungen werden immer besser mit Übung. Oder auch nicht. 🎯</p>
+</div>
+
+<script src="/shared/i18n.js"></script>
+<script src="gameLogic.js"></script>
+<script>
+// ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
+const TRANSLATIONS = {
+  de: {
+    back: 'Zurück',
+    subtitle: 'Wer trifft am nächsten? Schätze Zahlen, schlage deine Freunde!',
+    how_many_players: 'Wie viele Spieler?',
+    start_game: 'Spiel starten!',
+    pass_instruction: 'Gib das Gerät an diesen Spieler!',
+    im_ready: 'Ich bin bereit!',
+    round: 'Runde',
+    submit_guess: 'Meine Schätzung!',
+    correct_answer: 'Richtige Antwort:',
+    player_turn: (name) => `${name}, du bist dran!`,
+    player_guessed: (name) => `${name} hat geschätzt ✓`,
+    points_label: 'Pkt.',
+    final_title: 'Ergebnis',
+    play_again: 'Nochmal spielen!',
+    fun_text: 'Schätzungen werden mit Übung besser. Oder auch nicht. 🎯',
+    next_round: 'Nächste Runde →',
+    see_results: 'Ergebnis anzeigen →',
+    rank_1: '🥇',
+    rank_2: '🥈',
+    rank_3: '🥉',
+    rank_else: '🎯',
+    default_player: (n) => `Spieler ${n}`,
+    guessed_already: 'Schon geschätzt!',
+    error_pct: (p) => `${p}% daneben`,
+    perfect: 'Perfekt! 💫',
+    winner_text: (name) => `${name} gewinnt!`,
+    tie_text: 'Unentschieden! 🤝',
+    unit_bones: 'Knochen',
+    unit_km: 'km',
+    unit_year: 'Jahr',
+    unit_people: 'Einwohner',
+    unit_m: 'm',
+    unit_liters: 'Liter',
+    unit_kms: 'km/s',
+    unit_teeth: 'Zähne',
+    unit_countries: 'Länder',
+    unit_seconds: 'Sekunden',
+    unit_keys: 'Tasten',
+    unit_basepairs: 'Basenpaare',
+    // Questions
+    q_bones: 'Wie viele Knochen hat ein erwachsener Mensch?',
+    q_moon_km: 'Wie weit ist der Mond von der Erde entfernt? (in km)',
+    q_eiffel: 'In welchem Jahr wurde der Eiffelturm fertiggestellt?',
+    q_great_wall: 'Wie lang ist die Chinesische Mauer? (in km)',
+    q_amazon_length: 'Wie lang ist der Amazonas? (in km)',
+    q_population_berlin: 'Wie viele Menschen leben in Berlin?',
+    q_everest_m: 'Wie hoch ist der Mount Everest? (in Meter)',
+    q_olympic_pool_liters: 'Wie viel Liter fasst ein olympisches Schwimmbecken?',
+    q_iphone_launch: 'In welchem Jahr brachte Apple das erste iPhone heraus?',
+    q_speed_light: 'Wie schnell ist Licht? (km/s)',
+    q_vienna_paris: 'Wie weit ist Wien von Paris entfernt? (in km)',
+    q_human_teeth: 'Wie viele Zähne hat ein erwachsener Mensch?',
+    q_countries_world: 'Wie viele Länder gibt es auf der Welt?',
+    q_height_statue_liberty: 'Wie hoch ist die Freiheitsstatue (mit Sockel)? (in Meter)',
+    q_mona_lisa_year: 'In welchem Jahr malte Leonardo da Vinci die Mona Lisa?',
+    q_seconds_day: 'Wie viele Sekunden hat ein Tag?',
+    q_piano_keys: 'Wie viele Tasten hat ein Standardklavier?',
+    q_soccer_field_m: 'Wie lang ist ein offizielles Fußballfeld? (in Meter)',
+    q_great_barrier_reef: 'Wie lang ist das Great Barrier Reef? (in km)',
+    q_dna_letters: 'Wie viele Basenpaare hat das menschliche Genom?',
+  },
+  en: {
+    back: 'Back',
+    subtitle: 'Who gets closest? Estimate numbers, beat your friends!',
+    how_many_players: 'How many players?',
+    start_game: 'Start Game!',
+    pass_instruction: 'Hand the device to this player!',
+    im_ready: "I'm Ready!",
+    round: 'Round',
+    submit_guess: 'My Guess!',
+    correct_answer: 'Correct Answer:',
+    player_turn: (name) => `${name}, it's your turn!`,
+    player_guessed: (name) => `${name} guessed ✓`,
+    points_label: 'pts.',
+    final_title: 'Final Results',
+    play_again: 'Play Again!',
+    fun_text: 'Estimates get better with practice. Or not. 🎯',
+    next_round: 'Next Round →',
+    see_results: 'See Results →',
+    rank_1: '🥇', rank_2: '🥈', rank_3: '🥉', rank_else: '🎯',
+    default_player: (n) => `Player ${n}`,
+    guessed_already: 'Already guessed!',
+    error_pct: (p) => `${p}% off`,
+    perfect: 'Perfect! 💫',
+    winner_text: (name) => `${name} wins!`,
+    tie_text: "It's a tie! 🤝",
+    unit_bones: 'bones', unit_km: 'km', unit_year: 'year', unit_people: 'people',
+    unit_m: 'm', unit_liters: 'liters', unit_kms: 'km/s', unit_teeth: 'teeth',
+    unit_countries: 'countries', unit_seconds: 'seconds', unit_keys: 'keys', unit_basepairs: 'base pairs',
+    q_bones: 'How many bones does an adult human have?',
+    q_moon_km: 'How far is the Moon from Earth? (in km)',
+    q_eiffel: 'In what year was the Eiffel Tower completed?',
+    q_great_wall: 'How long is the Great Wall of China? (in km)',
+    q_amazon_length: 'How long is the Amazon River? (in km)',
+    q_population_berlin: 'How many people live in Berlin?',
+    q_everest_m: 'How tall is Mount Everest? (in meters)',
+    q_olympic_pool_liters: 'How many liters does an Olympic swimming pool hold?',
+    q_iphone_launch: 'In what year did Apple release the first iPhone?',
+    q_speed_light: 'How fast is light? (km/s)',
+    q_vienna_paris: 'How far is Vienna from Paris? (in km)',
+    q_human_teeth: 'How many teeth does an adult human have?',
+    q_countries_world: 'How many countries are there in the world?',
+    q_height_statue_liberty: 'How tall is the Statue of Liberty (with pedestal)? (in meters)',
+    q_mona_lisa_year: 'In what year did Leonardo da Vinci paint the Mona Lisa?',
+    q_seconds_day: 'How many seconds are in a day?',
+    q_piano_keys: 'How many keys does a standard piano have?',
+    q_soccer_field_m: 'How long is an official soccer field? (in meters)',
+    q_great_barrier_reef: 'How long is the Great Barrier Reef? (in km)',
+    q_dna_letters: 'How many base pairs does the human genome have?',
+  },
+  fr: {
+    back: 'Retour',
+    subtitle: 'Qui vise le plus juste ? Estimez des chiffres, battez vos amis !',
+    how_many_players: 'Combien de joueurs ?',
+    start_game: 'Démarrer !',
+    pass_instruction: "Passe l'appareil à ce joueur !",
+    im_ready: 'Je suis prêt !',
+    round: 'Manche',
+    submit_guess: 'Mon estimation !',
+    correct_answer: 'Bonne réponse :',
+    player_turn: (name) => `${name}, c'est ton tour !`,
+    player_guessed: (name) => `${name} a estimé ✓`,
+    points_label: 'pts.',
+    final_title: 'Résultat Final',
+    play_again: 'Rejouer !',
+    fun_text: "Les estimations s'améliorent avec la pratique. Ou pas. 🎯",
+    next_round: 'Manche suivante →',
+    see_results: 'Voir les résultats →',
+    rank_1: '🥇', rank_2: '🥈', rank_3: '🥉', rank_else: '🎯',
+    default_player: (n) => `Joueur ${n}`,
+    guessed_already: 'Déjà estimé !',
+    error_pct: (p) => `${p}% d'écart`,
+    perfect: 'Parfait ! 💫',
+    winner_text: (name) => `${name} gagne !`,
+    tie_text: 'Égalité ! 🤝',
+    unit_bones: 'os', unit_km: 'km', unit_year: 'an', unit_people: 'habitants',
+    unit_m: 'm', unit_liters: 'litres', unit_kms: 'km/s', unit_teeth: 'dents',
+    unit_countries: 'pays', unit_seconds: 'secondes', unit_keys: 'touches', unit_basepairs: 'paires de bases',
+    q_bones: "Combien d'os a un adulte ?",
+    q_moon_km: 'À quelle distance se trouve la Lune de la Terre ? (en km)',
+    q_eiffel: "En quelle année la Tour Eiffel a-t-elle été achevée ?",
+    q_great_wall: 'Quelle est la longueur de la Grande Muraille de Chine ? (en km)',
+    q_amazon_length: "Quelle est la longueur de l'Amazone ? (en km)",
+    q_population_berlin: 'Combien de personnes vivent à Berlin ?',
+    q_everest_m: 'Quelle est la hauteur du Mont Everest ? (en mètres)',
+    q_olympic_pool_liters: 'Combien de litres contient une piscine olympique ?',
+    q_iphone_launch: "En quelle année Apple a-t-il sorti le premier iPhone ?",
+    q_speed_light: 'Quelle est la vitesse de la lumière ? (km/s)',
+    q_vienna_paris: 'À quelle distance se trouve Vienne de Paris ? (en km)',
+    q_human_teeth: 'Combien de dents a un adulte ?',
+    q_countries_world: "Combien de pays y a-t-il dans le monde ?",
+    q_height_statue_liberty: "Quelle est la hauteur de la Statue de la Liberté (avec socle) ? (en mètres)",
+    q_mona_lisa_year: "En quelle année Léonard de Vinci a-t-il peint la Joconde ?",
+    q_seconds_day: "Combien de secondes y a-t-il dans une journée ?",
+    q_piano_keys: 'Combien de touches a un piano standard ?',
+    q_soccer_field_m: "Quelle est la longueur d'un terrain de football officiel ? (en mètres)",
+    q_great_barrier_reef: 'Quelle est la longueur de la Grande Barrière de Corail ? (en km)',
+    q_dna_letters: 'Combien de paires de bases comporte le génome humain ?',
+  },
+  it: {
+    back: 'Indietro',
+    subtitle: 'Chi ci va più vicino? Stima i numeri, batti i tuoi amici!',
+    how_many_players: 'Quanti giocatori?',
+    start_game: 'Inizia!',
+    pass_instruction: 'Passa il dispositivo a questo giocatore!',
+    im_ready: 'Sono pronto!',
+    round: 'Round',
+    submit_guess: 'La mia stima!',
+    correct_answer: 'Risposta corretta:',
+    player_turn: (name) => `${name}, tocca a te!`,
+    player_guessed: (name) => `${name} ha stimato ✓`,
+    points_label: 'pt.',
+    final_title: 'Risultato Finale',
+    play_again: 'Gioca ancora!',
+    fun_text: 'Le stime migliorano con la pratica. O forse no. 🎯',
+    next_round: 'Round successivo →',
+    see_results: 'Vedi risultati →',
+    rank_1: '🥇', rank_2: '🥈', rank_3: '🥉', rank_else: '🎯',
+    default_player: (n) => `Giocatore ${n}`,
+    guessed_already: 'Già stimato!',
+    error_pct: (p) => `${p}% di errore`,
+    perfect: 'Perfetto! 💫',
+    winner_text: (name) => `${name} vince!`,
+    tie_text: 'Pareggio! 🤝',
+    unit_bones: 'ossa', unit_km: 'km', unit_year: 'anno', unit_people: 'abitanti',
+    unit_m: 'm', unit_liters: 'litri', unit_kms: 'km/s', unit_teeth: 'denti',
+    unit_countries: 'paesi', unit_seconds: 'secondi', unit_keys: 'tasti', unit_basepairs: 'coppie di basi',
+    q_bones: 'Quante ossa ha un adulto?',
+    q_moon_km: 'Quanto è lontana la Luna dalla Terra? (in km)',
+    q_eiffel: 'In che anno fu completata la Torre Eiffel?',
+    q_great_wall: 'Quanto è lunga la Grande Muraglia Cinese? (in km)',
+    q_amazon_length: 'Quanto è lungo il Rio delle Amazzoni? (in km)',
+    q_population_berlin: 'Quante persone vivono a Berlino?',
+    q_everest_m: 'Quanto è alto il Monte Everest? (in metri)',
+    q_olympic_pool_liters: 'Quanti litri contiene una piscina olimpionica?',
+    q_iphone_launch: 'In che anno Apple ha lanciato il primo iPhone?',
+    q_speed_light: 'Quanto è veloce la luce? (km/s)',
+    q_vienna_paris: 'Quanto dista Vienna da Parigi? (in km)',
+    q_human_teeth: 'Quanti denti ha un adulto?',
+    q_countries_world: 'Quanti paesi ci sono nel mondo?',
+    q_height_statue_liberty: 'Quanto è alta la Statua della Libertà (con piedistallo)? (in metri)',
+    q_mona_lisa_year: 'In che anno Leonardo da Vinci dipinse la Gioconda?',
+    q_seconds_day: 'Quanti secondi ci sono in un giorno?',
+    q_piano_keys: 'Quanti tasti ha un pianoforte standard?',
+    q_soccer_field_m: 'Quanto è lungo un campo di calcio ufficiale? (in metri)',
+    q_great_barrier_reef: 'Quanto è lungo il Grande Scoglio di Barriera? (in km)',
+    q_dna_letters: 'Quante coppie di basi ha il genoma umano?',
+  },
+  es: {
+    back: 'Volver',
+    subtitle: '¿Quién se acerca más? ¡Estima números, supera a tus amigos!',
+    how_many_players: '¿Cuántos jugadores?',
+    start_game: '¡Comenzar!',
+    pass_instruction: '¡Pasa el dispositivo a este jugador!',
+    im_ready: '¡Estoy listo!',
+    round: 'Ronda',
+    submit_guess: '¡Mi estimación!',
+    correct_answer: 'Respuesta correcta:',
+    player_turn: (name) => `¡${name}, es tu turno!`,
+    player_guessed: (name) => `${name} ha estimado ✓`,
+    points_label: 'pts.',
+    final_title: 'Resultado Final',
+    play_again: '¡Jugar de nuevo!',
+    fun_text: 'Las estimaciones mejoran con la práctica. O no. 🎯',
+    next_round: 'Siguiente ronda →',
+    see_results: 'Ver resultados →',
+    rank_1: '🥇', rank_2: '🥈', rank_3: '🥉', rank_else: '🎯',
+    default_player: (n) => `Jugador ${n}`,
+    guessed_already: '¡Ya has estimado!',
+    error_pct: (p) => `${p}% de error`,
+    perfect: '¡Perfecto! 💫',
+    winner_text: (name) => `¡${name} gana!`,
+    tie_text: '¡Empate! 🤝',
+    unit_bones: 'huesos', unit_km: 'km', unit_year: 'año', unit_people: 'habitantes',
+    unit_m: 'm', unit_liters: 'litros', unit_kms: 'km/s', unit_teeth: 'dientes',
+    unit_countries: 'países', unit_seconds: 'segundos', unit_keys: 'teclas', unit_basepairs: 'pares de bases',
+    q_bones: '¿Cuántos huesos tiene un adulto?',
+    q_moon_km: '¿A qué distancia está la Luna de la Tierra? (en km)',
+    q_eiffel: '¿En qué año se completó la Torre Eiffel?',
+    q_great_wall: '¿Qué tan larga es la Gran Muralla China? (en km)',
+    q_amazon_length: '¿Qué tan largo es el río Amazonas? (en km)',
+    q_population_berlin: '¿Cuántas personas viven en Berlín?',
+    q_everest_m: '¿Cuánto mide el Monte Everest? (en metros)',
+    q_olympic_pool_liters: '¿Cuántos litros contiene una piscina olímpica?',
+    q_iphone_launch: '¿En qué año presentó Apple el primer iPhone?',
+    q_speed_light: '¿Cuál es la velocidad de la luz? (km/s)',
+    q_vienna_paris: '¿A qué distancia está Viena de París? (en km)',
+    q_human_teeth: '¿Cuántos dientes tiene un adulto?',
+    q_countries_world: '¿Cuántos países hay en el mundo?',
+    q_height_statue_liberty: '¿Cuánto mide la Estatua de la Libertad (con pedestal)? (en metros)',
+    q_mona_lisa_year: '¿En qué año pintó Leonardo da Vinci la Mona Lisa?',
+    q_seconds_day: '¿Cuántos segundos tiene un día?',
+    q_piano_keys: '¿Cuántas teclas tiene un piano estándar?',
+    q_soccer_field_m: '¿Qué tan largo es un campo de fútbol oficial? (en metros)',
+    q_great_barrier_reef: '¿Qué tan largo es el Gran Arrecife de Coral? (en km)',
+    q_dna_letters: '¿Cuántos pares de bases tiene el genoma humano?',
+  },
+};
+
+// ─── INIT i18n ────────────────────────────────────────────────────────────────
+const { t, lang, onLangChange, translatePage } = initI18n(TRANSLATIONS);
+
+// ─── GAME STATE ───────────────────────────────────────────────────────────────
+const TOTAL_ROUNDS = 7;
+const PLAYER_COLORS = ['player-color-0', 'player-color-1', 'player-color-2', 'player-color-3'];
+const PLAYER_EMOJIS = ['🔴', '🔵', '🟢', '🟣'];
+
+let playerCount = 2;
+let playerNames = [];
+let questions = [];
+let roundIndex = 0;
+let currentPlayerInRound = 0;
+let roundGuesses = []; // guesses for current round [by player index]
+let allRoundResults = []; // rankRound() results for all rounds
+let scores = []; // cumulative
+
+// ─── DOM REFS ─────────────────────────────────────────────────────────────────
+const screens = {
+  setup: document.getElementById('screen-setup'),
+  pass: document.getElementById('screen-pass'),
+  question: document.getElementById('screen-question'),
+  reveal: document.getElementById('screen-reveal'),
+  final: document.getElementById('screen-final'),
+};
+
+function showScreen(name) {
+  Object.values(screens).forEach(s => s.classList.remove('active'));
+  screens[name].classList.add('active');
+}
+
+// ─── SETUP ────────────────────────────────────────────────────────────────────
+document.getElementById('count-btns').addEventListener('click', e => {
+  const btn = e.target.closest('.count-btn');
+  if (!btn) return;
+  playerCount = parseInt(btn.dataset.count);
+  document.querySelectorAll('.count-btn').forEach(b => b.classList.toggle('selected', b === btn));
+  renderNameFields();
+});
+
+function renderNameFields() {
+  const container = document.getElementById('name-fields');
+  container.innerHTML = '';
+  for (let i = 0; i < playerCount; i++) {
+    const div = document.createElement('div');
+    div.className = 'name-field';
+    const badge = document.createElement('div');
+    badge.className = `player-badge ${PLAYER_COLORS[i]}`;
+    badge.textContent = (i + 1);
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.placeholder = t('default_player')(i + 1);
+    input.value = playerNames[i] || '';
+    input.dataset.idx = i;
+    input.addEventListener('input', e => { playerNames[i] = e.target.value.trim(); });
+    div.appendChild(badge);
+    div.appendChild(input);
+    container.appendChild(div);
+  }
+}
+renderNameFields();
+
+onLangChange(() => { renderNameFields(); });
+
+function getPlayerName(i) {
+  return playerNames[i] || t('default_player')(i + 1);
+}
+
+document.getElementById('start-btn').addEventListener('click', startGame);
+
+function startGame() {
+  // Collect names
+  document.querySelectorAll('#name-fields input').forEach((inp, i) => {
+    playerNames[i] = inp.value.trim();
+  });
+  questions = pickQuestions(TOTAL_ROUNDS);
+  roundIndex = 0;
+  allRoundResults = [];
+  scores = Array(playerCount).fill(0);
+  startRound();
+}
+
+// ─── ROUND FLOW ───────────────────────────────────────────────────────────────
+function startRound() {
+  currentPlayerInRound = 0;
+  roundGuesses = Array(playerCount).fill(null);
+  showPassScreen(0);
+}
+
+function showPassScreen(playerIdx) {
+  document.getElementById('pass-avatar').textContent = PLAYER_EMOJIS[playerIdx];
+  document.getElementById('pass-name').textContent = getPlayerName(playerIdx);
+  showScreen('pass');
+}
+
+document.getElementById('pass-ready-btn').addEventListener('click', () => {
+  showQuestionScreen(currentPlayerInRound);
+});
+
+function showQuestionScreen(playerIdx) {
+  const q = questions[roundIndex];
+
+  // Round indicator
+  document.getElementById('round-num').textContent = roundIndex + 1;
+  document.getElementById('round-total').textContent = TOTAL_ROUNDS;
+  document.getElementById('reveal-round-num').textContent = roundIndex + 1;
+
+  // Progress dots
+  const dots = document.getElementById('progress-dots');
+  dots.innerHTML = '';
+  for (let i = 0; i < TOTAL_ROUNDS; i++) {
+    const dot = document.createElement('div');
+    dot.className = 'dot' + (i < roundIndex ? ' done' : i === roundIndex ? ' current' : '');
+    dots.appendChild(dot);
+  }
+
+  // Question text
+  document.getElementById('question-text').textContent = t(q.key);
+  document.getElementById('guess-unit').textContent = t(q.unitKey) || '';
+  document.getElementById('player-hint').textContent = `${PLAYER_EMOJIS[playerIdx]} ${getPlayerName(playerIdx)}`;
+
+  // Clear input
+  const inp = document.getElementById('guess-input');
+  inp.value = '';
+  inp.focus();
+
+  showScreen('question');
+}
+
+document.getElementById('submit-guess-btn').addEventListener('click', submitGuess);
+document.getElementById('guess-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') submitGuess();
+});
+
+function submitGuess() {
+  const inp = document.getElementById('guess-input');
+  const val = parseFloat(inp.value);
+  if (isNaN(val) || val < 0) {
+    inp.style.borderColor = '#e74c3c';
+    setTimeout(() => inp.style.borderColor = '', 500);
+    return;
+  }
+  roundGuesses[currentPlayerInRound] = val;
+
+  currentPlayerInRound++;
+  if (currentPlayerInRound < playerCount) {
+    showPassScreen(currentPlayerInRound);
+  } else {
+    showReveal();
+  }
+}
+
+// ─── REVEAL ──────────────────────────────────────────────────────────────────
+function showReveal() {
+  const q = questions[roundIndex];
+  const result = rankRound(roundGuesses, q.answer);
+  allRoundResults.push(result);
+
+  // Update scores
+  for (const { playerIndex, points } of result) {
+    scores[playerIndex] += points;
+  }
+
+  // Answer
+  document.getElementById('reveal-number').textContent = formatNumber(q.answer) + (q.unit ? ' ' + q.unit : '');
+
+  // Guess bars (sorted by error)
+  const bars = document.getElementById('guess-bars');
+  bars.innerHTML = '';
+  result.forEach((r, rank) => {
+    const bar = document.createElement('div');
+    bar.className = 'guess-bar' + (rank === 0 ? ' winner pop-in' : rank === 1 ? ' second' : '');
+
+    // Fill visual
+    const fill = document.createElement('div');
+    fill.className = 'bar-fill';
+    fill.style.width = rank === 0 ? '60%' : rank === 1 ? '30%' : '10%';
+    bar.appendChild(fill);
+
+    // Rank emoji
+    const rankEl = document.createElement('div');
+    rankEl.className = 'bar-rank';
+    rankEl.textContent = rank === 0 ? t('rank_1') : rank === 1 ? t('rank_2') : rank === 2 ? t('rank_3') : t('rank_else');
+    bar.appendChild(rankEl);
+
+    // Player badge + name
+    const playerDiv = document.createElement('div');
+    playerDiv.className = 'bar-player';
+    const badge = document.createElement('div');
+    badge.className = `bar-badge ${PLAYER_COLORS[r.playerIndex]}`;
+    badge.textContent = r.playerIndex + 1;
+    const nameEl = document.createElement('div');
+    nameEl.className = 'bar-name';
+    nameEl.textContent = getPlayerName(r.playerIndex);
+    playerDiv.appendChild(badge);
+    playerDiv.appendChild(nameEl);
+    bar.appendChild(playerDiv);
+
+    // Guess value
+    const guessEl = document.createElement('div');
+    guessEl.className = 'bar-guess';
+    const errorPct = Math.round(r.error * 100);
+    guessEl.innerHTML = `<strong>${formatNumber(r.guess)}</strong><br><small style="color:#888">${r.error === 0 ? t('perfect') : t('error_pct')(errorPct)}</small>`;
+    bar.appendChild(guessEl);
+
+    // Points
+    const ptsEl = document.createElement('div');
+    ptsEl.className = 'bar-points';
+    ptsEl.style.color = r.points > 0 ? '#ffcc00' : '#666';
+    ptsEl.textContent = `+${r.points}`;
+    bar.appendChild(ptsEl);
+
+    bars.appendChild(bar);
+  });
+
+  // Next button text
+  const nextBtn = document.getElementById('next-round-btn');
+  nextBtn.textContent = roundIndex + 1 < TOTAL_ROUNDS ? t('next_round') : t('see_results');
+
+  showScreen('reveal');
+}
+
+document.getElementById('next-round-btn').addEventListener('click', () => {
+  roundIndex++;
+  if (roundIndex < TOTAL_ROUNDS) {
+    startRound();
+  } else {
+    showFinal();
+  }
+});
+
+// ─── FINAL ────────────────────────────────────────────────────────────────────
+function showFinal() {
+  const totals = calcTotals(allRoundResults, playerCount);
+
+  const list = document.getElementById('score-list');
+  list.innerHTML = '';
+  totals.forEach((t_item, rank) => {
+    const row = document.createElement('div');
+    row.className = `score-row rank-${rank + 1} pop-in`;
+    row.style.animationDelay = `${rank * 0.1}s`;
+
+    const rankEmoji = document.createElement('div');
+    rankEmoji.className = 'score-rank';
+    rankEmoji.textContent = rank === 0 ? t('rank_1') : rank === 1 ? t('rank_2') : rank === 2 ? t('rank_3') : t('rank_else');
+    row.appendChild(rankEmoji);
+
+    const badge = document.createElement('div');
+    badge.className = `score-badge ${PLAYER_COLORS[t_item.playerIndex]}`;
+    badge.textContent = t_item.playerIndex + 1;
+    row.appendChild(badge);
+
+    const name = document.createElement('div');
+    name.className = 'score-name';
+    name.textContent = getPlayerName(t_item.playerIndex);
+    row.appendChild(name);
+
+    const pts = document.createElement('div');
+    pts.className = 'score-points';
+    pts.textContent = t_item.total + ' ' + t('points_label');
+    row.appendChild(pts);
+
+    list.appendChild(row);
+  });
+
+  showScreen('final');
+}
+
+document.getElementById('play-again-btn').addEventListener('click', () => {
+  roundIndex = 0;
+  allRoundResults = [];
+  scores = Array(playerCount).fill(0);
+  playerNames = playerNames.slice(0, playerCount);
+  showScreen('setup');
+  translatePage();
+  renderNameFields();
+});
+
+// ─── LANG CHANGE ─────────────────────────────────────────────────────────────
+onLangChange(() => {
+  translatePage();
+});
+</script>
+</body>
+</html>
