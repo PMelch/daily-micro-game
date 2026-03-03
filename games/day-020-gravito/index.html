@@ -1,0 +1,908 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gravito</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #06061a;
+      color: #e0e0ff;
+      font-family: system-ui, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .back-bar {
+      width: 100%;
+      background: #0a0a1a;
+      padding: 0.5rem 1rem;
+      border-bottom: 1px solid #333;
+    }
+    .back-bar a {
+      color: #ffcc00;
+      text-decoration: none;
+      font-size: 0.9rem;
+      font-family: system-ui, sans-serif;
+    }
+    .back-bar a:hover { text-decoration: underline; }
+
+    #main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+      gap: 1rem;
+      width: 100%;
+      max-width: 520px;
+    }
+
+    h1 {
+      font-size: 2.2rem;
+      font-weight: 900;
+      letter-spacing: 0.05em;
+      background: linear-gradient(135deg, #a855f7, #38bdf8, #34d399);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .tagline {
+      color: #9999cc;
+      font-size: 0.9rem;
+      text-align: center;
+    }
+
+    /* HUD */
+    #hud {
+      display: flex;
+      gap: 1.5rem;
+      align-items: center;
+      font-size: 0.9rem;
+      color: #aaaadd;
+    }
+
+    #level-label { font-weight: 700; color: #a855f7; font-size: 1rem; }
+    #stars-label { color: #fbbf24; }
+    #moves-label { color: #38bdf8; }
+
+    /* Gravity arrows UI */
+    #gravity-ui {
+      display: grid;
+      grid-template-columns: repeat(3, 44px);
+      grid-template-rows: repeat(3, 44px);
+      gap: 4px;
+    }
+
+    .grav-btn {
+      background: #1a1a3a;
+      border: 2px solid #333355;
+      border-radius: 8px;
+      color: #aaaadd;
+      font-size: 1.4rem;
+      cursor: pointer;
+      transition: all 0.15s;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .grav-btn:hover { background: #2a2a5a; border-color: #6666aa; }
+    .grav-btn.active { background: #3d1a6e; border-color: #a855f7; color: #fff; box-shadow: 0 0 12px #a855f780; }
+    .grav-btn.empty { background: transparent; border: none; cursor: default; }
+
+    /* Canvas */
+    #game-canvas {
+      border: 2px solid #2a2a5a;
+      border-radius: 8px;
+      image-rendering: pixelated;
+      display: block;
+    }
+
+    /* Overlay screens */
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(6, 6, 26, 0.92);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 1.5rem;
+      z-index: 100;
+      padding: 2rem;
+    }
+    .overlay.hidden { display: none; }
+
+    .overlay h2 {
+      font-size: 2rem;
+      font-weight: 900;
+      text-align: center;
+    }
+
+    .overlay p {
+      color: #9999cc;
+      text-align: center;
+      max-width: 360px;
+      line-height: 1.6;
+    }
+
+    .btn {
+      background: linear-gradient(135deg, #7c3aed, #2563eb);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      padding: 0.75rem 2rem;
+      font-size: 1.1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: opacity 0.15s, transform 0.1s;
+    }
+    .btn:hover { opacity: 0.9; transform: scale(1.03); }
+    .btn.secondary {
+      background: #1a1a3a;
+      border: 2px solid #333355;
+      color: #aaaadd;
+      font-size: 0.9rem;
+      padding: 0.5rem 1.5rem;
+    }
+
+    .level-badge {
+      background: #1a1a3a;
+      border: 2px solid #a855f7;
+      border-radius: 8px;
+      padding: 0.4rem 1rem;
+      color: #a855f7;
+      font-weight: 700;
+      font-size: 0.9rem;
+    }
+
+    #instructions { color: #7777aa; font-size: 0.8rem; text-align: center; }
+    #instructions kbd {
+      background: #1a1a3a;
+      border: 1px solid #444;
+      border-radius: 4px;
+      padding: 1px 5px;
+      font-size: 0.75rem;
+      color: #aaaadd;
+    }
+
+    /* Win screen stars */
+    .star-row { font-size: 2rem; letter-spacing: 0.3em; }
+
+    /* Shake animation for death */
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-6px); }
+      75% { transform: translateX(6px); }
+    }
+    .shake { animation: shake 0.3s ease; }
+  </style>
+</head>
+<body>
+
+<div class="back-bar"><a href="/">← <span data-i18n="backLabel">Zurück</span></a></div>
+
+<div id="main">
+  <h1>Gravito 🔮</h1>
+  <p class="tagline" data-i18n="tagline">Wechsle die Schwerkraft. Sammle Sterne. Finde den Ausgang.</p>
+
+  <div id="hud">
+    <div id="level-label">Level 1/8</div>
+    <div id="stars-label">⭐ 0/0</div>
+    <div id="moves-label">🚀 <span id="moves-count">0</span></div>
+  </div>
+
+  <canvas id="game-canvas" width="400" height="400"></canvas>
+
+  <div id="gravity-ui" title="">
+    <div class="grav-btn empty"></div>
+    <button class="grav-btn" id="btn-up" data-dir="up">↑</button>
+    <div class="grav-btn empty"></div>
+    <button class="grav-btn" id="btn-left" data-dir="left">←</button>
+    <div class="grav-btn empty" style="font-size:0.6rem;color:#555;display:flex;align-items:center;justify-content:center;">G</div>
+    <button class="grav-btn" id="btn-right" data-dir="right">→</button>
+    <div class="grav-btn empty"></div>
+    <button class="grav-btn" id="btn-down" data-dir="down">↓</button>
+    <div class="grav-btn empty"></div>
+  </div>
+
+  <p id="instructions" data-i18n="instructions">Pfeiltasten oder Buttons nutzen · R = Neustart</p>
+</div>
+
+<!-- START OVERLAY -->
+<div class="overlay" id="start-screen">
+  <h2>🔮 Gravito</h2>
+  <p data-i18n="startDesc">Ändere die Schwerkraft mit den Pfeiltasten.<br>Dein Würfel gleitet, bis er eine Wand trifft.<br>Sammle alle ⭐ und finde das Portal!</p>
+  <div style="display:flex;flex-direction:column;gap:0.5rem;align-items:center;">
+    <div style="display:flex;gap:1rem;justify-content:center;font-size:1.4rem;">
+      <span title="wall">⬛ = Wand</span>
+      <span title="star">⭐ = Stern</span>
+      <span title="spike">💥 = Falle</span>
+      <span title="exit">🌀 = Ausgang</span>
+    </div>
+  </div>
+  <button class="btn" id="start-btn" data-i18n="startBtn">Los geht's!</button>
+</div>
+
+<!-- LEVEL COMPLETE OVERLAY -->
+<div class="overlay hidden" id="level-complete-screen">
+  <h2 data-i18n="levelComplete">Level geschafft! 🎉</h2>
+  <div class="star-row" id="completion-stars">⭐⭐⭐</div>
+  <p id="completion-msg"></p>
+  <button class="btn" id="next-level-btn" data-i18n="nextLevel">Weiter →</button>
+</div>
+
+<!-- GAME COMPLETE OVERLAY -->
+<div class="overlay hidden" id="game-complete-screen">
+  <h2 data-i18n="gameComplete">Gravito gemeistert! 🏆</h2>
+  <div class="star-row">🌟🌟🌟</div>
+  <p data-i18n="gameCompleteMsg">Du hast alle 8 Level gelöst! Gravito-Meister!</p>
+  <button class="btn" id="restart-btn" data-i18n="restart">Nochmal</button>
+</div>
+
+<script src="/shared/i18n.js"></script>
+<script>
+// ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
+const TRANSLATIONS = {
+  de: {
+    backLabel: 'Zurück',
+    tagline: 'Wechsle die Schwerkraft · Sammle Sterne · Finde den Ausgang',
+    startDesc: 'Ändere die Schwerkraft mit den Pfeiltasten.\nDein Würfel gleitet, bis er eine Wand trifft.\nSammle alle ⭐ und finde das Portal!',
+    startBtn: 'Los geht\'s!',
+    instructions: 'Pfeiltasten oder Buttons · R = Neustart',
+    levelComplete: 'Level geschafft! 🎉',
+    nextLevel: 'Weiter →',
+    gameComplete: 'Gravito gemeistert! 🏆',
+    gameCompleteMsg: 'Du hast alle 8 Level gelöst! Gravito-Meister!',
+    restart: 'Nochmal',
+    movesLabel: 'Züge',
+    starsLabel: 'Sterne',
+    perfectLabel: 'Perfekt!',
+    goodLabel: 'Gut gemacht!',
+    solvedLabel: 'Gelöst!',
+  },
+  en: {
+    backLabel: 'Back',
+    tagline: 'Shift gravity · Collect stars · Find the exit',
+    startDesc: 'Change gravity with arrow keys.\nYour cube slides until it hits a wall.\nCollect all ⭐ and find the portal!',
+    startBtn: 'Let\'s go!',
+    instructions: 'Arrow keys or buttons · R = Restart',
+    levelComplete: 'Level cleared! 🎉',
+    nextLevel: 'Next →',
+    gameComplete: 'Gravito mastered! 🏆',
+    gameCompleteMsg: 'You solved all 8 levels! Gravito master!',
+    restart: 'Play again',
+    movesLabel: 'Moves',
+    starsLabel: 'Stars',
+    perfectLabel: 'Perfect!',
+    goodLabel: 'Well done!',
+    solvedLabel: 'Solved!',
+  },
+  fr: {
+    backLabel: 'Retour',
+    tagline: 'Change la gravité · Collecte les étoiles · Trouve la sortie',
+    startDesc: 'Change la gravité avec les touches fléchées.\nTon cube glisse jusqu\'à toucher un mur.\nCollecte toutes les ⭐ et trouve le portail !',
+    startBtn: 'C\'est parti !',
+    instructions: 'Touches fléchées ou boutons · R = Recommencer',
+    levelComplete: 'Niveau réussi ! 🎉',
+    nextLevel: 'Suivant →',
+    gameComplete: 'Gravito maîtrisé ! 🏆',
+    gameCompleteMsg: 'Tu as résolu les 8 niveaux ! Maître de Gravito !',
+    restart: 'Rejouer',
+    movesLabel: 'Coups',
+    starsLabel: 'Étoiles',
+    perfectLabel: 'Parfait !',
+    goodLabel: 'Bien joué !',
+    solvedLabel: 'Résolu !',
+  },
+  it: {
+    backLabel: 'Indietro',
+    tagline: 'Cambia la gravità · Raccogli le stelle · Trova l\'uscita',
+    startDesc: 'Cambia la gravità con i tasti freccia.\nIl tuo cubo scivola finché non colpisce un muro.\nRaccogli tutte le ⭐ e trova il portale!',
+    startBtn: 'Andiamo!',
+    instructions: 'Tasti freccia o pulsanti · R = Ricomincia',
+    levelComplete: 'Livello superato! 🎉',
+    nextLevel: 'Avanti →',
+    gameComplete: 'Gravito superato! 🏆',
+    gameCompleteMsg: 'Hai risolto tutti gli 8 livelli! Maestro di Gravito!',
+    restart: 'Ancora',
+    movesLabel: 'Mosse',
+    starsLabel: 'Stelle',
+    perfectLabel: 'Perfetto!',
+    goodLabel: 'Ben fatto!',
+    solvedLabel: 'Risolto!',
+  },
+  es: {
+    backLabel: 'Volver',
+    tagline: 'Cambia la gravedad · Recoge estrellas · Encuentra la salida',
+    startDesc: 'Cambia la gravedad con las teclas de flecha.\nTu cubo se desliza hasta golpear una pared.\n¡Recoge todas las ⭐ y encuentra el portal!',
+    startBtn: '¡Vamos!',
+    instructions: 'Teclas de flecha o botones · R = Reiniciar',
+    levelComplete: '¡Nivel superado! 🎉',
+    nextLevel: 'Siguiente →',
+    gameComplete: '¡Gravito dominado! 🏆',
+    gameCompleteMsg: '¡Resolviste los 8 niveles! ¡Maestro de Gravito!',
+    restart: 'Jugar de nuevo',
+    movesLabel: 'Movimientos',
+    starsLabel: 'Estrellas',
+    perfectLabel: '¡Perfecto!',
+    goodLabel: '¡Bien hecho!',
+    solvedLabel: '¡Resuelto!',
+  },
+};
+
+const { t, lang, onLangChange } = initI18n(TRANSLATIONS);
+
+// ─── LEVELS ───────────────────────────────────────────────────────────────────
+// Tiles: # = wall, . = empty, P = player, * = star, S = spike, E = exit
+// Design: ~12x12 grid, read as rows top→bottom
+
+const LEVELS = [
+  // Level 1 - Tutorial: simple gravity shift, no stars needed
+  {
+    par: 4,
+    map: `
+##########
+#P.......#
+#........#
+#........#
+#........#
+#......*.#
+#........#
+#.......E#
+##########`.trim()
+  },
+  // Level 2 - Introduce spikes
+  {
+    par: 5,
+    map: `
+############
+#P.........#
+#..........#
+#.SSSSSS...#
+#..........#
+#.........E#
+#....*......#
+############`.trim()
+  },
+  // Level 3 - Multiple stars
+  {
+    par: 6,
+    map: `
+##########
+#P.......#
+#.......##
+##......##
+##.*.....#
+#........#
+#.*......#
+#.......E#
+##########`.trim()
+  },
+  // Level 4 - Tight corridors
+  {
+    par: 7,
+    map: `
+############
+#P.........#
+#.#######..#
+#.*......#..#
+#.#######..#
+#.........E#
+############`.trim()
+  },
+  // Level 5 - Spikes everywhere
+  {
+    par: 7,
+    map: `
+##########
+#P......*#
+#S......S#
+#.......##
+##......S#
+#*......S#
+#.......E#
+##########`.trim()
+  },
+  // Level 6 - Maze-like
+  {
+    par: 9,
+    map: `
+############
+#P.........#
+##.########
+#*....#...##
+######..#..#
+#....*..#..#
+#.######...#
+#.........E#
+############`.trim()
+  },
+  // Level 7 - Star gauntlet
+  {
+    par: 10,
+    map: `
+############
+#P..*......#
+#.########.#
+#*.......*.#
+#.########.#
+#..*......E#
+############`.trim()
+  },
+  // Level 8 - Final challenge
+  {
+    par: 12,
+    map: `
+##############
+#P...........#
+#.####.####..#
+#.#*......#..#
+#.#.######...#
+#.#..*....#.E#
+#.#########..#
+#............#
+#...S.S.S....#
+##############`.trim()
+  },
+];
+
+// ─── GAME STATE ───────────────────────────────────────────────────────────────
+
+const CELL = 40; // pixels per cell
+
+let state = {
+  levelIdx: 0,
+  grid: [],
+  playerPos: { r: 0, c: 0 },
+  playerStart: { r: 0, c: 0 },
+  allStars: [],
+  collectedStars: new Set(),
+  exit: { r: 0, c: 0 },
+  gravity: 'down',
+  moves: 0,
+  animating: false,
+  deathFlash: false,
+  totalMoves: 0,
+};
+
+// ─── CANVAS SETUP ──────────────────────────────────────────────────────────────
+
+const canvas = document.getElementById('game-canvas');
+const ctx = canvas.getContext('2d');
+
+function resizeCanvas(rows, cols) {
+  const maxW = Math.min(window.innerWidth - 32, 480);
+  const cellSize = Math.floor(Math.min(maxW / cols, 480 / rows));
+  canvas.width = cols * cellSize;
+  canvas.height = rows * cellSize;
+  return cellSize;
+}
+
+let CELL_SIZE = CELL;
+
+// ─── LEVEL LOADING ────────────────────────────────────────────────────────────
+
+function parseLevel(levelStr) {
+  const rows = levelStr.trim().split('\n').map(row => row.split(''));
+  const stars = [];
+  let playerStart = null;
+  let exit = null;
+
+  for (let r = 0; r < rows.length; r++) {
+    for (let c = 0; c < rows[r].length; c++) {
+      const tile = rows[r][c];
+      if (tile === 'P') { playerStart = { r, c }; rows[r][c] = '.'; }
+      else if (tile === '*') { stars.push({ r, c }); }
+      else if (tile === 'E') { exit = { r, c }; }
+    }
+  }
+  return { grid: rows, playerStart, stars, exit };
+}
+
+function loadLevel(idx) {
+  const lvl = LEVELS[idx];
+  const { grid, playerStart, stars, exit } = parseLevel(lvl.map);
+  const rows = grid.length;
+  const cols = Math.max(...grid.map(r => r.length));
+  CELL_SIZE = resizeCanvas(rows, cols);
+
+  state.levelIdx = idx;
+  state.grid = grid;
+  state.playerStart = playerStart;
+  state.playerPos = { ...playerStart };
+  state.allStars = stars;
+  state.collectedStars = new Set();
+  state.exit = exit;
+  state.gravity = 'down';
+  state.moves = 0;
+  state.animating = false;
+  state.deathFlash = false;
+
+  updateHUD();
+  setActiveGravBtn('down');
+  draw();
+}
+
+// ─── PHYSICS ──────────────────────────────────────────────────────────────────
+
+function gravityDelta(dir) {
+  switch (dir) {
+    case 'down':  return { dr: 1, dc: 0 };
+    case 'up':    return { dr: -1, dc: 0 };
+    case 'left':  return { dr: 0, dc: -1 };
+    case 'right': return { dr: 0, dc: 1 };
+  }
+}
+
+function slidePlayer(pos, dir) {
+  const { dr, dc } = gravityDelta(dir);
+  const rows = state.grid.length;
+  const cols = state.grid[0].length;
+  const path = [];
+  let r = pos.r, c = pos.c;
+
+  while (true) {
+    const nr = r + dr, nc = c + dc;
+    if (nr < 0 || nr >= rows || nc < 0 || nc >= cols) {
+      return { path, finalPos: { r, c }, hitSomething: 'boundary' };
+    }
+    const tile = state.grid[nr][nc];
+    if (tile === '#') return { path, finalPos: { r, c }, hitSomething: 'wall' };
+    r = nr; c = nc;
+    path.push({ r, c });
+    if (tile === 'S') return { path, finalPos: { r, c }, hitSomething: 'spike' };
+    if (tile === '*') return { path, finalPos: { r, c }, hitSomething: 'star' };
+    if (tile === 'E') return { path, finalPos: { r, c }, hitSomething: 'exit' };
+  }
+}
+
+// ─── ANIMATION ────────────────────────────────────────────────────────────────
+
+let animPath = [];
+let animStep = 0;
+let animCallback = null;
+
+function animateSlide(path, finalPos, hitSomething) {
+  state.animating = true;
+  animPath = path;
+  animStep = 0;
+
+  function step() {
+    if (animStep < animPath.length) {
+      state.playerPos = animPath[animStep];
+      animStep++;
+      draw();
+      setTimeout(step, 40);
+    } else {
+      state.playerPos = finalPos;
+      state.animating = false;
+      handleHit(hitSomething);
+      draw();
+    }
+  }
+  step();
+}
+
+function handleHit(hitSomething) {
+  if (hitSomething === 'spike') {
+    triggerDeath();
+  } else if (hitSomething === 'star') {
+    const key = `${state.playerPos.r},${state.playerPos.c}`;
+    state.collectedStars.add(key);
+    // Remove star from grid visually (mark as empty so player can pass through on re-slide)
+    state.grid[state.playerPos.r][state.playerPos.c] = '.';
+    updateHUD();
+    checkWin();
+  } else if (hitSomething === 'exit') {
+    checkWin();
+  }
+}
+
+function triggerDeath() {
+  state.deathFlash = true;
+  canvas.classList.add('shake');
+  setTimeout(() => {
+    canvas.classList.remove('shake');
+    state.deathFlash = false;
+    // Reset player
+    state.playerPos = { ...state.playerStart };
+    state.collectedStars = new Set();
+    // Restore stars in grid
+    state.allStars.forEach(s => { state.grid[s.r][s.c] = '*'; });
+    state.moves = 0;
+    updateHUD();
+    draw();
+  }, 400);
+}
+
+function checkWin() {
+  const allCollected = state.allStars.every(s => state.collectedStars.has(`${s.r},${s.c}`));
+  const atExit = state.playerPos.r === state.exit.r && state.playerPos.c === state.exit.c;
+  if (allCollected && atExit) {
+    setTimeout(() => showLevelComplete(), 300);
+  }
+}
+
+// ─── DRAWING ──────────────────────────────────────────────────────────────────
+
+const COLORS = {
+  wall: '#1e1e4a',
+  wallBorder: '#3a3a7a',
+  empty: '#0d0d2e',
+  spike: '#ff3355',
+  star: '#fbbf24',
+  exit: '#a855f7',
+  exitGlow: '#6d28d9',
+  player: '#38bdf8',
+  playerGlow: '#0ea5e9',
+  collected: '#1a1a3a',
+};
+
+let exitPulse = 0;
+let playerGlow = 0;
+
+function draw() {
+  const cs = CELL_SIZE;
+  const rows = state.grid.length;
+  const cols = state.grid[0].length;
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  exitPulse += 0.05;
+  playerGlow = (playerGlow + 0.08) % (Math.PI * 2);
+
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const x = c * cs;
+      const y = r * cs;
+      const tile = state.grid[r][c];
+
+      if (tile === '#') {
+        // Wall with gradient
+        ctx.fillStyle = COLORS.wall;
+        ctx.fillRect(x, y, cs, cs);
+        ctx.strokeStyle = COLORS.wallBorder;
+        ctx.lineWidth = 1;
+        ctx.strokeRect(x + 0.5, y + 0.5, cs - 1, cs - 1);
+        // Inner dot pattern
+        ctx.fillStyle = '#2a2a5a';
+        ctx.fillRect(x + cs/2 - 2, y + cs/2 - 2, 4, 4);
+      } else {
+        // Empty/floor
+        ctx.fillStyle = COLORS.empty;
+        ctx.fillRect(x, y, cs, cs);
+
+        if (tile === 'S') {
+          // Spike - red triangle pointing up
+          ctx.fillStyle = COLORS.spike;
+          ctx.shadowColor = COLORS.spike;
+          ctx.shadowBlur = 6;
+          ctx.beginPath();
+          ctx.moveTo(x + cs / 2, y + 4);
+          ctx.lineTo(x + cs - 6, y + cs - 6);
+          ctx.lineTo(x + 6, y + cs - 6);
+          ctx.closePath();
+          ctx.fill();
+          ctx.shadowBlur = 0;
+
+        } else if (tile === '*') {
+          // Star - collected check
+          const key = `${r},${c}`;
+          if (!state.collectedStars.has(key)) {
+            const sz = cs * 0.35;
+            const cx2 = x + cs / 2, cy2 = y + cs / 2;
+            ctx.fillStyle = COLORS.star;
+            ctx.shadowColor = COLORS.star;
+            ctx.shadowBlur = 10;
+            drawStar(ctx, cx2, cy2, 5, sz, sz * 0.45);
+            ctx.shadowBlur = 0;
+          }
+
+        } else if (tile === 'E') {
+          // Exit portal - pulsing circle
+          const pulse = 0.7 + 0.3 * Math.sin(exitPulse);
+          const radius = cs * 0.35 * pulse;
+          const cx2 = x + cs / 2, cy2 = y + cs / 2;
+
+          const grd = ctx.createRadialGradient(cx2, cy2, 0, cx2, cy2, radius * 1.5);
+          grd.addColorStop(0, '#fff');
+          grd.addColorStop(0.3, '#a855f7');
+          grd.addColorStop(1, 'transparent');
+          ctx.fillStyle = grd;
+          ctx.beginPath();
+          ctx.arc(cx2, cy2, radius * 1.5, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.font = `${cs * 0.55}px system-ui`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText('🌀', cx2, cy2);
+        }
+      }
+    }
+  }
+
+  // Draw gravity arrows on grid (subtle)
+  drawGravityHint();
+
+  // Draw player
+  if (!state.deathFlash) {
+    const pr = state.playerPos.r;
+    const pc = state.playerPos.c;
+    const px = pc * cs;
+    const py = pr * cs;
+    const pad = cs * 0.1;
+    const glow = 8 + 4 * Math.sin(playerGlow);
+
+    ctx.shadowColor = COLORS.playerGlow;
+    ctx.shadowBlur = glow;
+    ctx.fillStyle = COLORS.player;
+    ctx.beginPath();
+    ctx.roundRect(px + pad, py + pad, cs - pad * 2, cs - pad * 2, 4);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+
+    // Direction indicator
+    const { dr, dc } = gravityDelta(state.gravity);
+    const arrowX = px + cs / 2 + dc * cs * 0.15;
+    const arrowY = py + cs / 2 + dr * cs * 0.15;
+    ctx.fillStyle = 'rgba(255,255,255,0.6)';
+    ctx.font = `${cs * 0.35}px system-ui`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    const dirArrow = { down: '↓', up: '↑', left: '←', right: '→' };
+    ctx.fillText(dirArrow[state.gravity], arrowX, arrowY);
+  } else {
+    // Death flash - red
+    const pr = state.playerPos.r;
+    const pc = state.playerPos.c;
+    ctx.fillStyle = '#ff3355';
+    ctx.shadowColor = '#ff3355';
+    ctx.shadowBlur = 20;
+    ctx.fillRect(pc * cs + 4, pr * cs + 4, cs - 8, cs - 8);
+    ctx.shadowBlur = 0;
+  }
+
+  // Schedule next frame for animations
+  if (state.animating || true) {
+    requestAnimationFrame(draw);
+  }
+}
+
+function drawStar(ctx, cx, cy, spikes, outerR, innerR) {
+  const step = Math.PI / spikes;
+  ctx.beginPath();
+  for (let i = 0; i < 2 * spikes; i++) {
+    const r = i % 2 === 0 ? outerR : innerR;
+    const angle = i * step - Math.PI / 2;
+    const x = cx + Math.cos(angle) * r;
+    const y = cy + Math.sin(angle) * r;
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  }
+  ctx.closePath();
+  ctx.fill();
+}
+
+function drawGravityHint() {
+  // Subtle arrow showing gravity direction at canvas edge
+}
+
+// ─── HUD ──────────────────────────────────────────────────────────────────────
+
+function updateHUD() {
+  document.getElementById('level-label').textContent = `Level ${state.levelIdx + 1}/8`;
+  document.getElementById('stars-label').textContent =
+    `⭐ ${state.collectedStars.size}/${state.allStars.length}`;
+  document.getElementById('moves-count').textContent = state.moves;
+}
+
+function setActiveGravBtn(dir) {
+  document.querySelectorAll('.grav-btn[data-dir]').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.dir === dir);
+  });
+}
+
+// ─── INPUT ────────────────────────────────────────────────────────────────────
+
+function applyGravity(dir) {
+  if (state.animating || state.deathFlash) return;
+  state.gravity = dir;
+  state.moves++;
+  state.totalMoves++;
+  setActiveGravBtn(dir);
+  updateHUD();
+
+  const { path, finalPos, hitSomething } = slidePlayer(state.playerPos, dir);
+  animateSlide(path, finalPos, hitSomething);
+}
+
+document.addEventListener('keydown', e => {
+  const keyMap = {
+    ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right',
+    KeyW: 'up', KeyS: 'down', KeyA: 'left', KeyD: 'right',
+  };
+  if (keyMap[e.code]) {
+    e.preventDefault();
+    applyGravity(keyMap[e.code]);
+  }
+  if (e.code === 'KeyR') {
+    loadLevel(state.levelIdx);
+  }
+});
+
+document.querySelectorAll('.grav-btn[data-dir]').forEach(btn => {
+  btn.addEventListener('click', () => applyGravity(btn.dataset.dir));
+});
+
+// Touch swipe support
+let touchStartX = 0, touchStartY = 0;
+canvas.addEventListener('touchstart', e => {
+  touchStartX = e.touches[0].clientX;
+  touchStartY = e.touches[0].clientY;
+}, { passive: true });
+canvas.addEventListener('touchend', e => {
+  const dx = e.changedTouches[0].clientX - touchStartX;
+  const dy = e.changedTouches[0].clientY - touchStartY;
+  if (Math.abs(dx) < 10 && Math.abs(dy) < 10) return;
+  if (Math.abs(dx) > Math.abs(dy)) {
+    applyGravity(dx > 0 ? 'right' : 'left');
+  } else {
+    applyGravity(dy > 0 ? 'down' : 'up');
+  }
+}, { passive: true });
+
+// ─── OVERLAYS ─────────────────────────────────────────────────────────────────
+
+function showLevelComplete() {
+  const par = LEVELS[state.levelIdx].par;
+  const moves = state.moves;
+  const starsEarned = moves <= par ? 3 : moves <= par + 3 ? 2 : 1;
+  const starStr = '⭐'.repeat(starsEarned) + '☆'.repeat(3 - starsEarned);
+
+  document.getElementById('completion-stars').textContent = starStr;
+  const msgs = [t('solvedLabel'), t('goodLabel'), t('perfectLabel')];
+  document.getElementById('completion-msg').textContent =
+    `${msgs[starsEarned - 1]} ${t('movesLabel')}: ${moves} (Par: ${par})`;
+
+  document.getElementById('level-complete-screen').classList.remove('hidden');
+}
+
+document.getElementById('next-level-btn').addEventListener('click', () => {
+  document.getElementById('level-complete-screen').classList.add('hidden');
+  if (state.levelIdx + 1 < LEVELS.length) {
+    loadLevel(state.levelIdx + 1);
+  } else {
+    document.getElementById('game-complete-screen').classList.remove('hidden');
+  }
+});
+
+document.getElementById('start-btn').addEventListener('click', () => {
+  document.getElementById('start-screen').classList.add('hidden');
+  loadLevel(0);
+});
+
+document.getElementById('restart-btn').addEventListener('click', () => {
+  document.getElementById('game-complete-screen').classList.add('hidden');
+  state.totalMoves = 0;
+  loadLevel(0);
+});
+
+// Language change re-renders UI text
+onLangChange(() => {
+  updateHUD();
+});
+
+// ─── BOOT ────────────────────────────────────────────────────────────────────
+
+// Pre-load level 0 behind the start screen for immediate feel
+loadLevel(0);
+requestAnimationFrame(draw);
+</script>
+</body>
+</html>
