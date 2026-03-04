@@ -3,7 +3,7 @@
  * Pure functions — no DOM dependencies, fully testable.
  */
 
-const G = 2000;
+const G = 400000;
 
 function computeGravity(ballPos, wellPos, strength = 1) {
   const dx = wellPos[0] - ballPos[0];
