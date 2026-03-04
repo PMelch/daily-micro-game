@@ -5,7 +5,7 @@ module.exports = defineConfig({
   testDir: './e2e',
   timeout: 30_000,
   expect: { timeout: 5_000 },
-  fullyParallel: false, // games share a server
+  fullyParallel: false,
   retries: 0,
   workers: 1,
   reporter: 'list',
@@ -17,10 +17,12 @@ module.exports = defineConfig({
     {
       name: 'desktop-chromium',
       use: { ...devices['Desktop Chrome'] },
+      testMatch: ['smoke.spec.js', 'sync-or-sink.spec.js'],
     },
     {
       name: 'mobile-chrome',
       use: { ...devices['Pixel 5'] },
+      testMatch: ['smoke.spec.js'],  // multiplayer tests only need desktop
     },
   ],
   webServer: {

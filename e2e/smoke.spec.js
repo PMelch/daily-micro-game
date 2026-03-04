@@ -34,13 +34,7 @@ for (const game of games) {
       await expect(clickable).toBeAttached({ timeout: 3000 });
     });
 
-    test('no overlapping touch targets on mobile', async ({ page, browserName }, testInfo) => {
-      // Only run on mobile project
-      if (!testInfo.project.name.includes('mobile')) {
-        test.skip();
-        return;
-      }
-
+    test('no overlapping touch targets', async ({ page }) => {
       await page.goto(`/games/${game}/`);
       await page.waitForLoadState('domcontentloaded');
 

@@ -17,9 +17,7 @@ test.describe('Sync or Sink – multiplayer', () => {
   const WS_PORT = 13017;
   const GAME_URL = '/games/day-017-sync-or-sink/';
 
-  test.beforeAll(async ({ browser }, testInfo) => {
-    if (testInfo.project.name.includes('mobile')) return;
-
+  test.beforeAll(async ({ browser }) => {
     // Start WS server
     const { spawn } = require('child_process');
     wsServer = spawn('node', ['server.js'], {
@@ -55,8 +53,7 @@ test.describe('Sync or Sink – multiplayer', () => {
     wsServer?.kill();
   });
 
-  test('create room → join → play round → see results', async ({}, testInfo) => {
-    if (testInfo.project.name.includes('mobile')) { test.skip(); return; }
+  test('create room → join → play round → see results', async ({}) => {
 
     // Host creates room
     await hostPage.goto(GAME_URL);
@@ -102,8 +99,7 @@ test.describe('Sync or Sink – multiplayer', () => {
     await expect(hostPage.locator('#score-rows tr')).toHaveCount(2);
   });
 
-  test('sync button is not blocked by wave-ring overlays', async ({}, testInfo) => {
-    if (testInfo.project.name.includes('mobile')) { test.skip(); return; }
+  test('sync button is not blocked by wave-ring overlays', async ({}) => {
 
     await hostPage.goto(GAME_URL);
 
