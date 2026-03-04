@@ -45,8 +45,8 @@ for (const game of games) {
       await page.waitForLoadState('domcontentloaded');
 
       // Dismiss any intro modals/overlays first
-      const overlay = page.locator('.overlay, .modal, .intro, .splash, [class*="start-screen"]').first();
-      const startBtn = overlay.locator('button, [role="button"]').first();
+      const overlay = page.locator('.overlay, .modal, .intro, .splash, [class*="start-screen"], #overlay, #intro, #splash, #start-screen').first();
+      const startBtn = overlay.locator('button, [role="button"], #start-btn').first();
       if (await startBtn.isVisible({ timeout: 1000 }).catch(() => false)) {
         await startBtn.click();
         await page.waitForTimeout(500);
@@ -67,9 +67,13 @@ for (const game of games) {
           if (btn) return { blocked: false };
           // Check if blocker is an intentional overlay (modal, overlay, backdrop)
           const cls = el.className?.toString() || '';
-          const isIntentionalOverlay = /modal|overlay|backdrop|splash|intro/i.test(cls);
+          const id = el.id || '';
+          const isIntentionalOverlay = /modal|overlay|backdrop|splash|intro/i.test(cls + ' ' + id);
           if (isIntentionalOverlay) return { blocked: false }; // expected behavior
-          return { blocked: true, tag: el.tagName, cls };
+          // Also check ancestors — button might be behind a nested overlay child
+          const ancestor = el.closest('[class*="overlay"], [class*="modal"], [id*="overlay"], [id*="modal"]');
+          if (ancestor) return { blocked: false };
+          return { blocked: true, tag: el.tagName, cls, id };
         }, { x: box.x + box.width / 2, y: box.y + box.height / 2 });
 
         if (result.blocked) {
