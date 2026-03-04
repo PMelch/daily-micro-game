@@ -1,0 +1,1155 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <title>5 Strokes – Drawing Duel</title>
+  <script src="/shared/i18n.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:       #0a0a1a;
+      --surface:  #12122a;
+      --border:   #2a2a4a;
+      --accent:   #ffcc00;
+      --accent2:  #ff6b35;
+      --text:     #e8e8ff;
+      --muted:    #888aaa;
+      --canvas-bg:#f5f5dc;
+      --stroke:   #1a1a2e;
+      --green:    #4ade80;
+      --red:      #f87171;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: system-ui, -apple-system, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .back-bar {
+      width: 100%;
+      background: #0a0a1a;
+      padding: 0.5rem 1rem;
+      border-bottom: 1px solid #333;
+    }
+    .back-bar a {
+      color: #ffcc00;
+      text-decoration: none;
+      font-size: 0.9rem;
+      font-family: system-ui, sans-serif;
+    }
+    .back-bar a:hover { text-decoration: underline; }
+
+    /* ── Screens ── */
+    .screen {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      flex: 1;
+      padding: 1.5rem 1rem;
+      gap: 1rem;
+    }
+    .screen.active { display: flex; }
+
+    h1 {
+      font-size: 2.2rem;
+      font-weight: 900;
+      letter-spacing: -1px;
+      color: var(--accent);
+    }
+    h2 { font-size: 1.5rem; font-weight: 700; }
+    h3 { font-size: 1.2rem; font-weight: 600; }
+
+    p { color: var(--muted); font-size: 0.95rem; text-align: center; line-height: 1.5; }
+
+    /* ── Buttons ── */
+    .btn {
+      background: var(--accent);
+      color: #0a0a1a;
+      border: none;
+      border-radius: 12px;
+      padding: 0.8rem 2rem;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.1s, opacity 0.15s;
+      min-width: 140px;
+    }
+    .btn:hover  { opacity: 0.9; }
+    .btn:active { transform: scale(0.96); }
+    .btn:disabled { opacity: 0.35; cursor: not-allowed; transform: none; }
+    .btn.secondary {
+      background: transparent;
+      border: 2px solid var(--border);
+      color: var(--text);
+    }
+    .btn.danger {
+      background: var(--red);
+    }
+    .btn.success {
+      background: var(--green);
+    }
+    .btn.big {
+      font-size: 1.2rem;
+      padding: 1rem 2.5rem;
+      border-radius: 16px;
+    }
+    .btn-row {
+      display: flex;
+      gap: 0.8rem;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    /* ── Number picker ── */
+    .num-picker {
+      display: flex;
+      gap: 0.6rem;
+    }
+    .num-btn {
+      width: 56px; height: 56px;
+      border-radius: 12px;
+      border: 2px solid var(--border);
+      background: var(--surface);
+      color: var(--text);
+      font-size: 1.4rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .num-btn:hover  { border-color: var(--accent); color: var(--accent); }
+    .num-btn.active { border-color: var(--accent); background: var(--accent); color: #0a0a1a; }
+
+    /* ── Player name inputs ── */
+    .player-inputs { display: flex; flex-direction: column; gap: 0.6rem; width: 100%; max-width: 320px; }
+    .player-input-row { display: flex; align-items: center; gap: 0.6rem; }
+    .player-dot {
+      width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0;
+    }
+    input[type=text] {
+      background: var(--surface);
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      font-size: 1rem;
+      padding: 0.55rem 0.9rem;
+      width: 100%;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    input[type=text]:focus { border-color: var(--accent); }
+
+    /* ── Card ── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 1.5rem;
+      width: 100%;
+      max-width: 420px;
+      text-align: center;
+    }
+
+    /* ── Badge (word display) ── */
+    .word-badge {
+      background: var(--accent);
+      color: #0a0a1a;
+      border-radius: 12px;
+      padding: 0.6rem 1.4rem;
+      font-size: 1.5rem;
+      font-weight: 900;
+      letter-spacing: 1px;
+      display: inline-block;
+    }
+
+    /* ── Stroke counter ── */
+    .stroke-pips {
+      display: flex;
+      gap: 6px;
+      justify-content: center;
+    }
+    .pip {
+      width: 20px; height: 20px;
+      border-radius: 50%;
+      border: 2px solid var(--accent);
+      transition: background 0.2s;
+    }
+    .pip.filled { background: var(--accent); }
+    .pip.last-stroke { border-color: var(--accent2); background: var(--accent2); }
+
+    /* ── Canvas wrapper ── */
+    #canvas-wrap {
+      width: 100%;
+      max-width: 420px;
+      position: relative;
+    }
+    #draw-canvas {
+      width: 100%;
+      border-radius: 16px;
+      border: 3px solid var(--border);
+      cursor: crosshair;
+      touch-action: none;
+      display: block;
+      background: var(--canvas-bg);
+    }
+    #draw-canvas.drawing-done {
+      cursor: default;
+    }
+
+    /* ── Round indicator ── */
+    .round-indicator {
+      font-size: 0.85rem;
+      color: var(--muted);
+      letter-spacing: 0.5px;
+    }
+    .round-indicator span { color: var(--accent); font-weight: 700; }
+
+    /* ── Guess input area ── */
+    .guess-area {
+      width: 100%;
+      max-width: 420px;
+      display: flex;
+      flex-direction: column;
+      gap: 0.7rem;
+    }
+    .guess-input-row {
+      display: flex;
+      gap: 0.5rem;
+    }
+    .guess-input-row input { flex: 1; }
+    .attempts-label {
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+    .wrong-guesses {
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
+    }
+    .wrong-guess-item {
+      background: rgba(248,113,113,0.15);
+      border: 1px solid rgba(248,113,113,0.4);
+      border-radius: 8px;
+      padding: 0.35rem 0.7rem;
+      font-size: 0.9rem;
+      color: var(--red);
+      text-decoration: line-through;
+    }
+
+    /* ── Result screen ── */
+    .result-correct {
+      background: rgba(74,222,128,0.12);
+      border: 2px solid var(--green);
+      border-radius: 16px;
+      padding: 1rem 1.5rem;
+      text-align: center;
+      font-size: 1rem;
+    }
+    .result-wrong {
+      background: rgba(248,113,113,0.12);
+      border: 2px solid var(--red);
+      border-radius: 16px;
+      padding: 1rem 1.5rem;
+      text-align: center;
+      font-size: 1rem;
+    }
+    .points-row {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .points-chip {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0.4rem 0.9rem;
+      font-size: 0.85rem;
+    }
+    .points-chip .pts { font-size: 1.2rem; font-weight: 900; color: var(--accent); }
+
+    /* ── Final scoreboard ── */
+    .scoreboard {
+      width: 100%;
+      max-width: 380px;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    .score-row {
+      display: flex;
+      align-items: center;
+      gap: 0.8rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 0.75rem 1rem;
+    }
+    .score-rank {
+      font-size: 1.3rem;
+      width: 32px;
+      text-align: center;
+    }
+    .score-name { flex: 1; font-weight: 600; font-size: 1rem; }
+    .score-pts  { font-size: 1.3rem; font-weight: 900; color: var(--accent); }
+    .score-row.winner {
+      border-color: var(--accent);
+      background: rgba(255,204,0,0.08);
+    }
+
+    /* ── Handoff / Look away screen ── */
+    .big-emoji { font-size: 4rem; }
+    .handoff-name {
+      font-size: 2rem;
+      font-weight: 900;
+      color: var(--accent);
+    }
+
+    /* ── Progress bar ── */
+    .progress-bar-outer {
+      width: 100%;
+      max-width: 320px;
+      height: 6px;
+      background: var(--border);
+      border-radius: 3px;
+    }
+    .progress-bar-inner {
+      height: 100%;
+      background: var(--accent);
+      border-radius: 3px;
+      transition: width 0.3s ease;
+    }
+
+    /* ── Mini canvas preview ── */
+    #result-canvas-preview {
+      border-radius: 12px;
+      border: 2px solid var(--border);
+      max-width: 200px;
+      max-height: 200px;
+      display: block;
+    }
+
+    /* ── Player color dots in turn indicator ── */
+    .turn-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 0.3rem 0.8rem;
+      font-size: 0.9rem;
+    }
+
+    /* ── Reveal cover (look away) ── */
+    #lookaway-cover {
+      position: fixed;
+      inset: 0;
+      background: #0a0a1a;
+      z-index: 200;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 1.5rem;
+      padding: 2rem;
+    }
+    #lookaway-cover.hidden { display: none; }
+  </style>
+</head>
+<body>
+  <div class="back-bar"><a href="/">← Back to Games</a></div>
+
+  <!-- ── SETUP ── -->
+  <div id="screen-setup" class="screen active">
+    <h1>✏️ 5 Strokes</h1>
+    <p data-i18n="setup_subtitle"></p>
+
+    <div class="card">
+      <h3 data-i18n="howManyPlayers" style="margin-bottom:0.8rem;"></h3>
+      <div class="num-picker">
+        <button class="num-btn" data-n="2">2</button>
+        <button class="num-btn" data-n="3">3</button>
+        <button class="num-btn" data-n="4">4</button>
+      </div>
+    </div>
+
+    <div class="player-inputs" id="player-inputs"></div>
+
+    <button class="btn big" id="start-btn" data-i18n="startGame"></button>
+  </div>
+
+  <!-- ── LOOK AWAY COVER (shown over top) ── -->
+  <div id="lookaway-cover" class="hidden">
+    <div class="big-emoji">👀</div>
+    <h2 id="lookaway-title" data-i18n="lookAwayTitle"></h2>
+    <p id="lookaway-msg"></p>
+    <button class="btn big" id="lookaway-ready-btn"></button>
+  </div>
+
+  <!-- ── DRAW ── -->
+  <div id="screen-draw" class="screen">
+    <div class="round-indicator" id="draw-round-label"></div>
+    <div style="text-align:center;">
+      <div style="font-size:0.85rem;color:var(--muted);margin-bottom:0.4rem;" data-i18n="yourWordIs"></div>
+      <div class="word-badge" id="secret-word-display"></div>
+    </div>
+
+    <div class="stroke-pips" id="stroke-pips">
+      <div class="pip" id="pip-1"></div>
+      <div class="pip" id="pip-2"></div>
+      <div class="pip" id="pip-3"></div>
+      <div class="pip" id="pip-4"></div>
+      <div class="pip" id="pip-5"></div>
+    </div>
+    <div style="font-size:0.8rem;color:var(--muted);" id="stroke-label"></div>
+
+    <div id="canvas-wrap">
+      <canvas id="draw-canvas" width="420" height="360"></canvas>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn secondary" id="undo-btn" data-i18n="undoStroke"></button>
+      <button class="btn" id="finish-draw-btn" data-i18n="finishDrawing"></button>
+    </div>
+  </div>
+
+  <!-- ── HANDOFF TO GUESSER ── -->
+  <div id="screen-handoff-guess" class="screen">
+    <div class="big-emoji">🎨</div>
+    <h2 data-i18n="drawDone"></h2>
+    <p data-i18n="handoffMsg"></p>
+    <div class="handoff-name" id="handoff-guesser-name"></div>
+    <button class="btn big" id="handoff-ready-btn"></button>
+  </div>
+
+  <!-- ── GUESS ── -->
+  <div id="screen-guess" class="screen">
+    <div class="round-indicator" id="guess-round-label"></div>
+    <h3 id="guess-prompt"></h3>
+
+    <canvas id="guess-canvas" width="420" height="360"
+      style="width:100%;max-width:420px;border-radius:16px;border:3px solid var(--border);background:var(--canvas-bg);display:block;"></canvas>
+
+    <div class="guess-area">
+      <div class="attempts-label" id="attempts-label"></div>
+      <div class="wrong-guesses" id="wrong-guesses"></div>
+      <div class="guess-input-row">
+        <input type="text" id="guess-input" autocomplete="off" autocorrect="off" spellcheck="false" />
+        <button class="btn" id="submit-guess-btn" data-i18n="guess"></button>
+      </div>
+    </div>
+    <button class="btn secondary" id="give-up-btn" data-i18n="giveUp"></button>
+  </div>
+
+  <!-- ── ROUND RESULT ── -->
+  <div id="screen-round-result" class="screen">
+    <div class="round-indicator" id="result-round-label"></div>
+    <div id="result-feedback"></div>
+
+    <div style="text-align:center;">
+      <div style="font-size:0.8rem;color:var(--muted);margin-bottom:0.4rem;" data-i18n="theWordWas"></div>
+      <div class="word-badge" id="result-word"></div>
+    </div>
+
+    <canvas id="result-canvas" width="420" height="360"
+      style="width:180px;height:155px;border-radius:12px;border:2px solid var(--border);background:var(--canvas-bg);display:block;"></canvas>
+
+    <div class="points-row" id="points-row"></div>
+
+    <div class="card" style="padding:1rem;">
+      <div style="font-size:0.8rem;color:var(--muted);margin-bottom:0.5rem;" data-i18n="currentScores"></div>
+      <div id="live-scores" style="display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;"></div>
+    </div>
+
+    <button class="btn big" id="next-round-btn"></button>
+  </div>
+
+  <!-- ── FINAL SCOREBOARD ── -->
+  <div id="screen-final" class="screen">
+    <div class="big-emoji">🏆</div>
+    <h1 data-i18n="gameOver"></h1>
+    <div id="winner-announcement" style="font-size:1.2rem;text-align:center;color:var(--accent);font-weight:700;"></div>
+    <div class="scoreboard" id="final-scoreboard"></div>
+    <button class="btn big" id="play-again-btn" data-i18n="playAgain"></button>
+  </div>
+
+  <!-- ── game logic ── -->
+  <script src="game.js"></script>
+  <script>
+  // ─── i18n ─────────────────────────────────────────────────────────────────
+  const TRANSLATIONS = {
+    de: {
+      setup_subtitle:   'Zeichne mit GENAU 5 Strichen — dein Gegner muss es erraten!',
+      howManyPlayers:   'Wie viele Spieler?',
+      startGame:        'Spiel starten',
+      player:           'Spieler',
+      yourWordIs:       'Dein geheimes Wort:',
+      undoStroke:       'Rückgängig',
+      finishDrawing:    'Fertig',
+      drawDone:         'Super Zeichnung! 🎨',
+      handoffMsg:       'Gib das Gerät jetzt an:',
+      imReady:          'Ich bin bereit!',
+      lookAwayTitle:    'Alle wegschauen!',
+      lookAwayMsg:      'Alle außer __NAME__ bitte wegschauen!',
+      lookAwayReady:    '__NAME__ ist bereit – los!',
+      guess:            'Raten',
+      giveUp:           'Aufgeben',
+      correct:          '🎉 Richtig!',
+      wrong:            '❌ Falsch!',
+      theWordWas:       'Das Wort war:',
+      currentScores:    'Aktuelle Punkte',
+      gameOver:         'Spiel vorbei!',
+      playAgain:        'Nochmal spielen',
+      round:            'Runde',
+      of:               'von',
+      draws:            'zeichnet',
+      guesses:          'rät',
+      attempt:          'Versuch',
+      noMoreAttempts:   'Keine Versuche mehr!',
+      pointsDrawer:     'Zeichner',
+      pointsGuesser:    'Rater',
+      noPoints:         'Niemand bekommt Punkte',
+      nextRound:        'Nächste Runde',
+      finalRound:       'Auswertung anzeigen',
+      wins:             'gewinnt!',
+      tie:              'Unentschieden!',
+      whoDraws:         'zeichnet dieses Mal',
+      whoGuesses:       'muss erraten',
+      strokesLeft:      'Striche übrig:',
+      strokesDone:      'Alle 5 Striche genutzt',
+      hint_strokes:     'Nutze deine 5 Striche weise!',
+      enterGuess:       'Wort eintippen...',
+    },
+    en: {
+      setup_subtitle:   'Draw with EXACTLY 5 strokes — your opponent must guess it!',
+      howManyPlayers:   'How many players?',
+      startGame:        'Start game',
+      player:           'Player',
+      yourWordIs:       'Your secret word:',
+      undoStroke:       'Undo',
+      finishDrawing:    'Done',
+      drawDone:         'Great drawing! 🎨',
+      handoffMsg:       'Now pass the device to:',
+      imReady:          "I'm ready!",
+      lookAwayTitle:    'Everyone look away!',
+      lookAwayMsg:      'Everyone except __NAME__ please look away!',
+      lookAwayReady:    '__NAME__ is ready — go!',
+      guess:            'Guess',
+      giveUp:           'Give up',
+      correct:          '🎉 Correct!',
+      wrong:            '❌ Wrong!',
+      theWordWas:       'The word was:',
+      currentScores:    'Current scores',
+      gameOver:         'Game over!',
+      playAgain:        'Play again',
+      round:            'Round',
+      of:               'of',
+      draws:            'draws',
+      guesses:          'guesses',
+      attempt:          'Attempt',
+      noMoreAttempts:   'No more attempts!',
+      pointsDrawer:     'Drawer',
+      pointsGuesser:    'Guesser',
+      noPoints:         'Nobody scores points',
+      nextRound:        'Next round',
+      finalRound:       'Show results',
+      wins:             'wins!',
+      tie:              'It\'s a tie!',
+      whoDraws:         'draws this round',
+      whoGuesses:       'must guess',
+      strokesLeft:      'Strokes left:',
+      strokesDone:      'All 5 strokes used',
+      hint_strokes:     'Use your 5 strokes wisely!',
+      enterGuess:       'Type a word...',
+    },
+    fr: {
+      setup_subtitle:   'Dessine avec EXACTEMENT 5 traits — ton adversaire doit deviner !',
+      howManyPlayers:   'Combien de joueurs ?',
+      startGame:        'Démarrer',
+      player:           'Joueur',
+      yourWordIs:       'Ton mot secret :',
+      undoStroke:       'Annuler',
+      finishDrawing:    'Terminer',
+      drawDone:         'Super dessin ! 🎨',
+      handoffMsg:       'Passe maintenant l\'appareil à :',
+      imReady:          'Je suis prêt(e) !',
+      lookAwayTitle:    'Tout le monde détourne les yeux !',
+      lookAwayMsg:      'Tous sauf __NAME__ regardez ailleurs !',
+      lookAwayReady:    '__NAME__ est prêt(e) — c\'est parti !',
+      guess:            'Deviner',
+      giveUp:           'Abandonner',
+      correct:          '🎉 Correct !',
+      wrong:            '❌ Faux !',
+      theWordWas:       'Le mot était :',
+      currentScores:    'Scores actuels',
+      gameOver:         'Jeu terminé !',
+      playAgain:        'Rejouer',
+      round:            'Manche',
+      of:               'sur',
+      draws:            'dessine',
+      guesses:          'devine',
+      attempt:          'Tentative',
+      noMoreAttempts:   'Plus de tentatives !',
+      pointsDrawer:     'Dessinateur',
+      pointsGuesser:    'Devineur',
+      noPoints:         'Personne ne marque',
+      nextRound:        'Manche suivante',
+      finalRound:       'Voir les résultats',
+      wins:             'gagne !',
+      tie:              'Égalité !',
+      whoDraws:         'dessine ce tour',
+      whoGuesses:       'doit deviner',
+      strokesLeft:      'Traits restants :',
+      strokesDone:      'Les 5 traits utilisés',
+      hint_strokes:     'Utilise tes 5 traits avec sagesse !',
+      enterGuess:       'Tapez un mot...',
+    },
+    it: {
+      setup_subtitle:   'Disegna con ESATTAMENTE 5 tratti — il tuo avversario deve indovinare!',
+      howManyPlayers:   'Quanti giocatori?',
+      startGame:        'Inizia',
+      player:           'Giocatore',
+      yourWordIs:       'La tua parola segreta:',
+      undoStroke:       'Annulla',
+      finishDrawing:    'Fine',
+      drawDone:         'Ottimo disegno! 🎨',
+      handoffMsg:       'Passa il dispositivo a:',
+      imReady:          'Sono pronto!',
+      lookAwayTitle:    'Tutti guardate altrove!',
+      lookAwayMsg:      'Tutti tranne __NAME__ girate la testa!',
+      lookAwayReady:    '__NAME__ è pronto — via!',
+      guess:            'Indovina',
+      giveUp:           'Rinuncia',
+      correct:          '🎉 Corretto!',
+      wrong:            '❌ Sbagliato!',
+      theWordWas:       'La parola era:',
+      currentScores:    'Punteggi attuali',
+      gameOver:         'Gioco finito!',
+      playAgain:        'Gioca ancora',
+      round:            'Round',
+      of:               'di',
+      draws:            'disegna',
+      guesses:          'indovina',
+      attempt:          'Tentativo',
+      noMoreAttempts:   'Nessun altro tentativo!',
+      pointsDrawer:     'Disegnatore',
+      pointsGuesser:    'Indovinatore',
+      noPoints:         'Nessuno segna punti',
+      nextRound:        'Prossimo round',
+      finalRound:       'Mostra risultati',
+      wins:             'vince!',
+      tie:              'Pareggio!',
+      whoDraws:         'disegna questo round',
+      whoGuesses:       'deve indovinare',
+      strokesLeft:      'Tratti rimasti:',
+      strokesDone:      'Tutti e 5 i tratti usati',
+      hint_strokes:     'Usa i tuoi 5 tratti con saggezza!',
+      enterGuess:       'Digita una parola...',
+    },
+    es: {
+      setup_subtitle:   '¡Dibuja con EXACTAMENTE 5 trazos — tu rival debe adivinar!',
+      howManyPlayers:   '¿Cuántos jugadores?',
+      startGame:        'Iniciar',
+      player:           'Jugador',
+      yourWordIs:       'Tu palabra secreta:',
+      undoStroke:       'Deshacer',
+      finishDrawing:    'Listo',
+      drawDone:         '¡Gran dibujo! 🎨',
+      handoffMsg:       'Pasa el dispositivo a:',
+      imReady:          '¡Estoy listo!',
+      lookAwayTitle:    '¡Todos miren para otro lado!',
+      lookAwayMsg:      '¡Todos excepto __NAME__ miren para otro lado!',
+      lookAwayReady:    '¡__NAME__ está listo — vamos!',
+      guess:            'Adivinar',
+      giveUp:           'Rendirse',
+      correct:          '🎉 ¡Correcto!',
+      wrong:            '❌ ¡Incorrecto!',
+      theWordWas:       'La palabra era:',
+      currentScores:    'Puntuaciones actuales',
+      gameOver:         '¡Juego terminado!',
+      playAgain:        'Jugar de nuevo',
+      round:            'Ronda',
+      of:               'de',
+      draws:            'dibuja',
+      guesses:          'adivina',
+      attempt:          'Intento',
+      noMoreAttempts:   '¡No quedan intentos!',
+      pointsDrawer:     'Dibujante',
+      pointsGuesser:    'Adivinador',
+      noPoints:         'Nadie anota puntos',
+      nextRound:        'Siguiente ronda',
+      finalRound:       'Ver resultados',
+      wins:             '¡gana!',
+      tie:              '¡Empate!',
+      whoDraws:         'dibuja esta ronda',
+      whoGuesses:       'debe adivinar',
+      strokesLeft:      'Trazos restantes:',
+      strokesDone:      'Los 5 trazos usados',
+      hint_strokes:     '¡Usa tus 5 trazos con sabiduría!',
+      enterGuess:       'Escribe una palabra...',
+    },
+  };
+
+  const { t, lang, onLangChange } = initI18n(TRANSLATIONS);
+
+  // ─── Player colors ──────────────────────────────────────────────────────
+  const PLAYER_COLORS = ['#ffcc00', '#ff6b35', '#4ade80', '#60a5fa'];
+
+  // ─── State ───────────────────────────────────────────────────────────────
+  let game = null;
+  let numPlayers = 2;
+  let playerNames = [];
+
+  // Drawing state
+  let strokes    = [];   // [{pts:[{x,y},...], color, width}]
+  let curStroke  = null; // currently drawing stroke
+  let isDown     = false;
+  const MAX_STROKES = 5;
+
+  // Guess state
+  let attemptNum    = 0;
+  let wrongGuesses  = [];
+  let currentWordPair = null;
+
+  // Canvas refs
+  const drawCanvas   = document.getElementById('draw-canvas');
+  const guessCanvas  = document.getElementById('guess-canvas');
+  const resultCanvas = document.getElementById('result-canvas');
+  const drawCtx      = drawCanvas.getContext('2d');
+  const guessCtx     = guessCanvas.getContext('2d');
+  const resultCtx    = resultCanvas.getContext('2d');
+
+  // ─── Setup screen logic ─────────────────────────────────────────────────
+  function buildPlayerInputs(n) {
+    const container = document.getElementById('player-inputs');
+    container.innerHTML = '';
+    for (let i = 0; i < n; i++) {
+      const row = document.createElement('div');
+      row.className = 'player-input-row';
+      const dot = document.createElement('div');
+      dot.className = 'player-dot';
+      dot.style.background = PLAYER_COLORS[i];
+      const inp = document.createElement('input');
+      inp.type = 'text';
+      inp.id   = `player-name-${i}`;
+      inp.value = playerNames[i] || `${t('player')} ${i + 1}`;
+      inp.maxLength = 16;
+      inp.setAttribute('data-i18n-placeholder', 'player');
+      row.appendChild(dot);
+      row.appendChild(inp);
+      container.appendChild(row);
+    }
+  }
+
+  function initSetup() {
+    // Number picker
+    document.querySelectorAll('.num-btn').forEach(btn => {
+      btn.classList.toggle('active', parseInt(btn.dataset.n) === numPlayers);
+      btn.addEventListener('click', () => {
+        numPlayers = parseInt(btn.dataset.n);
+        document.querySelectorAll('.num-btn').forEach(b =>
+          b.classList.toggle('active', b === btn));
+        buildPlayerInputs(numPlayers);
+      });
+    });
+    buildPlayerInputs(numPlayers);
+
+    document.getElementById('start-btn').addEventListener('click', () => {
+      playerNames = [];
+      for (let i = 0; i < numPlayers; i++) {
+        const val = document.getElementById(`player-name-${i}`).value.trim();
+        playerNames.push(val || `${t('player')} ${i + 1}`);
+      }
+      startGame();
+    });
+  }
+
+  onLangChange(() => buildPlayerInputs(numPlayers));
+
+  // ─── Game flow ──────────────────────────────────────────────────────────
+  function startGame() {
+    game = new FiveStrokesGame(playerNames);
+    showRound();
+  }
+
+  function showRound() {
+    if (game.isOver) { showFinal(); return; }
+    currentWordPair = game.currentWordPair;
+    resetCanvas();
+    showLookAway();
+  }
+
+  // ── Look-away cover ──────────────────────────────────────────────────────
+  function showLookAway() {
+    const cover = document.getElementById('lookaway-cover');
+    const msg   = document.getElementById('lookaway-msg');
+    const btn   = document.getElementById('lookaway-ready-btn');
+
+    msg.textContent = t('lookAwayMsg').replace('__NAME__', game.drawer);
+    btn.textContent = t('lookAwayReady').replace('__NAME__', game.drawer);
+    cover.classList.remove('hidden');
+
+    btn.onclick = () => {
+      cover.classList.add('hidden');
+      showDrawScreen();
+    };
+  }
+
+  // ── Draw screen ──────────────────────────────────────────────────────────
+  function showDrawScreen() {
+    showScreen('screen-draw');
+    const rnd = game.currentRound + 1;
+    document.getElementById('draw-round-label').innerHTML =
+      `<span>${t('round')} ${rnd} ${t('of')} ${game.totalRounds}</span> — <b>${game.drawer}</b> ${t('draws')}`;
+    document.getElementById('secret-word-display').textContent =
+      currentWordPair[lang()] || currentWordPair.de;
+
+    updateStrokePips();
+    updateStrokeLabel();
+    updateDrawButtons();
+  }
+
+  function updateStrokePips() {
+    for (let i = 1; i <= MAX_STROKES; i++) {
+      const pip = document.getElementById(`pip-${i}`);
+      pip.classList.toggle('filled', i <= strokes.length);
+      pip.classList.toggle('last-stroke', i === strokes.length);
+    }
+  }
+
+  function updateStrokeLabel() {
+    const rem = MAX_STROKES - strokes.length;
+    const lbl = document.getElementById('stroke-label');
+    if (rem > 0) {
+      lbl.textContent = `${t('strokesLeft')} ${rem}`;
+    } else {
+      lbl.textContent = t('strokesDone');
+    }
+  }
+
+  function updateDrawButtons() {
+    const undoBtn   = document.getElementById('undo-btn');
+    const finishBtn = document.getElementById('finish-draw-btn');
+    undoBtn.disabled   = strokes.length === 0;
+    finishBtn.disabled = strokes.length === 0;
+  }
+
+  document.getElementById('undo-btn').addEventListener('click', () => {
+    if (strokes.length > 0) {
+      strokes.pop();
+      redrawCanvas(drawCtx, drawCanvas);
+      updateStrokePips();
+      updateStrokeLabel();
+      updateDrawButtons();
+    }
+  });
+
+  document.getElementById('finish-draw-btn').addEventListener('click', () => {
+    if (strokes.length === 0) return;
+    showHandoffGuess();
+  });
+
+  // ── Canvas drawing ───────────────────────────────────────────────────────
+  function getPos(e, canvas) {
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width  / rect.width;
+    const scaleY = canvas.height / rect.height;
+    let cx, cy;
+    if (e.touches) {
+      cx = e.touches[0].clientX;
+      cy = e.touches[0].clientY;
+    } else {
+      cx = e.clientX;
+      cy = e.clientY;
+    }
+    return { x: (cx - rect.left) * scaleX, y: (cy - rect.top) * scaleY };
+  }
+
+  function startStroke(e) {
+    if (strokes.length >= MAX_STROKES) return;
+    e.preventDefault();
+    isDown = true;
+    const pos = getPos(e, drawCanvas);
+    curStroke = { pts: [pos], color: '#1a1a2e', width: 5 };
+    drawCtx.beginPath();
+    drawCtx.moveTo(pos.x, pos.y);
+  }
+
+  function continueStroke(e) {
+    if (!isDown || !curStroke) return;
+    e.preventDefault();
+    const pos = getPos(e, drawCanvas);
+    curStroke.pts.push(pos);
+
+    // Draw segment
+    drawCtx.lineCap   = 'round';
+    drawCtx.lineJoin  = 'round';
+    drawCtx.strokeStyle = curStroke.color;
+    drawCtx.lineWidth   = curStroke.width;
+    const pts = curStroke.pts;
+    drawCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
+    clearCanvasBg(drawCtx, drawCanvas);
+    redrawStrokes(drawCtx, strokes);
+    // draw current
+    drawCtx.beginPath();
+    drawCtx.moveTo(pts[0].x, pts[0].y);
+    for (let i = 1; i < pts.length; i++) drawCtx.lineTo(pts[i].x, pts[i].y);
+    drawCtx.stroke();
+  }
+
+  function endStroke(e) {
+    if (!isDown || !curStroke) return;
+    e.preventDefault();
+    isDown = false;
+    if (curStroke.pts.length > 1) {
+      strokes.push(curStroke);
+    } else if (curStroke.pts.length === 1) {
+      // tiny dot
+      strokes.push({ ...curStroke, isDot: true });
+    }
+    curStroke = null;
+    redrawCanvas(drawCtx, drawCanvas);
+    updateStrokePips();
+    updateStrokeLabel();
+    updateDrawButtons();
+  }
+
+  drawCanvas.addEventListener('pointerdown',  startStroke,    { passive: false });
+  drawCanvas.addEventListener('pointermove',  continueStroke, { passive: false });
+  drawCanvas.addEventListener('pointerup',    endStroke,      { passive: false });
+  drawCanvas.addEventListener('pointerleave', endStroke,      { passive: false });
+
+  function clearCanvasBg(ctx, canvas) {
+    ctx.fillStyle = '#f5f5dc';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+  }
+
+  function resetCanvas() {
+    strokes   = [];
+    curStroke = null;
+    isDown    = false;
+    clearCanvasBg(drawCtx, drawCanvas);
+  }
+
+  function redrawStrokes(ctx, strokeList) {
+    ctx.lineCap  = 'round';
+    ctx.lineJoin = 'round';
+    for (const s of strokeList) {
+      if (!s.pts || s.pts.length === 0) continue;
+      ctx.beginPath();
+      ctx.strokeStyle = s.color || '#1a1a2e';
+      ctx.lineWidth   = s.width || 5;
+      if (s.isDot) {
+        ctx.arc(s.pts[0].x, s.pts[0].y, (s.width || 5) / 2, 0, Math.PI * 2);
+        ctx.fillStyle = s.color || '#1a1a2e';
+        ctx.fill();
+      } else {
+        ctx.moveTo(s.pts[0].x, s.pts[0].y);
+        for (let i = 1; i < s.pts.length; i++) ctx.lineTo(s.pts[i].x, s.pts[i].y);
+        ctx.stroke();
+      }
+    }
+  }
+
+  function redrawCanvas(ctx, canvas) {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    clearCanvasBg(ctx, canvas);
+    redrawStrokes(ctx, strokes);
+  }
+
+  // ── Copy strokes to another canvas ───────────────────────────────────────
+  function copyDrawingTo(ctx, canvas) {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#f5f5dc';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    redrawStrokes(ctx, strokes);
+  }
+
+  // ── Handoff to guesser ───────────────────────────────────────────────────
+  function showHandoffGuess() {
+    showScreen('screen-handoff-guess');
+    document.getElementById('handoff-guesser-name').textContent = game.guesser;
+    const btn = document.getElementById('handoff-ready-btn');
+    btn.textContent = `${game.guesser} — ${t('imReady')}`;
+    btn.onclick = () => {
+      showGuessScreen();
+    };
+  }
+
+  // ── Guess screen ─────────────────────────────────────────────────────────
+  function showGuessScreen() {
+    showScreen('screen-guess');
+    attemptNum   = 0;
+    wrongGuesses = [];
+
+    const rnd = game.currentRound + 1;
+    document.getElementById('guess-round-label').innerHTML =
+      `<span>${t('round')} ${rnd} ${t('of')} ${game.totalRounds}</span> — <b>${game.guesser}</b> ${t('guesses')}`;
+    document.getElementById('guess-prompt').textContent =
+      `${game.drawer} ${t('draws')} … ${t('whoGuesses')}?`;
+
+    // Inject drawing
+    copyDrawingTo(guessCtx, guessCanvas);
+
+    document.getElementById('wrong-guesses').innerHTML = '';
+    document.getElementById('guess-input').value = '';
+    document.getElementById('guess-input').placeholder = t('enterGuess');
+    updateAttemptsLabel();
+
+    document.getElementById('guess-input').focus();
+  }
+
+  function updateAttemptsLabel() {
+    document.getElementById('attempts-label').textContent =
+      `${t('attempt')} ${attemptNum + 1} / 3`;
+  }
+
+  document.getElementById('submit-guess-btn').addEventListener('click', submitGuess);
+  document.getElementById('guess-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') submitGuess();
+  });
+
+  function submitGuess() {
+    const input = document.getElementById('guess-input');
+    const guess = input.value.trim();
+    if (!guess) return;
+
+    const answer = currentWordPair[lang()] || currentWordPair.de;
+    attemptNum++;
+
+    if (checkGuess(guess, answer)) {
+      // Correct!
+      const { guesser: gPts, drawer: dPts } = calculatePoints(attemptNum);
+      game.awardPoints(gPts, dPts);
+      showRoundResult(true, attemptNum, gPts, dPts);
+    } else {
+      // Wrong
+      wrongGuesses.push(guess);
+      const wgDiv = document.getElementById('wrong-guesses');
+      const item  = document.createElement('div');
+      item.className = 'wrong-guess-item';
+      item.textContent = `✗ ${guess}`;
+      wgDiv.appendChild(item);
+      input.value = '';
+
+      if (attemptNum >= 3) {
+        // No more attempts
+        game.awardPoints(0, 0);
+        showRoundResult(false, 0, 0, 0);
+      } else {
+        updateAttemptsLabel();
+      }
+    }
+  }
+
+  document.getElementById('give-up-btn').addEventListener('click', () => {
+    game.awardPoints(0, 0);
+    showRoundResult(false, 0, 0, 0);
+  });
+
+  // ── Round result ─────────────────────────────────────────────────────────
+  function showRoundResult(correct, attempt, gPts, dPts) {
+    showScreen('screen-round-result');
+
+    const rnd = game.currentRound + 1;
+    document.getElementById('result-round-label').innerHTML =
+      `<span>${t('round')} ${rnd} ${t('of')} ${game.totalRounds}</span>`;
+
+    const feedback = document.getElementById('result-feedback');
+    if (correct) {
+      feedback.innerHTML = `<div class="result-correct"><b>${t('correct')}</b></div>`;
+    } else {
+      feedback.innerHTML = `<div class="result-wrong"><b>${t('wrong')}</b></div>`;
+    }
+
+    const answer = currentWordPair[lang()] || currentWordPair.de;
+    document.getElementById('result-word').textContent = answer;
+
+    // Mini canvas
+    copyDrawingTo(resultCtx, resultCanvas);
+
+    // Points row
+    const pr = document.getElementById('points-row');
+    pr.innerHTML = '';
+    if (correct) {
+      pr.innerHTML = `
+        <div class="points-chip">
+          ${t('pointsDrawer')} <b>${game.drawer}</b><br>
+          <span class="pts">+${dPts}</span>
+        </div>
+        <div class="points-chip">
+          ${t('pointsGuesser')} <b>${game.guesser}</b><br>
+          <span class="pts">+${gPts}</span>
+        </div>`;
+    } else {
+      pr.innerHTML = `<div class="points-chip" style="color:var(--muted);">${t('noPoints')}</div>`;
+    }
+
+    // Live scores
+    const ls = document.getElementById('live-scores');
+    ls.innerHTML = game.players.map((name, i) =>
+      `<div style="text-align:center;">
+        <div style="font-size:0.75rem;color:var(--muted);">${name}</div>
+        <div style="font-size:1.3rem;font-weight:900;color:${PLAYER_COLORS[i]};">${game.scores[i]}</div>
+      </div>`
+    ).join('');
+
+    game.nextRound();
+
+    const nextBtn = document.getElementById('next-round-btn');
+    if (game.isOver) {
+      nextBtn.textContent = t('finalRound');
+    } else {
+      nextBtn.textContent = t('nextRound');
+    }
+    nextBtn.onclick = () => showRound();
+  }
+
+  // ── Final screen ─────────────────────────────────────────────────────────
+  function showFinal() {
+    showScreen('screen-final');
+    const { winners, maxScore } = game.getWinner();
+
+    const announce = document.getElementById('winner-announcement');
+    if (winners.length === 1) {
+      announce.textContent = `🏆 ${winners[0]} ${t('wins')} (${maxScore} pts)`;
+    } else {
+      announce.textContent = `🤝 ${t('tie')} ${winners.join(' & ')} (${maxScore} pts)`;
+    }
+
+    const sb = document.getElementById('final-scoreboard');
+    const ranking = game.getRanking();
+    const medals  = ['🥇','🥈','🥉','4️⃣'];
+    sb.innerHTML = ranking.map((entry, i) => {
+      const playerI = game.players.indexOf(entry.name);
+      const isWinner = winners.includes(entry.name);
+      return `<div class="score-row ${isWinner ? 'winner' : ''}">
+        <div class="score-rank">${medals[i] || (i+1)}</div>
+        <div class="score-name" style="color:${PLAYER_COLORS[playerI]};">${entry.name}</div>
+        <div class="score-pts">${entry.score} pts</div>
+      </div>`;
+    }).join('');
+
+    document.getElementById('play-again-btn').onclick = () => {
+      showScreen('screen-setup');
+    };
+  }
+
+  // ─── Screen switcher ────────────────────────────────────────────────────
+  function showScreen(id) {
+    document.querySelectorAll('.screen').forEach(s =>
+      s.classList.toggle('active', s.id === id));
+  }
+
+  // ─── Init ────────────────────────────────────────────────────────────────
+  initSetup();
+  </script>
+</body>
+</html>
