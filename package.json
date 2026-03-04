@@ -6,6 +6,12 @@
   "scripts": {
     "test": "bun test",
     "test:dashboard": "bun test dashboard/test/",
+    "test:e2e": "npx playwright test",
+    "test:e2e:smoke": "npx playwright test smoke",
+    "test:e2e:multiplayer": "npx playwright test sync-or-sink",
     "start": "bun dashboard/server.js"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.58.2"
   }
 }

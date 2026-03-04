@@ -357,7 +357,7 @@ let players = [];
 let totalRounds = 5;
 let hasPressedThisRound = false;
 
-const WS_URL = 'wss://day-017-sync-or-sink.lab.gogerl.com';
+const WS_URL = window.__TEST_WS_URL || 'wss://day-017-sync-or-sink.lab.gogerl.com';
 
 // --- Screens ---
 function showScreen(id) {
