@@ -14,6 +14,25 @@ import {
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = 3009;
+const MAX_ROOMS = 100;
+const MAX_MSG_SIZE = 512;
+const MAX_MSG_PER_SEC = 20;
+const NAME_MAX_LEN = 20;
+
+function sanitizeName(name) {
+  if (typeof name !== 'string') return 'Player';
+  return name.trim().slice(0, NAME_MAX_LEN).replace(/[<>"'&]/g, '') || 'Player';
+}
+
+const rateLimits = new WeakMap();
+function checkRate(ws) {
+  const now = Date.now();
+  let rl = rateLimits.get(ws);
+  if (!rl) { rl = { count: 0, reset: now + 1000 }; rateLimits.set(ws, rl); }
+  if (now > rl.reset) { rl.count = 0; rl.reset = now + 1000; }
+  rl.count++;
+  return rl.count <= MAX_MSG_PER_SEC;
+}
 
 // ─── In-memory rooms ──────────────────────────────────────────────────────
 const rooms = new Map();       // code → room
@@ -22,7 +41,13 @@ const clientRoom = new Map();  // ws → { code, playerName }
 // ─── HTTP Server ──────────────────────────────────────────────────────────
 const httpServer = http.createServer((req, res) => {
   const urlPath = req.url === '/' ? '/index.html' : req.url;
-  const filePath = path.join(__dirname, urlPath);
+  const filePath = path.resolve(path.join(__dirname, urlPath));
+  // Prevent path traversal — resolved path must stay within __dirname
+  if (!filePath.startsWith(__dirname + '/') && filePath !== __dirname) {
+    res.writeHead(403);
+    res.end('Forbidden');
+    return;
+  }
   const ext = path.extname(filePath);
   const mime = { '.html': 'text/html', '.js': 'application/javascript', '.css': 'text/css', '.png': 'image/png' };
 
@@ -38,7 +63,7 @@ const httpServer = http.createServer((req, res) => {
 });
 
 // ─── WebSocket Server ────────────────────────────────────────────────────
-const wss = new WebSocketServer({ server: httpServer });
+const wss = new WebSocketServer({ server: httpServer, maxPayload: MAX_MSG_SIZE });
 
 function broadcast(room, message) {
   const payload = JSON.stringify(message);
@@ -60,18 +85,23 @@ function sendTo(ws, message) {
 
 wss.on('connection', (ws) => {
   ws.on('message', (raw) => {
+    if (!checkRate(ws)) return;
     let msg;
     try { msg = JSON.parse(raw); } catch { return; }
+    if (typeof msg.type !== 'string') return;
 
     const info = clientRoom.get(ws);
 
     // ── CREATE ROOM ──
     if (msg.type === 'create') {
-      if (!msg.name?.trim()) return sendTo(ws, { type: 'error', message: 'Name required' });
+      const name = sanitizeName(msg.name);
+      if (!name) return sendTo(ws, { type: 'error', message: 'Name required' });
+      if (rooms.size >= MAX_ROOMS) return sendTo(ws, { type: 'error', message: 'Too many rooms' });
 
-      const room = createRoom(msg.name.trim());
+      const room = createRoom(name);
+      room._createdAt = Date.now();
       rooms.set(room.code, room);
-      clientRoom.set(ws, { code: room.code, playerName: msg.name.trim() });
+      clientRoom.set(ws, { code: room.code, playerName: name });
 
       sendTo(ws, { type: 'created', code: room.code, state: getRoomState(room) });
       return;
@@ -79,8 +109,8 @@ wss.on('connection', (ws) => {
 
     // ── JOIN ROOM ──
     if (msg.type === 'join') {
-      const code = (msg.code || '').trim().toUpperCase();
-      const name = (msg.name || '').trim();
+      const code = typeof msg.code === 'string' ? msg.code.trim().toUpperCase().slice(0, 4) : '';
+      const name = sanitizeName(msg.name);
       if (!code || !name) return sendTo(ws, { type: 'error', message: 'Code and name required' });
 
       const room = rooms.get(code);
