@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title data-i18n="title">Cosmic Delivery</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; padding: 0;
+      background: #111; color: white;
+      font-family: system-ui, sans-serif;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+    .back-bar {
+      width: 100%;
+      background: #0a0a1a;
+      padding: 0.5rem 1rem;
+      border-bottom: 1px solid #333;
+      z-index: 100;
+    }
+    .back-bar a {
+      color: #ffcc00;
+      text-decoration: none;
+      font-size: 0.9rem;
+      font-family: system-ui, sans-serif;
+    }
+    .back-bar a:hover { text-decoration: underline; }
+
+    #game-container {
+      flex: 1;
+      position: relative;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+    }
+    canvas {
+      background: #050510;
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+    }
+    #ui {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      right: 10px;
+      display: flex;
+      justify-content: space-between;
+      pointer-events: none;
+      font-size: 1.2rem;
+      text-shadow: 1px 1px 2px black;
+      z-index: 10;
+    }
+    #messages {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+      pointer-events: none;
+      z-index: 20;
+    }
+    h1 { font-size: 3rem; margin: 0; text-shadow: 2px 2px 4px #000; }
+    button {
+      margin-top: 1rem;
+      padding: 0.8rem 1.5rem;
+      font-size: 1.2rem;
+      background: #ffcc00;
+      color: #111;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      pointer-events: auto;
+      font-weight: bold;
+    }
+    button:hover { background: #ffaa00; }
+    #controls {
+      position: absolute;
+      bottom: 20px;
+      left: 0;
+      right: 0;
+      display: flex;
+      justify-content: space-around;
+      padding: 0 20px;
+      pointer-events: none;
+    }
+    .btn-ctrl {
+      width: 60px;
+      height: 60px;
+      background: rgba(255,255,255,0.2);
+      border-radius: 50%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 2rem;
+      pointer-events: auto;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    .hidden { display: none !important; }
+    
+    @media (min-width: 768px) {
+      #controls { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="back-bar"><a href="/" data-i18n="back_to_games">← Back to Games</a></div>
+
+  <div id="game-container">
+    <div id="ui">
+      <div><span data-i18n="fuel">Fuel</span>: <span id="fuel-val">100</span>%</div>
+      <div><span data-i18n="level">Level</span>: <span id="level-val">1</span></div>
+    </div>
+
+    <div id="messages">
+      <h1 id="msg-title" data-i18n="title">Cosmic Delivery</h1>
+      <p id="msg-desc" data-i18n="instructions">Land safely on the green pad. Don't crash!</p>
+      <button id="start-btn" data-i18n="start">Start Game</button>
+    </div>
+
+    <canvas id="gameCanvas" width="480" height="640"></canvas>
+
+    <div id="controls">
+      <div class="btn-ctrl" id="btn-left">↺</div>
+      <div class="btn-ctrl" id="btn-thrust">🚀</div>
+      <div class="btn-ctrl" id="btn-right">↻</div>
+    </div>
+  </div>
+
+  <script src="/shared/i18n.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>
