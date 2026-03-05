@@ -89,7 +89,7 @@ export function joinRoom(room, playerName) {
   if (room.phase !== 'lobby') {
     return { ok: false, reason: 'Game already started' };
   }
-  if (room.players.length >= 6) {
+  if (room.players.length >= 20) {
     return { ok: false, reason: 'Room is full' };
   }
   room.players.push({ name: playerName, score: 0, isHost: false, id: playerName });

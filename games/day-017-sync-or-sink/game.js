@@ -4,7 +4,7 @@
 
 const TOTAL_ROUNDS = 5;
 const MIN_PLAYERS = 2;
-const MAX_PLAYERS = 6;
+const MAX_PLAYERS = 20;
 const ROOM_CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
 
 function generateRoomCode() {

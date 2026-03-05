@@ -49,8 +49,8 @@ button.secondary:hover{background:#2a2a3e;}
 @keyframes pulse{0%{transform:scale(0.8);opacity:0}100%{transform:scale(1);opacity:1}}
 
 /* Press indicator */
-.press-dots{display:flex;gap:0.75rem;margin:0.5rem 0;}
-.press-dot{width:20px;height:20px;border-radius:50%;background:#333;transition:background 0.3s;}
+.press-dots{display:flex;flex-wrap:wrap;justify-content:center;gap:0.4rem;margin:0.5rem 0;max-width:320px;}
+.press-dot{width:14px;height:14px;border-radius:50%;background:#333;transition:background 0.3s;}
 .press-dot.lit{background:#0f8;box-shadow:0 0 8px #0f8;}
 
 /* Result */
