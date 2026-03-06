@@ -76,8 +76,10 @@ const TRANSLATIONS = {
   }
 };
 
+let _t = key => TRANSLATIONS.en[key] || key;
 if (typeof initI18n !== 'undefined') {
-  initI18n(TRANSLATIONS);
+  const i18n = initI18n(TRANSLATIONS);
+  _t = i18n.t;
 }
 
 const canvas = document.getElementById('gameCanvas');
@@ -280,9 +282,9 @@ function gameLoop(time) {
     gameState = 'GAMEOVER';
     explosion();
     setTimeout(() => {
-      msgTitle.innerText = t('game_over') || TRANSLATIONS.en.game_over;
-      msgDesc.innerText = t('try_again') || TRANSLATIONS.en.try_again;
-      btnStart.innerText = t('try_again') || TRANSLATIONS.en.try_again;
+      msgTitle.innerText = _t('game_over') || TRANSLATIONS.en.game_over;
+      msgDesc.innerText = _t('try_again') || TRANSLATIONS.en.try_again;
+      btnStart.innerText = _t('try_again') || TRANSLATIONS.en.try_again;
       uiMessages.classList.remove('hidden');
     }, 1000);
   } else if (col === 'LANDED') {
@@ -291,13 +293,13 @@ function gameLoop(time) {
       currentLevel++;
       if (currentLevel >= LEVELS.length) {
         gameState = 'WIN';
-        msgTitle.innerText = t('win') || TRANSLATIONS.en.win;
-        msgDesc.innerText = t('win_desc') || TRANSLATIONS.en.win_desc;
-        btnStart.innerText = t('try_again') || TRANSLATIONS.en.try_again;
+        msgTitle.innerText = _t('win') || TRANSLATIONS.en.win;
+        msgDesc.innerText = _t('win_desc') || TRANSLATIONS.en.win_desc;
+        btnStart.innerText = _t('try_again') || TRANSLATIONS.en.try_again;
       } else {
-        msgTitle.innerText = t('success') || TRANSLATIONS.en.success;
-        msgDesc.innerText = t('next_level') || TRANSLATIONS.en.next_level;
-        btnStart.innerText = t('next_level') || TRANSLATIONS.en.next_level;
+        msgTitle.innerText = _t('success') || TRANSLATIONS.en.success;
+        msgDesc.innerText = _t('next_level') || TRANSLATIONS.en.next_level;
+        btnStart.innerText = _t('next_level') || TRANSLATIONS.en.next_level;
       }
       uiMessages.classList.remove('hidden');
     }, 1000);
@@ -365,11 +367,7 @@ function draw() {
   }
 }
 
-// Ensure t() fallback if i18n not loaded properly during dev
-function t(key) {
-  if (typeof window.t === 'function') return window.t(key);
-  return TRANSLATIONS.en[key];
-}
+
 
 // Initial draw
 ctx.fillStyle = '#444';
