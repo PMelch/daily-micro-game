@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lone Wolf 🐺</title>
+<style>
+  :root {
+    --bg: #0a0a1a;
+    --card: #12122a;
+    --border: #2a2a4a;
+    --accent: #ffcc00;
+    --accent2: #ff6b35;
+    --text: #e8e8f0;
+    --muted: #888;
+    --success: #4ade80;
+    --danger: #f87171;
+    --wolf: #a78bfa;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: system-ui, sans-serif; min-height: 100vh; overflow-x: hidden; }
+
+  .back-bar { width:100%; background:#0a0a1a; padding:0.5rem 1rem; border-bottom:1px solid #333; }
+  .back-bar a { color:#ffcc00; text-decoration:none; font-size:0.9rem; font-family:system-ui,sans-serif; }
+  .back-bar a:hover { text-decoration:underline; }
+
+  /* Stars background */
+  #stars { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
+
+  .screen { display: none; position: relative; z-index: 1; padding: 1.5rem 1rem; max-width: 480px; margin: 0 auto; }
+  .screen.active { display: flex; flex-direction: column; align-items: center; gap: 1.2rem; }
+
+  h1 { font-size: 2.5rem; font-weight: 900; text-align: center; }
+  h1 span { color: var(--wolf); }
+  .subtitle { color: var(--muted); text-align: center; font-size: 0.95rem; }
+
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 1.5rem; width: 100%; }
+
+  input[type="text"] {
+    width: 100%; background: #1a1a2e; border: 1px solid var(--border); border-radius: 10px;
+    padding: 0.8rem 1rem; color: var(--text); font-size: 1rem; outline: none;
+    transition: border-color 0.2s;
+  }
+  input[type="text"]:focus { border-color: var(--wolf); }
+
+  .btn {
+    width: 100%; padding: 0.85rem 1.5rem; border: none; border-radius: 12px;
+    font-size: 1rem; font-weight: 700; cursor: pointer; transition: transform 0.1s, opacity 0.2s;
+  }
+  .btn:active { transform: scale(0.97); }
+  .btn-primary { background: var(--wolf); color: #fff; }
+  .btn-secondary { background: transparent; border: 1px solid var(--border); color: var(--text); }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .divider { color: var(--muted); font-size: 0.85rem; }
+
+  /* Room code display */
+  .room-code { font-size: 3rem; font-weight: 900; letter-spacing: 0.3em; color: var(--accent); text-align: center; font-family: monospace; }
+
+  /* Players list */
+  .players-list { list-style: none; display: flex; flex-direction: column; gap: 0.5rem; width: 100%; }
+  .player-item { display: flex; align-items: center; gap: 0.7rem; padding: 0.6rem 1rem; background: #1a1a2e; border-radius: 10px; font-size: 0.9rem; }
+  .player-dot { width: 10px; height: 10px; border-radius: 50%; }
+  .player-crown { font-size: 1rem; }
+
+  /* Picking screen */
+  .round-info { text-align: center; width: 100%; }
+  .round-badge { display: inline-block; background: var(--wolf); color: #fff; border-radius: 20px; padding: 0.3rem 1rem; font-size: 0.85rem; font-weight: 700; margin-bottom: 0.5rem; }
+  .category-label { font-size: 1.6rem; font-weight: 800; color: var(--accent); text-align: center; line-height: 1.2; }
+  .category-sub { color: var(--muted); font-size: 0.85rem; text-align: center; margin-top: 0.3rem; }
+
+  /* Timer */
+  .timer-wrap { position: relative; width: 80px; height: 80px; margin: 0 auto; }
+  .timer-svg { transform: rotate(-90deg); }
+  .timer-bg { fill: none; stroke: #1a1a2e; stroke-width: 6; }
+  .timer-arc { fill: none; stroke: var(--wolf); stroke-width: 6; stroke-linecap: round; transition: stroke-dashoffset 1s linear, stroke 0.5s; }
+  .timer-text { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); font-size: 1.6rem; font-weight: 900; color: var(--text); }
+
+  /* Options grid */
+  .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.7rem; width: 100%; }
+  .option-btn {
+    padding: 1rem 0.5rem; background: #1a1a2e; border: 2px solid var(--border);
+    border-radius: 14px; color: var(--text); font-size: 0.95rem; font-weight: 600;
+    cursor: pointer; transition: all 0.15s; text-align: center; line-height: 1.3;
+  }
+  .option-btn:hover:not(:disabled) { border-color: var(--wolf); background: #22224a; transform: scale(1.03); }
+  .option-btn.selected { border-color: var(--wolf); background: #2d2060; color: var(--wolf); }
+  .option-btn:disabled { cursor: default; }
+  .option-btn.locked { opacity: 0.7; }
+
+  .pick-status { text-align: center; color: var(--muted); font-size: 0.85rem; }
+  .pick-status strong { color: var(--text); }
+
+  /* Reveal screen */
+  .reveal-question { font-size: 1.3rem; font-weight: 700; text-align: center; color: var(--accent); }
+  .reveal-options { display: flex; flex-direction: column; gap: 0.6rem; width: 100%; }
+  .reveal-option { display: flex; align-items: center; justify-content: space-between; padding: 0.8rem 1rem; border-radius: 12px; border: 1px solid var(--border); background: #1a1a2e; }
+  .reveal-option.unique { border-color: var(--success); background: #0a2a0a; }
+  .reveal-option.clash { border-color: var(--danger); background: #2a0a0a; }
+  .reveal-option.nobody { opacity: 0.4; }
+  .reveal-option-name { font-weight: 700; font-size: 0.95rem; }
+  .reveal-pickers { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+  .reveal-picker-tag { font-size: 0.75rem; padding: 0.2rem 0.5rem; border-radius: 20px; background: #2a2a4a; }
+  .reveal-picker-tag.winner { background: var(--success); color: #000; }
+  .badge-unique { font-size: 0.7rem; color: var(--success); font-weight: 700; }
+  .badge-clash { font-size: 0.7rem; color: var(--danger); font-weight: 700; }
+
+  /* Score table */
+  .score-table { width: 100%; border-collapse: collapse; }
+  .score-table tr { border-bottom: 1px solid var(--border); }
+  .score-table td { padding: 0.6rem 0.5rem; font-size: 0.95rem; }
+  .score-table .rank { color: var(--muted); width: 2rem; }
+  .score-table .name { font-weight: 600; }
+  .score-table .pts { color: var(--accent); font-weight: 900; text-align: right; }
+
+  /* Final winner banner */
+  .winner-banner { text-align: center; padding: 1.5rem; background: linear-gradient(135deg, #1a0a3a, #2a1a4a); border-radius: 16px; border: 2px solid var(--wolf); width: 100%; }
+  .winner-emoji { font-size: 3rem; }
+  .winner-name { font-size: 1.5rem; font-weight: 900; color: var(--wolf); margin-top: 0.3rem; }
+
+  /* Error toast */
+  .toast { position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%); background: #333; color: #fff; padding: 0.7rem 1.5rem; border-radius: 20px; font-size: 0.9rem; z-index: 100; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
+  .toast.show { opacity: 1; }
+
+  /* Animations */
+  @keyframes wolf-bounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+  .wolf-icon { display: inline-block; animation: wolf-bounce 2s ease-in-out infinite; font-size: 3rem; }
+
+  @keyframes fadeIn { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+  .fade-in { animation: fadeIn 0.3s ease forwards; }
+
+  .confetti-wrap { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 50; }
+</style>
+</head>
+<body>
+<div class="back-bar"><a href="/">← Back to Games</a></div>
+<canvas id="stars"></canvas>
+
+<!-- LOBBY SCREEN -->
+<div id="screen-lobby" class="screen active">
+  <div class="wolf-icon">🐺</div>
+  <h1>Lone <span>Wolf</span></h1>
+  <p class="subtitle" data-i18n="tagline">Nur einzigartige Antworten zählen!</p>
+
+  <div class="card">
+    <label style="font-size:0.9rem;color:var(--muted);display:block;margin-bottom:0.5rem;" data-i18n="your_name">Dein Name</label>
+    <input type="text" id="inp-name" maxlength="20" data-i18n-placeholder="name_placeholder">
+    <div style="height:1rem"></div>
+    <button class="btn btn-primary" id="btn-create" data-i18n="create_room">Raum erstellen</button>
+    <div style="text-align:center;margin:0.8rem 0;color:var(--muted);font-size:0.85rem;" data-i18n="or">oder</div>
+    <input type="text" id="inp-code" maxlength="4" placeholder="ABCD" style="text-align:center;text-transform:uppercase;letter-spacing:0.3em;font-size:1.2rem;font-weight:700;">
+    <div style="height:0.5rem"></div>
+    <button class="btn btn-secondary" id="btn-join" data-i18n="join_room">Raum beitreten</button>
+  </div>
+</div>
+
+<!-- WAITING SCREEN -->
+<div id="screen-waiting" class="screen">
+  <h1>Lone <span>Wolf</span></h1>
+  <p class="subtitle" data-i18n="waiting_subtitle">Teile den Code mit Freunden</p>
+
+  <div class="card" style="text-align:center;">
+    <p style="color:var(--muted);font-size:0.85rem;margin-bottom:0.4rem;" data-i18n="room_code">Raum-Code</p>
+    <div class="room-code" id="display-code">----</div>
+  </div>
+
+  <div class="card" style="width:100%;">
+    <p style="font-size:0.85rem;color:var(--muted);margin-bottom:0.7rem;" data-i18n="players_joined">Spieler:</p>
+    <ul class="players-list" id="players-list"></ul>
+  </div>
+
+  <button class="btn btn-primary" id="btn-start" disabled data-i18n="start_game">Spiel starten</button>
+  <p style="font-size:0.8rem;color:var(--muted);" data-i18n="need_2_players">Mindestens 2 Spieler benötigt</p>
+</div>
+
+<!-- PICKING SCREEN -->
+<div id="screen-picking" class="screen">
+  <div class="round-info">
+    <div class="round-badge" id="round-badge">Runde 1/8</div>
+    <div class="category-label" id="category-label">Kategorie</div>
+    <div class="category-sub" data-i18n="pick_unique">Wähle etwas Einzigartiges! 🐺</div>
+  </div>
+
+  <div class="timer-wrap">
+    <svg class="timer-svg" width="80" height="80" viewBox="0 0 80 80">
+      <circle class="timer-bg" cx="40" cy="40" r="35"/>
+      <circle class="timer-arc" id="timer-arc" cx="40" cy="40" r="35" stroke-dasharray="219.9" stroke-dashoffset="0"/>
+    </svg>
+    <div class="timer-text" id="timer-text">12</div>
+  </div>
+
+  <div class="options-grid" id="options-grid"></div>
+
+  <p class="pick-status" id="pick-status"></p>
+</div>
+
+<!-- REVEAL SCREEN -->
+<div id="screen-reveal" class="screen">
+  <div class="round-badge" id="reveal-round-badge">Runde 1/8</div>
+  <div class="reveal-question" id="reveal-question"></div>
+  <div class="reveal-options" id="reveal-options"></div>
+  <div class="card" style="width:100%;text-align:center;">
+    <p style="color:var(--muted);font-size:0.8rem;" data-i18n="next_round_auto">Nächste Runde startet automatisch...</p>
+    <div id="scores-mini" style="margin-top:0.7rem;"></div>
+  </div>
+</div>
+
+<!-- FINAL SCORES SCREEN -->
+<div id="screen-scores" class="screen">
+  <h1>Lone <span>Wolf</span></h1>
+  <div class="winner-banner" id="winner-banner">
+    <div class="winner-emoji">🏆</div>
+    <div class="winner-name" id="winner-name"></div>
+    <p id="winner-subtitle" style="color:var(--muted);font-size:0.85rem;margin-top:0.3rem;"></p>
+  </div>
+  <div class="card" style="width:100%;">
+    <table class="score-table" id="final-score-table"></table>
+  </div>
+  <button class="btn btn-primary" id="btn-play-again" data-i18n="play_again">Nochmal spielen</button>
+</div>
+
+<div class="toast" id="toast"></div>
+<div class="confetti-wrap" id="confetti-wrap"></div>
+
+<script src="/shared/i18n.js"></script>
+<script>
+const TRANSLATIONS = {
+  de: {
+    tagline: 'Nur einzigartige Antworten zählen!',
+    your_name: 'Dein Name',
+    name_placeholder: 'Name eingeben...',
+    create_room: 'Raum erstellen 🐺',
+    or: '— oder —',
+    join_room: 'Raum beitreten',
+    waiting_subtitle: 'Teile den Code mit Freunden',
+    room_code: 'Raum-Code',
+    players_joined: 'Spieler:',
+    start_game: 'Spiel starten ▶',
+    need_2_players: 'Mindestens 2 Spieler benötigt',
+    pick_unique: 'Wähle etwas Einzigartiges! 🐺',
+    round_label: (n, t) => `Runde ${n}/${t}`,
+    next_round_auto: 'Nächste Runde startet automatisch...',
+    play_again: '🔄 Nochmal spielen',
+    scores_title: 'Endstand',
+    waiting_for: (n) => `Warten auf ${n}...`,
+    picked_label: (n, t) => `${n}/${t} haben gewählt`,
+    you_picked: (o) => `Du hast gewählt: ${o}`,
+    unique_badge: '🐺 Einzigartig!',
+    clash_badge: '💥 Clash!',
+    winner_suffix: 'ist der Lone Wolf!',
+    tie_label: 'Unentschieden!',
+    points: (n) => `${n} Pkt`,
+    cat_planet: '🪐 Nenne einen Planeten',
+    cat_fruit: '🍎 Nenne eine Frucht',
+    cat_color: '🎨 Nenne eine Farbe',
+    cat_sport: '⚽ Nenne eine Sportart',
+    cat_animal: '🦁 Nenne ein Tier',
+    cat_country: '🗺️ Nenne ein europäisches Land',
+    cat_instrument: '🎸 Nenne ein Instrument',
+    cat_season: '🌤️ Nenne eine Jahreszeit oder Wetter',
+    cat_ocean: '🌊 Nenne ein Meer oder Ozean',
+    cat_day: '📅 Nenne einen Wochentag',
+    err_enter_name: 'Bitte einen Namen eingeben!',
+    err_enter_code: 'Bitte einen Raum-Code eingeben!',
+    err_room_not_found: 'Raum nicht gefunden.',
+    err_game_started: 'Das Spiel hat bereits begonnen.',
+    err_room_full: 'Der Raum ist voll.',
+    err_not_host: 'Nur der Host kann das Spiel starten.',
+    err_not_enough_players: 'Nicht genug Spieler (min. 2).',
+    err_connect: 'Verbindung fehlgeschlagen.',
+  },
+  en: {
+    tagline: 'Only unique answers score!',
+    your_name: 'Your Name',
+    name_placeholder: 'Enter name...',
+    create_room: 'Create Room 🐺',
+    or: '— or —',
+    join_room: 'Join Room',
+    waiting_subtitle: 'Share the code with friends',
+    room_code: 'Room Code',
+    players_joined: 'Players:',
+    start_game: 'Start Game ▶',
+    need_2_players: 'At least 2 players required',
+    pick_unique: 'Pick something unique! 🐺',
+    round_label: (n, t) => `Round ${n}/${t}`,
+    next_round_auto: 'Next round starts automatically...',
+    play_again: '🔄 Play Again',
+    scores_title: 'Final Scores',
+    waiting_for: (n) => `Waiting for ${n}...`,
+    picked_label: (n, t) => `${n}/${t} have picked`,
+    you_picked: (o) => `You picked: ${o}`,
+    unique_badge: '🐺 Unique!',
+    clash_badge: '💥 Clash!',
+    winner_suffix: 'is the Lone Wolf!',
+    tie_label: "It's a tie!",
+    points: (n) => `${n} pts`,
+    cat_planet: '🪐 Name a Planet',
+    cat_fruit: '🍎 Name a Fruit',
+    cat_color: '🎨 Name a Color',
+    cat_sport: '⚽ Name a Sport',
+    cat_animal: '🦁 Name an Animal',
+    cat_country: '🗺️ Name a European Country',
+    cat_instrument: '🎸 Name an Instrument',
+    cat_season: '🌤️ Name a Season or Weather',
+    cat_ocean: '🌊 Name an Ocean or Sea',
+    cat_day: '📅 Name a Day of the Week',
+    err_enter_name: 'Please enter a name!',
+    err_enter_code: 'Please enter a room code!',
+    err_room_not_found: 'Room not found.',
+    err_game_started: 'Game has already started.',
+    err_room_full: 'Room is full.',
+    err_not_host: 'Only the host can start the game.',
+    err_not_enough_players: 'Not enough players (min. 2).',
+    err_connect: 'Connection failed.',
+  },
+  fr: {
+    tagline: 'Seules les réponses uniques comptent !',
+    your_name: 'Votre Nom',
+    name_placeholder: 'Entrez votre nom...',
+    create_room: 'Créer une Salle 🐺',
+    or: '— ou —',
+    join_room: 'Rejoindre une Salle',
+    waiting_subtitle: 'Partagez le code avec vos amis',
+    room_code: 'Code de Salle',
+    players_joined: 'Joueurs :',
+    start_game: 'Démarrer le Jeu ▶',
+    need_2_players: 'Minimum 2 joueurs requis',
+    pick_unique: 'Choisissez quelque chose d\'unique ! 🐺',
+    round_label: (n, t) => `Manche ${n}/${t}`,
+    next_round_auto: 'La prochaine manche démarre automatiquement...',
+    play_again: '🔄 Rejouer',
+    scores_title: 'Scores Finaux',
+    waiting_for: (n) => `En attente de ${n}...`,
+    picked_label: (n, t) => `${n}/${t} ont choisi`,
+    you_picked: (o) => `Vous avez choisi : ${o}`,
+    unique_badge: '🐺 Unique !',
+    clash_badge: '💥 Clash !',
+    winner_suffix: 'est le Lone Wolf !',
+    tie_label: 'Égalité !',
+    points: (n) => `${n} pts`,
+    cat_planet: '🪐 Nommez une Planète',
+    cat_fruit: '🍎 Nommez un Fruit',
+    cat_color: '🎨 Nommez une Couleur',
+    cat_sport: '⚽ Nommez un Sport',
+    cat_animal: '🦁 Nommez un Animal',
+    cat_country: '🗺️ Nommez un Pays Européen',
+    cat_instrument: '🎸 Nommez un Instrument',
+    cat_season: '🌤️ Nommez une Saison ou la Météo',
+    cat_ocean: '🌊 Nommez un Océan ou une Mer',
+    cat_day: '📅 Nommez un Jour de la Semaine',
+    err_enter_name: 'Veuillez entrer un nom !',
+    err_enter_code: 'Veuillez entrer un code de salle !',
+    err_room_not_found: 'Salle introuvable.',
+    err_game_started: 'Le jeu a déjà commencé.',
+    err_room_full: 'La salle est pleine.',
+    err_not_host: 'Seul l\'hôte peut démarrer.',
+    err_not_enough_players: 'Pas assez de joueurs (min. 2).',
+    err_connect: 'Connexion échouée.',
+  },
+  it: {
+    tagline: 'Solo le risposte uniche fanno punti!',
+    your_name: 'Il Tuo Nome',
+    name_placeholder: 'Inserisci nome...',
+    create_room: 'Crea Stanza 🐺',
+    or: '— oppure —',
+    join_room: 'Unisciti a una Stanza',
+    waiting_subtitle: 'Condividi il codice con gli amici',
+    room_code: 'Codice Stanza',
+    players_joined: 'Giocatori:',
+    start_game: 'Inizia il Gioco ▶',
+    need_2_players: 'Servono almeno 2 giocatori',
+    pick_unique: 'Scegli qualcosa di unico! 🐺',
+    round_label: (n, t) => `Round ${n}/${t}`,
+    next_round_auto: 'Il prossimo round inizia automaticamente...',
+    play_again: '🔄 Gioca Ancora',
+    scores_title: 'Punteggi Finali',
+    waiting_for: (n) => `In attesa di ${n}...`,
+    picked_label: (n, t) => `${n}/${t} hanno scelto`,
+    you_picked: (o) => `Hai scelto: ${o}`,
+    unique_badge: '🐺 Unico!',
+    clash_badge: '💥 Clash!',
+    winner_suffix: 'è il Lone Wolf!',
+    tie_label: 'Pareggio!',
+    points: (n) => `${n} pt`,
+    cat_planet: '🪐 Nomina un Pianeta',
+    cat_fruit: '🍎 Nomina un Frutto',
+    cat_color: '🎨 Nomina un Colore',
+    cat_sport: '⚽ Nomina uno Sport',
+    cat_animal: '🦁 Nomina un Animale',
+    cat_country: '🗺️ Nomina un Paese Europeo',
+    cat_instrument: '🎸 Nomina uno Strumento',
+    cat_season: '🌤️ Nomina una Stagione o Meteo',
+    cat_ocean: '🌊 Nomina un Oceano o Mare',
+    cat_day: '📅 Nomina un Giorno della Settimana',
+    err_enter_name: 'Inserisci un nome!',
+    err_enter_code: 'Inserisci un codice stanza!',
+    err_room_not_found: 'Stanza non trovata.',
+    err_game_started: 'Il gioco è già iniziato.',
+    err_room_full: 'Stanza piena.',
+    err_not_host: 'Solo l\'host può iniziare.',
+    err_not_enough_players: 'Non abbastanza giocatori (min. 2).',
+    err_connect: 'Connessione fallita.',
+  },
+  es: {
+    tagline: '¡Solo las respuestas únicas puntúan!',
+    your_name: 'Tu Nombre',
+    name_placeholder: 'Introduce tu nombre...',
+    create_room: 'Crear Sala 🐺',
+    or: '— o —',
+    join_room: 'Unirse a Sala',
+    waiting_subtitle: 'Comparte el código con tus amigos',
+    room_code: 'Código de Sala',
+    players_joined: 'Jugadores:',
+    start_game: 'Iniciar Juego ▶',
+    need_2_players: 'Se necesitan al menos 2 jugadores',
+    pick_unique: '¡Elige algo único! 🐺',
+    round_label: (n, t) => `Ronda ${n}/${t}`,
+    next_round_auto: 'La siguiente ronda comienza automáticamente...',
+    play_again: '🔄 Jugar de Nuevo',
+    scores_title: 'Puntuaciones Finales',
+    waiting_for: (n) => `Esperando a ${n}...`,
+    picked_label: (n, t) => `${n}/${t} han elegido`,
+    you_picked: (o) => `Elegiste: ${o}`,
+    unique_badge: '🐺 ¡Único!',
+    clash_badge: '💥 ¡Clash!',
+    winner_suffix: '¡es el Lone Wolf!',
+    tie_label: '¡Empate!',
+    points: (n) => `${n} pts`,
+    cat_planet: '🪐 Nombra un Planeta',
+    cat_fruit: '🍎 Nombra una Fruta',
+    cat_color: '🎨 Nombra un Color',
+    cat_sport: '⚽ Nombra un Deporte',
+    cat_animal: '🦁 Nombra un Animal',
+    cat_country: '🗺️ Nombra un País Europeo',
+    cat_instrument: '🎸 Nombra un Instrumento',
+    cat_season: '🌤️ Nombra una Estación o Clima',
+    cat_ocean: '🌊 Nombra un Océano o Mar',
+    cat_day: '📅 Nombra un Día de la Semana',
+    err_enter_name: '¡Por favor introduce un nombre!',
+    err_enter_code: '¡Por favor introduce un código de sala!',
+    err_room_not_found: 'Sala no encontrada.',
+    err_game_started: 'El juego ya ha comenzado.',
+    err_room_full: 'La sala está llena.',
+    err_not_host: 'Solo el host puede iniciar.',
+    err_not_enough_players: 'No hay suficientes jugadores (mín. 2).',
+    err_connect: 'Conexión fallida.',
+  },
+};
+
+const { t, lang, onLangChange, translatePage } = initI18n(TRANSLATIONS);
+
+// ── Stars background ──────────────────────────────────────────────────────────
+(function() {
+  const canvas = document.getElementById('stars');
+  const ctx = canvas.getContext('2d');
+  let stars = [];
+  function resize() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+  function init() {
+    stars = Array.from({length:80}, () => ({
+      x: Math.random() * window.innerWidth,
+      y: Math.random() * window.innerHeight,
+      r: Math.random() * 1.5 + 0.3,
+      a: Math.random(),
+      speed: Math.random() * 0.005 + 0.002,
+    }));
+  }
+  function draw() {
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    stars.forEach(s => {
+      s.a += s.speed; if(s.a>1)s.a=0;
+      ctx.beginPath();
+      ctx.arc(s.x,s.y,s.r,0,Math.PI*2);
+      ctx.fillStyle=`rgba(200,180,255,${0.3+s.a*0.5})`;
+      ctx.fill();
+    });
+    requestAnimationFrame(draw);
+  }
+  window.addEventListener('resize', () => { resize(); init(); });
+  resize(); init(); draw();
+})();
+
+// ── Game State ────────────────────────────────────────────────────────────────
+const WS_URL = 'wss://day-024-lone-wolf.lab.gogerl.com';
+let ws = null;
+let myName = null;
+let myRoom = null;
+let isHost = false;
+let myPick = null;
+let timerInterval = null;
+let timerVal = 12;
+
+const PLAYER_COLORS = ['#a78bfa','#60a5fa','#4ade80','#fb923c','#f472b6','#38bdf8'];
+
+// ── Screens ───────────────────────────────────────────────────────────────────
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  const el = document.getElementById('screen-' + id);
+  if (el) { el.classList.add('active'); el.classList.add('fade-in'); }
+}
+
+// ── Toast ─────────────────────────────────────────────────────────────────────
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2800);
+}
+
+// ── WebSocket ─────────────────────────────────────────────────────────────────
+function connect(onOpen) {
+  ws = new WebSocket(WS_URL);
+  ws.onopen = onOpen;
+  ws.onerror = () => showToast(t('err_connect'));
+  ws.onclose = () => { /* attempt reconnect could go here */ };
+  ws.onmessage = (ev) => {
+    const msg = JSON.parse(ev.data);
+    handleMessage(msg);
+  };
+}
+
+function send(obj) {
+  if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(obj));
+}
+
+// ── Message Handler ───────────────────────────────────────────────────────────
+function handleMessage(msg) {
+  if (msg.type === 'joined') {
+    myRoom = msg.roomCode;
+    isHost = msg.isHost;
+    document.getElementById('display-code').textContent = msg.roomCode;
+    showScreen('waiting');
+  }
+  else if (msg.type === 'state') {
+    updateFromState(msg.room);
+  }
+  else if (msg.type === 'pick_ack') {
+    // Already handled
+  }
+  else if (msg.type === 'error') {
+    const errMap = {
+      room_not_found: t('err_room_not_found'),
+      game_started: t('err_game_started'),
+      room_full: t('err_room_full'),
+      not_host: t('err_not_host'),
+      not_enough_players: t('err_not_enough_players'),
+    };
+    showToast(errMap[msg.error] || msg.error);
+  }
+}
+
+let lastState = null;
+
+function updateFromState(room) {
+  const prevState = lastState?.state;
+  lastState = room;
+
+  // Update lobby if needed
+  if (room.state === 'LOBBY') {
+    renderWaitingScreen(room);
+    if (prevState && prevState !== 'LOBBY') showScreen('waiting');
+  }
+  else if (room.state === 'PICKING') {
+    if (prevState !== 'PICKING') {
+      myPick = null;
+      renderPickingScreen(room);
+      showScreen('picking');
+      startTimer(12);
+    } else {
+      // Update pick count
+      const pickedCount = Object.values(room.picks).filter(v => v === true || typeof v === 'boolean' ? true : v !== undefined).length;
+      const total = room.players.length;
+      updatePickStatus(pickedCount, total, room.players);
+    }
+  }
+  else if (room.state === 'REVEAL') {
+    stopTimer();
+    renderRevealScreen(room);
+    if (prevState !== 'REVEAL') showScreen('reveal');
+  }
+  else if (room.state === 'SCORES') {
+    stopTimer();
+    renderScoresScreen(room);
+    if (prevState !== 'SCORES') showScreen('scores');
+  }
+
+  // Always update waiting screen players if visible
+  if (room.state === 'LOBBY') {
+    renderWaitingScreen(room);
+  }
+}
+
+// ── Waiting Screen ────────────────────────────────────────────────────────────
+function renderWaitingScreen(room) {
+  const list = document.getElementById('players-list');
+  list.innerHTML = '';
+  room.players.forEach((p, i) => {
+    const li = document.createElement('li');
+    li.className = 'player-item';
+    li.innerHTML = `
+      <div class="player-dot" style="background:${PLAYER_COLORS[i%6]}"></div>
+      <span>${escHtml(p.name)}</span>
+      ${p.name === room.host ? '<span class="player-crown">👑</span>' : ''}
+    `;
+    list.appendChild(li);
+  });
+  const btn = document.getElementById('btn-start');
+  btn.disabled = room.players.length < 2 || !isHost;
+  btn.style.display = isHost ? '' : 'none';
+  document.getElementById('display-code').textContent = room.code;
+}
+
+// ── Picking Screen ────────────────────────────────────────────────────────────
+function renderPickingScreen(room) {
+  const q = room.currentQuestion;
+  const roundN = (room.currentRound || 0) + 1;
+  document.getElementById('round-badge').textContent = t('round_label')(roundN, room.totalRounds || 8);
+  document.getElementById('category-label').textContent = t(q.categoryKey) || q.categoryKey;
+
+  const grid = document.getElementById('options-grid');
+  grid.innerHTML = '';
+  q.options.forEach((opt, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'option-btn';
+    btn.textContent = opt;
+    btn.dataset.idx = i;
+    btn.addEventListener('click', () => onPick(i, opt, btn));
+    grid.appendChild(btn);
+  });
+
+  updatePickStatus(0, room.players.length, room.players);
+}
+
+function onPick(idx, optText, btn) {
+  if (myPick !== null) {
+    // Allow change
+    document.querySelectorAll('.option-btn').forEach(b => b.classList.remove('selected'));
+  }
+  myPick = idx;
+  btn.classList.add('selected');
+  document.getElementById('pick-status').textContent = t('you_picked')(optText);
+  send({ type: 'pick', optionIndex: idx });
+}
+
+function updatePickStatus(picked, total, players) {
+  const el = document.getElementById('pick-status');
+  if (myPick !== null) return; // keep "you picked" message
+  el.textContent = t('picked_label')(picked, total);
+}
+
+// ── Timer ─────────────────────────────────────────────────────────────────────
+function startTimer(seconds) {
+  timerVal = seconds;
+  const arc = document.getElementById('timer-arc');
+  const txt = document.getElementById('timer-text');
+  const circumference = 219.9;
+  stopTimer();
+  arc.style.stroke = 'var(--wolf)';
+
+  function tick() {
+    txt.textContent = timerVal;
+    const offset = circumference * (1 - timerVal / seconds);
+    arc.style.strokeDashoffset = offset;
+    if (timerVal <= 3) arc.style.stroke = 'var(--danger)';
+    timerVal--;
+  }
+  tick();
+  timerInterval = setInterval(() => {
+    if (timerVal < 0) { stopTimer(); return; }
+    tick();
+  }, 1000);
+}
+
+function stopTimer() {
+  if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+}
+
+// ── Reveal Screen ─────────────────────────────────────────────────────────────
+function renderRevealScreen(room) {
+  const lastRound = room.roundHistory[room.roundHistory.length - 1];
+  const roundN = (room.currentRound || 0) + 1;
+  document.getElementById('reveal-round-badge').textContent = t('round_label')(roundN, room.totalRounds || 8);
+  document.getElementById('reveal-question').textContent = t(lastRound.question.categoryKey) || lastRound.question.categoryKey;
+
+  // Group picks by option index
+  const byOption = {};
+  for (const [player, optIdx] of Object.entries(lastRound.picks)) {
+    if (!byOption[optIdx]) byOption[optIdx] = [];
+    byOption[optIdx].push(player);
+  }
+
+  const winners = new Set(lastRound.winners || []);
+
+  const container = document.getElementById('reveal-options');
+  container.innerHTML = '';
+
+  lastRound.question.options.forEach((opt, i) => {
+    const pickers = byOption[i] || [];
+    const isUnique = pickers.length === 1 && winners.has(pickers[0]);
+    const isClash = pickers.length > 1;
+    const nobody = pickers.length === 0;
+
+    const div = document.createElement('div');
+    div.className = 'reveal-option' + (isUnique ? ' unique' : isClash ? ' clash' : nobody ? ' nobody' : '');
+    div.innerHTML = `
+      <div>
+        <div class="reveal-option-name">${escHtml(opt)}</div>
+        ${isUnique ? `<div class="badge-unique">${t('unique_badge')}</div>` : ''}
+        ${isClash ? `<div class="badge-clash">${t('clash_badge')}</div>` : ''}
+      </div>
+      <div class="reveal-pickers">
+        ${pickers.map(p => `<span class="reveal-picker-tag ${winners.has(p) ? 'winner' : ''}">${escHtml(p)}</span>`).join('')}
+      </div>
+    `;
+    container.appendChild(div);
+  });
+
+  // Mini scoreboard
+  const mini = document.getElementById('scores-mini');
+  const sorted = [...room.players].sort((a,b) => b.score - a.score);
+  mini.innerHTML = sorted.map((p, i) => 
+    `<span style="margin-right:1rem;font-size:0.85rem;">
+      ${i===0?'👑':''}<b>${escHtml(p.name)}</b>: <span style="color:var(--accent)">${p.score}</span>
+    </span>`
+  ).join('');
+}
+
+// ── Scores Screen ─────────────────────────────────────────────────────────────
+function renderScoresScreen(room) {
+  const sorted = [...room.players].sort((a,b) => b.score - a.score);
+  const winner = sorted[0];
+  const isTie = sorted.length > 1 && sorted[0].score === sorted[1].score;
+
+  document.getElementById('winner-name').textContent = isTie ? t('tie_label') : winner.name;
+  document.getElementById('winner-subtitle').textContent = isTie ? '' : t('winner_suffix');
+
+  const table = document.getElementById('final-score-table');
+  table.innerHTML = sorted.map((p, i) => `
+    <tr>
+      <td class="rank">${['🥇','🥈','🥉'][i] || (i+1+'.')}</td>
+      <td class="name">${escHtml(p.name)}</td>
+      <td class="pts">${t('points')(p.score)}</td>
+    </tr>
+  `).join('');
+
+  if (!isTie && winner.score > 0) spawnConfetti();
+}
+
+// ── Confetti ──────────────────────────────────────────────────────────────────
+function spawnConfetti() {
+  const wrap = document.getElementById('confetti-wrap');
+  wrap.innerHTML = '';
+  const colors = ['#ffcc00','#a78bfa','#60a5fa','#4ade80','#fb923c'];
+  for (let i=0; i<60; i++) {
+    const el = document.createElement('div');
+    const x = Math.random()*100;
+    const delay = Math.random()*1.5;
+    const dur = 2+Math.random()*2;
+    const color = colors[Math.floor(Math.random()*colors.length)];
+    el.style.cssText = `position:absolute;left:${x}%;top:-20px;width:8px;height:8px;background:${color};border-radius:${Math.random()>0.5?'50%':'0'};animation:fall ${dur}s ${delay}s linear forwards;`;
+    wrap.appendChild(el);
+  }
+  const style = document.createElement('style');
+  style.textContent = `@keyframes fall{to{transform:translateY(110vh) rotate(720deg);opacity:0;}}`;
+  wrap.appendChild(style);
+  setTimeout(() => wrap.innerHTML = '', 5000);
+}
+
+// ── Utility ───────────────────────────────────────────────────────────────────
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ── UI Event Handlers ─────────────────────────────────────────────────────────
+document.getElementById('btn-create').addEventListener('click', () => {
+  const name = document.getElementById('inp-name').value.trim();
+  if (!name) return showToast(t('err_enter_name'));
+  myName = name;
+  connect(() => send({ type: 'create_room', name }));
+});
+
+document.getElementById('btn-join').addEventListener('click', () => {
+  const name = document.getElementById('inp-name').value.trim();
+  const code = document.getElementById('inp-code').value.trim().toUpperCase();
+  if (!name) return showToast(t('err_enter_name'));
+  if (!code) return showToast(t('err_enter_code'));
+  myName = name;
+  connect(() => send({ type: 'join_room', name, code }));
+});
+
+document.getElementById('btn-start').addEventListener('click', () => {
+  send({ type: 'start_game' });
+});
+
+document.getElementById('btn-play-again').addEventListener('click', () => {
+  location.reload();
+});
+
+// Enter key on code input
+document.getElementById('inp-code').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') document.getElementById('btn-join').click();
+});
+document.getElementById('inp-name').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') document.getElementById('btn-create').click();
+});
+
+// i18n: re-translate dynamic content on lang change
+onLangChange(() => {
+  translatePage();
+  if (lastState) updateFromState(lastState);
+});
+</script>
+</body>
+</html>
