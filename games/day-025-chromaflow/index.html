@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chromaflow</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --c0: #e63946; /* red    */
+      --c1: #f4a261; /* orange */
+      --c2: #2a9d8f; /* teal   */
+      --c3: #457b9d; /* blue   */
+      --c4: #a8dadc; /* ice    */
+      --c5: #e9c46a; /* yellow */
+      --bg: #0a0a1a;
+      --panel: #12122a;
+    }
+
+    body {
+      background: var(--bg);
+      color: #eee;
+      font-family: system-ui, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .back-bar {
+      width: 100%;
+      background: #0a0a1a;
+      padding: 0.5rem 1rem;
+      border-bottom: 1px solid #333;
+    }
+    .back-bar a {
+      color: #ffcc00;
+      text-decoration: none;
+      font-size: 0.9rem;
+    }
+    .back-bar a:hover { text-decoration: underline; }
+
+    header {
+      text-align: center;
+      padding: 1rem 1rem 0.5rem;
+    }
+    header h1 {
+      font-size: 1.8rem;
+      font-weight: 800;
+      letter-spacing: 0.05em;
+      background: linear-gradient(135deg, #ff6b9d, #ffcc00, #00d4ff);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    header p {
+      color: #888;
+      font-size: 0.85rem;
+      margin-top: 0.25rem;
+    }
+
+    .stats-bar {
+      display: flex;
+      gap: 1.5rem;
+      justify-content: center;
+      padding: 0.6rem 1rem;
+      font-size: 0.9rem;
+    }
+    .stat { display: flex; flex-direction: column; align-items: center; }
+    .stat-val { font-size: 1.4rem; font-weight: 700; color: #ffcc00; }
+    .stat-lbl { font-size: 0.7rem; color: #666; text-transform: uppercase; letter-spacing: 0.05em; }
+
+    #grid-wrap {
+      padding: 0.5rem;
+      display: flex;
+      justify-content: center;
+    }
+    #grid-canvas {
+      border-radius: 4px;
+      display: block;
+      cursor: default;
+      image-rendering: pixelated;
+    }
+
+    .palette {
+      display: flex;
+      gap: 0.5rem;
+      padding: 0.75rem 1rem;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .color-btn {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      border: 3px solid transparent;
+      cursor: pointer;
+      transition: transform 0.1s, border-color 0.1s, box-shadow 0.1s;
+      position: relative;
+    }
+    .color-btn:hover { transform: scale(1.1); }
+    .color-btn.active {
+      border-color: #fff;
+      box-shadow: 0 0 12px rgba(255,255,255,0.5);
+      transform: scale(1.15);
+    }
+    .color-btn.disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    #message-area {
+      min-height: 3rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0.5rem 1rem;
+      font-size: 1rem;
+      color: #aaa;
+      text-align: center;
+    }
+
+    /* Win overlay */
+    #win-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.85);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 1rem;
+    }
+    #win-overlay.show { display: flex; }
+
+    .win-box {
+      background: var(--panel);
+      border: 1px solid #333;
+      border-radius: 16px;
+      padding: 2rem;
+      text-align: center;
+      max-width: 340px;
+      width: 90%;
+    }
+    .win-emoji { font-size: 3rem; margin-bottom: 0.5rem; }
+    .win-title { font-size: 1.8rem; font-weight: 800; margin-bottom: 0.25rem; }
+    .win-subtitle { color: #888; font-size: 0.9rem; margin-bottom: 1rem; }
+    .stars { font-size: 2rem; letter-spacing: 0.2rem; margin-bottom: 1rem; }
+    .win-stats { display: flex; gap: 1.5rem; justify-content: center; margin-bottom: 1.5rem; }
+    .win-stat { display: flex; flex-direction: column; align-items: center; }
+    .win-stat-val { font-size: 1.6rem; font-weight: 700; color: #ffcc00; }
+    .win-stat-lbl { font-size: 0.7rem; color: #666; text-transform: uppercase; }
+
+    .btn {
+      display: inline-block;
+      padding: 0.7rem 1.5rem;
+      background: linear-gradient(135deg, #ff6b9d, #ffcc00);
+      color: #000;
+      font-weight: 700;
+      font-size: 0.95rem;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: opacity 0.15s, transform 0.1s;
+    }
+    .btn:hover { opacity: 0.9; transform: translateY(-1px); }
+    .btn-secondary {
+      background: transparent;
+      color: #aaa;
+      border: 1px solid #444;
+      margin-left: 0.5rem;
+    }
+    .btn-secondary:hover { color: #fff; border-color: #888; background: transparent; }
+
+    /* Progress bar */
+    .progress-wrap {
+      width: 100%;
+      max-width: 360px;
+      padding: 0 1rem;
+    }
+    .progress-bar-bg {
+      background: #222;
+      border-radius: 4px;
+      height: 6px;
+      overflow: hidden;
+      margin-bottom: 0.25rem;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      border-radius: 4px;
+      background: linear-gradient(90deg, #ff6b9d, #ffcc00);
+      transition: width 0.3s ease;
+    }
+    .progress-label {
+      font-size: 0.75rem;
+      color: #555;
+      text-align: right;
+    }
+
+    /* How to play */
+    .how-section {
+      max-width: 360px;
+      width: 90%;
+      padding: 0.75rem 1rem;
+      border-top: 1px solid #1e1e3a;
+    }
+    .how-toggle {
+      background: none;
+      border: none;
+      color: #555;
+      font-size: 0.8rem;
+      cursor: pointer;
+      width: 100%;
+      text-align: left;
+      padding: 0;
+    }
+    .how-toggle:hover { color: #aaa; }
+    .how-body {
+      display: none;
+      font-size: 0.82rem;
+      color: #888;
+      line-height: 1.5;
+      margin-top: 0.5rem;
+    }
+    .how-body.open { display: block; }
+
+    @media (max-width: 400px) {
+      header h1 { font-size: 1.4rem; }
+      .color-btn { width: 42px; height: 42px; }
+    }
+  </style>
+</head>
+<body>
+<div class="back-bar"><a href="/">← <span data-i18n="backToGames">Zurück zu den Spielen</span></a></div>
+
+<header>
+  <h1>🌊 Chromaflow</h1>
+  <p data-i18n="tagline">Tägliches Farb-Flut-Rätsel · <span id="date-display"></span></p>
+</header>
+
+<div class="stats-bar">
+  <div class="stat">
+    <div class="stat-val" id="moves-display">0</div>
+    <div class="stat-lbl" data-i18n="moves">Züge</div>
+  </div>
+  <div class="stat">
+    <div class="stat-val" id="par-display">26</div>
+    <div class="stat-lbl" data-i18n="par">Par</div>
+  </div>
+  <div class="stat">
+    <div class="stat-val" id="coverage-display">0%</div>
+    <div class="stat-lbl" data-i18n="covered">Bedeckt</div>
+  </div>
+</div>
+
+<div class="progress-wrap">
+  <div class="progress-bar-bg">
+    <div class="progress-bar-fill" id="progress-fill" style="width:0%"></div>
+  </div>
+  <div class="progress-label" id="progress-label">0 / 144</div>
+</div>
+
+<div id="grid-wrap">
+  <canvas id="grid-canvas"></canvas>
+</div>
+
+<div class="palette" id="palette"></div>
+
+<div id="message-area">
+  <span id="msg" data-i18n="pickColor">Wähle eine Farbe, um zu fluten!</span>
+</div>
+
+<div class="how-section">
+  <button class="how-toggle" onclick="this.nextElementSibling.classList.toggle('open')">
+    ℹ️ <span data-i18n="howToPlay">Wie spielen?</span> ▾
+  </button>
+  <div class="how-body">
+    <p data-i18n="howToPlayText">
+      Du startest in der oberen linken Ecke. Wähle eine Farbe — dein Gebiet 
+      übernimmt diese Farbe und saugt alle angrenzenden Felder dieser Farbe auf. 
+      Ziel: Das gesamte Raster in einer Farbe fluten. Je weniger Züge, desto mehr Sterne!
+    </p>
+  </div>
+</div>
+
+<!-- Win Overlay -->
+<div id="win-overlay">
+  <div class="win-box">
+    <div class="win-emoji">🎉</div>
+    <div class="win-title" data-i18n="solved">Gelöst!</div>
+    <div class="win-subtitle" data-i18n="dailyComplete">Tägliches Rätsel abgeschlossen</div>
+    <div class="stars" id="win-stars">⭐⭐⭐</div>
+    <div class="win-stats">
+      <div class="win-stat">
+        <div class="win-stat-val" id="win-moves">0</div>
+        <div class="win-stat-lbl" data-i18n="moves">Züge</div>
+      </div>
+      <div class="win-stat">
+        <div class="win-stat-val" id="win-par">26</div>
+        <div class="win-stat-lbl" data-i18n="par">Par</div>
+      </div>
+    </div>
+    <button class="btn" onclick="resetGame()" data-i18n="playAgain">Nochmal spielen</button>
+    <button class="btn btn-secondary" onclick="document.getElementById('win-overlay').classList.remove('show')" data-i18n="close">Schließen</button>
+  </div>
+</div>
+
+<script src="/shared/i18n.js"></script>
+<script>
+const TRANSLATIONS = {
+  de: {
+    backToGames: 'Zurück zu den Spielen',
+    tagline: 'Tägliches Farb-Flut-Rätsel',
+    moves: 'Züge',
+    par: 'Par',
+    covered: 'Bedeckt',
+    pickColor: 'Wähle eine Farbe, um zu fluten!',
+    howToPlay: 'Wie spielen?',
+    howToPlayText: 'Du startest in der oberen linken Ecke. Wähle eine Farbe — dein Gebiet übernimmt diese Farbe und saugt alle angrenzenden Felder dieser Farbe auf. Ziel: Das gesamte Raster in einer Farbe fluten. Je weniger Züge, desto mehr Sterne!',
+    solved: 'Gelöst! 🌊',
+    dailyComplete: 'Tägliches Rätsel abgeschlossen',
+    playAgain: 'Nochmal spielen',
+    close: 'Schließen',
+    starMsg3: '🌟 Perfekt! Du hast das Par erreicht!',
+    starMsg2: '✨ Gut gemacht! Noch knapper beim nächsten Mal!',
+    starMsg1: '💪 Erledigt! Versuch es effizienter!',
+  },
+  en: {
+    backToGames: 'Back to Games',
+    tagline: 'Daily Color Flood Puzzle',
+    moves: 'Moves',
+    par: 'Par',
+    covered: 'Covered',
+    pickColor: 'Pick a color to flood!',
+    howToPlay: 'How to play?',
+    howToPlayText: 'You start in the top-left corner. Pick a color — your territory adopts it and absorbs all adjacent cells of that color. Goal: flood the entire grid in one color. Fewer moves = more stars!',
+    solved: 'Solved! 🌊',
+    dailyComplete: 'Daily puzzle complete',
+    playAgain: 'Play again',
+    close: 'Close',
+    starMsg3: '🌟 Perfect! You matched par!',
+    starMsg2: '✨ Well done! Try to be tighter next time!',
+    starMsg1: '💪 Done! Try to be more efficient!',
+  },
+  fr: {
+    backToGames: 'Retour aux jeux',
+    tagline: 'Puzzle de couleur quotidien',
+    moves: 'Coups',
+    par: 'Par',
+    covered: 'Couvert',
+    pickColor: 'Choisis une couleur pour inonder!',
+    howToPlay: 'Comment jouer?',
+    howToPlayText: 'Tu commences dans le coin supérieur gauche. Choisis une couleur — ton territoire adopte cette couleur et absorbe toutes les cellules adjacentes de cette couleur. But : inonder toute la grille. Moins de coups = plus d\'étoiles!',
+    solved: 'Résolu! 🌊',
+    dailyComplete: 'Puzzle quotidien complété',
+    playAgain: 'Rejouer',
+    close: 'Fermer',
+    starMsg3: '🌟 Parfait! Tu as atteint le par!',
+    starMsg2: '✨ Bien joué! Essaie de faire mieux la prochaine fois!',
+    starMsg1: '💪 Terminé! Essaie d\'être plus efficace!',
+  },
+  it: {
+    backToGames: 'Torna ai giochi',
+    tagline: 'Puzzle di colori quotidiano',
+    moves: 'Mosse',
+    par: 'Par',
+    covered: 'Coperto',
+    pickColor: 'Scegli un colore per allagare!',
+    howToPlay: 'Come si gioca?',
+    howToPlayText: 'Parti dall\'angolo in alto a sinistra. Scegli un colore — il tuo territorio adotta quel colore e assorbe tutte le celle adiacenti di quel colore. Obiettivo: allagare l\'intera griglia. Meno mosse = più stelle!',
+    solved: 'Risolto! 🌊',
+    dailyComplete: 'Puzzle quotidiano completato',
+    playAgain: 'Gioca ancora',
+    close: 'Chiudi',
+    starMsg3: '🌟 Perfetto! Hai raggiunto il par!',
+    starMsg2: '✨ Ben fatto! Cerca di fare meglio la prossima volta!',
+    starMsg1: '💪 Fatto! Cerca di essere più efficiente!',
+  },
+  es: {
+    backToGames: 'Volver a los juegos',
+    tagline: 'Rompecabezas de color diario',
+    moves: 'Movimientos',
+    par: 'Par',
+    covered: 'Cubierto',
+    pickColor: '¡Elige un color para inundar!',
+    howToPlay: '¿Cómo se juega?',
+    howToPlayText: 'Empiezas en la esquina superior izquierda. Elige un color — tu territorio adopta ese color y absorbe todas las celdas adyacentes de ese color. Objetivo: inundar toda la cuadrícula. ¡Menos movimientos = más estrellas!',
+    solved: '¡Resuelto! 🌊',
+    dailyComplete: 'Rompecabezas diario completado',
+    playAgain: 'Jugar de nuevo',
+    close: 'Cerrar',
+    starMsg3: '🌟 ¡Perfecto! ¡Alcanzaste el par!',
+    starMsg2: '✨ ¡Bien hecho! ¡Intenta hacerlo más ajustado!',
+    starMsg1: '💪 ¡Hecho! ¡Intenta ser más eficiente!',
+  },
+};
+
+const { t, lang, onLangChange } = initI18n(TRANSLATIONS);
+
+// ─── Constants ─────────────────────────────────────────────────────────────
+const GRID_SIZE = 12;
+const NUM_COLORS = 6;
+const PAR_MOVES = 26;
+const COLORS = ['#e63946','#f4a261','#2a9d8f','#457b9d','#a8dadc','#e9c46a'];
+
+// ─── Seeded RNG ─────────────────────────────────────────────────────────────
+function mulberry32(seed) {
+  let s = seed >>> 0;
+  return function () {
+    s += 0x6d2b79f5;
+    let t = Math.imul(s ^ (s >>> 15), 1 | s);
+    t ^= t + Math.imul(t ^ (t >>> 7), 61 | t);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+// ─── Date seed ──────────────────────────────────────────────────────────────
+function dateSeed() {
+  const d = new Date();
+  return d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
+}
+
+function formatDate(d) {
+  return d.toLocaleDateString(lang(), { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
+}
+
+// ─── Grid logic ─────────────────────────────────────────────────────────────
+function generateGrid(seed) {
+  const rng = mulberry32(seed);
+  return Array.from({ length: GRID_SIZE }, () =>
+    Array.from({ length: GRID_SIZE }, () => Math.floor(rng() * NUM_COLORS))
+  );
+}
+
+function getTerritory(grid) {
+  const origin = grid[0][0];
+  const visited = new Set(['0,0']);
+  const queue = [[0, 0]];
+  while (queue.length > 0) {
+    const [r, c] = queue.shift();
+    for (const [dr, dc] of [[-1,0],[1,0],[0,-1],[0,1]]) {
+      const nr = r + dr, nc = c + dc;
+      const key = `${nr},${nc}`;
+      if (nr >= 0 && nr < GRID_SIZE && nc >= 0 && nc < GRID_SIZE &&
+          !visited.has(key) && grid[nr][nc] === origin) {
+        visited.add(key);
+        queue.push([nr, nc]);
+      }
+    }
+  }
+  return visited;
+}
+
+function applyMove(grid, color) {
+  const next = grid.map(r => [...r]);
+  const territory = getTerritory(next);
+  if (color === next[0][0]) return next;
+  for (const key of territory) {
+    const [r, c] = key.split(',').map(Number);
+    next[r][c] = color;
+  }
+  const expanded = new Set(territory);
+  const bfsQueue = [...territory].map(k => k.split(',').map(Number));
+  while (bfsQueue.length > 0) {
+    const [r, c] = bfsQueue.shift();
+    for (const [dr, dc] of [[-1,0],[1,0],[0,-1],[0,1]]) {
+      const nr = r + dr, nc = c + dc;
+      const key = `${nr},${nc}`;
+      if (nr >= 0 && nr < GRID_SIZE && nc >= 0 && nc < GRID_SIZE &&
+          !expanded.has(key) && next[nr][nc] === color) {
+        expanded.add(key);
+        next[nr][nc] = color;
+        bfsQueue.push([nr, nc]);
+      }
+    }
+  }
+  return next;
+}
+
+function isWon(grid) {
+  const target = grid[0][0];
+  return grid.every(r => r.every(c => c === target));
+}
+
+function getStarRating(moves) {
+  if (moves <= PAR_MOVES) return 3;
+  if (moves <= Math.floor(PAR_MOVES * 1.3)) return 2;
+  return 1;
+}
+
+function calcCoverage(grid) {
+  const territory = getTerritory(grid);
+  return territory.size;
+}
+
+// ─── Rendering ──────────────────────────────────────────────────────────────
+const canvas = document.getElementById('grid-canvas');
+const ctx = canvas.getContext('2d');
+let CELL;
+
+function setupCanvas() {
+  const maxW = Math.min(window.innerWidth - 32, 420);
+  CELL = Math.floor(maxW / GRID_SIZE);
+  const size = CELL * GRID_SIZE;
+  canvas.width = size;
+  canvas.height = size;
+}
+
+function drawGrid(grid, territory) {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  for (let r = 0; r < GRID_SIZE; r++) {
+    for (let c = 0; c < GRID_SIZE; c++) {
+      const color = COLORS[grid[r][c]];
+      const key = `${r},${c}`;
+      const inTerritory = territory && territory.has(key);
+      ctx.fillStyle = color;
+      ctx.fillRect(c * CELL, r * CELL, CELL, CELL);
+      // Gap/border
+      ctx.fillStyle = 'rgba(10,10,26,0.35)';
+      ctx.fillRect(c * CELL, r * CELL, CELL, 1);
+      ctx.fillRect(c * CELL, r * CELL, 1, CELL);
+      // Territory highlight — subtle white glow on edges
+      if (inTerritory) {
+        const top    = r === 0 || !territory.has(`${r-1},${c}`);
+        const bottom = r === GRID_SIZE-1 || !territory.has(`${r+1},${c}`);
+        const left   = c === 0 || !territory.has(`${r},${c-1}`);
+        const right  = c === GRID_SIZE-1 || !territory.has(`${r},${c+1}`);
+        ctx.strokeStyle = 'rgba(255,255,255,0.8)';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        if (top)    { ctx.moveTo(c*CELL+1, r*CELL+1); ctx.lineTo(c*CELL+CELL, r*CELL+1); }
+        if (bottom) { ctx.moveTo(c*CELL, r*CELL+CELL-1); ctx.lineTo(c*CELL+CELL, r*CELL+CELL-1); }
+        if (left)   { ctx.moveTo(c*CELL+1, r*CELL); ctx.lineTo(c*CELL+1, r*CELL+CELL); }
+        if (right)  { ctx.moveTo(c*CELL+CELL-1, r*CELL); ctx.lineTo(c*CELL+CELL-1, r*CELL+CELL); }
+        ctx.stroke();
+      }
+    }
+  }
+}
+
+// ─── Game state ─────────────────────────────────────────────────────────────
+let grid, moves, seed, won, territory;
+let animQueue = [];
+let animating = false;
+
+function resetGame() {
+  seed = dateSeed();
+  grid = generateGrid(seed);
+  moves = 0;
+  won = false;
+  animQueue = [];
+  animating = false;
+  territory = getTerritory(grid);
+  updateUI();
+  document.getElementById('win-overlay').classList.remove('show');
+}
+
+function updateUI() {
+  territory = getTerritory(grid);
+  drawGrid(grid, territory);
+  const cov = territory.size;
+  const total = GRID_SIZE * GRID_SIZE;
+  const pct = Math.round(cov / total * 100);
+
+  document.getElementById('moves-display').textContent = moves;
+  document.getElementById('par-display').textContent = PAR_MOVES;
+  document.getElementById('coverage-display').textContent = pct + '%';
+  document.getElementById('progress-fill').style.width = pct + '%';
+  document.getElementById('progress-label').textContent = `${cov} / ${total}`;
+
+  // Update palette: highlight current color, disable if same as territory color
+  const currentColor = grid[0][0];
+  document.querySelectorAll('.color-btn').forEach(btn => {
+    const ci = parseInt(btn.dataset.color);
+    btn.classList.toggle('active', ci === currentColor);
+    btn.classList.toggle('disabled', ci === currentColor || won);
+  });
+}
+
+// ─── Animated move ──────────────────────────────────────────────────────────
+function doMove(colorIndex) {
+  if (won || animating) return;
+  if (colorIndex === grid[0][0]) return; // no-op
+  moves++;
+  grid = applyMove(grid, colorIndex);
+  territory = getTerritory(grid);
+  updateUI();
+
+  if (isWon(grid)) {
+    won = true;
+    setTimeout(showWin, 400);
+  }
+}
+
+function showWin() {
+  const stars = getStarRating(moves);
+  document.getElementById('win-stars').textContent = '⭐'.repeat(stars) + '☆'.repeat(3 - stars);
+  document.getElementById('win-moves').textContent = moves;
+  document.getElementById('win-par').textContent = PAR_MOVES;
+  document.getElementById('win-overlay').classList.add('show');
+}
+
+// ─── Palette ────────────────────────────────────────────────────────────────
+function buildPalette() {
+  const palette = document.getElementById('palette');
+  palette.innerHTML = '';
+  for (let i = 0; i < NUM_COLORS; i++) {
+    const btn = document.createElement('button');
+    btn.className = 'color-btn';
+    btn.dataset.color = i;
+    btn.style.background = COLORS[i];
+    btn.title = `Color ${i + 1}`;
+    btn.addEventListener('click', () => doMove(i));
+    palette.appendChild(btn);
+  }
+}
+
+// ─── Init ────────────────────────────────────────────────────────────────────
+const now = new Date();
+document.getElementById('date-display').textContent = formatDate(now);
+
+onLangChange(() => {
+  document.getElementById('date-display').textContent = formatDate(new Date());
+});
+
+setupCanvas();
+buildPalette();
+resetGame();
+
+window.addEventListener('resize', () => {
+  setupCanvas();
+  drawGrid(grid, territory);
+});
+
+window.resetGame = resetGame;
+</script>
+</body>
+</html>
