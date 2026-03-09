@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>HexBridge</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{
+    background:#08080f;
+    color:#e0e0ff;
+    font-family:system-ui,-apple-system,sans-serif;
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+  }
+  .back-bar{
+    width:100%;
+    background:#0a0a1a;
+    padding:0.5rem 1rem;
+    border-bottom:1px solid #333;
+  }
+  .back-bar a{
+    color:#ffcc00;
+    text-decoration:none;
+    font-size:0.9rem;
+    font-family:system-ui,sans-serif;
+  }
+  .back-bar a:hover{text-decoration:underline;}
+
+  /* ── Screens ── */
+  .screen{
+    display:none;
+    flex-direction:column;
+    align-items:center;
+    padding:1.5rem 1rem;
+    width:100%;
+    max-width:520px;
+    flex:1;
+  }
+  .screen.active{display:flex;}
+
+  h1{
+    font-size:2rem;
+    font-weight:900;
+    letter-spacing:.05em;
+    margin-bottom:.25rem;
+    background:linear-gradient(135deg,#4a9eff,#ff4466);
+    -webkit-background-clip:text;
+    -webkit-text-fill-color:transparent;
+    background-clip:text;
+  }
+  .subtitle{
+    font-size:.85rem;
+    color:#888;
+    margin-bottom:1.5rem;
+    text-align:center;
+  }
+
+  /* ── Setup screen ── */
+  .player-inputs{
+    display:flex;
+    flex-direction:column;
+    gap:1rem;
+    width:100%;
+    max-width:320px;
+    margin-bottom:1.5rem;
+  }
+  .player-row{
+    display:flex;
+    align-items:center;
+    gap:.75rem;
+  }
+  .player-dot{
+    width:20px;height:20px;
+    border-radius:50%;
+    flex-shrink:0;
+  }
+  .player-dot.blue{background:#4a9eff;box-shadow:0 0 8px #4a9eff;}
+  .player-dot.red {background:#ff4466;box-shadow:0 0 8px #ff4466;}
+  .player-row label{
+    width:60px;
+    font-size:.85rem;
+    color:#999;
+  }
+  .player-row input{
+    flex:1;
+    background:#1a1a2e;
+    border:1px solid #333;
+    border-radius:6px;
+    padding:.5rem .75rem;
+    color:#e0e0ff;
+    font-size:.95rem;
+  }
+  .player-row input:focus{
+    outline:none;
+    border-color:#4a9eff;
+  }
+  .hint-box{
+    background:#111122;
+    border:1px solid #2a2a4a;
+    border-radius:8px;
+    padding:.75rem 1rem;
+    margin-bottom:1.5rem;
+    font-size:.8rem;
+    color:#aaa;
+    max-width:320px;
+    width:100%;
+    line-height:1.5;
+  }
+  .hint-box .blue-text{color:#4a9eff;}
+  .hint-box .red-text {color:#ff4466;}
+
+  /* ── Buttons ── */
+  .btn{
+    background:linear-gradient(135deg,#4a9eff,#3377dd);
+    color:#fff;
+    border:none;
+    border-radius:8px;
+    padding:.75rem 2rem;
+    font-size:1rem;
+    font-weight:700;
+    cursor:pointer;
+    letter-spacing:.05em;
+    transition:transform .1s,box-shadow .1s;
+  }
+  .btn:hover{transform:scale(1.03);box-shadow:0 4px 16px #4a9eff44;}
+  .btn:active{transform:scale(.97);}
+  .btn.red-btn{background:linear-gradient(135deg,#ff4466,#cc2244);}
+  .btn.red-btn:hover{box-shadow:0 4px 16px #ff446644;}
+  .btn.ghost{
+    background:transparent;
+    border:1px solid #444;
+    color:#aaa;
+    font-weight:500;
+  }
+  .btn.ghost:hover{border-color:#888;color:#e0e0ff;box-shadow:none;}
+
+  /* ── Transition screen ── */
+  #screen-transition{
+    gap:1.5rem;
+    text-align:center;
+  }
+  .handoff-icon{font-size:3rem;}
+  .handoff-name{
+    font-size:1.6rem;
+    font-weight:800;
+  }
+  .handoff-name.blue{color:#4a9eff;text-shadow:0 0 12px #4a9eff66;}
+  .handoff-name.red {color:#ff4466;text-shadow:0 0 12px #ff446666;}
+  .handoff-sub{color:#888;font-size:.9rem;}
+  .handoff-bar{
+    width:200px;
+    height:4px;
+    background:#222;
+    border-radius:2px;
+    overflow:hidden;
+  }
+  .handoff-bar-fill{
+    height:100%;
+    border-radius:2px;
+    animation:fillBar 1.8s linear forwards;
+  }
+  .handoff-bar-fill.blue{background:#4a9eff;}
+  .handoff-bar-fill.red{background:#ff4466;}
+  @keyframes fillBar{from{width:0}to{width:100%}}
+
+  /* ── Game screen ── */
+  #screen-game{
+    gap:.75rem;
+    padding-top:1rem;
+  }
+  .turn-bar{
+    display:flex;
+    align-items:center;
+    gap:.5rem;
+    font-size:.9rem;
+    padding:.4rem .75rem;
+    border-radius:20px;
+    border:1px solid #333;
+    background:#111122;
+  }
+  .turn-dot{
+    width:10px;height:10px;
+    border-radius:50%;
+    flex-shrink:0;
+  }
+  .turn-dot.blue{background:#4a9eff;box-shadow:0 0 6px #4a9eff;}
+  .turn-dot.red {background:#ff4466;box-shadow:0 0 6px #ff4466;}
+  .turn-name{font-weight:700;}
+  .turn-name.blue{color:#4a9eff;}
+  .turn-name.red {color:#ff4466;}
+  .turn-task{color:#888;font-size:.8rem;}
+
+  /* ── SVG hex board ── */
+  #board-container{
+    width:100%;
+    display:flex;
+    justify-content:center;
+    overflow:hidden;
+  }
+  #board-svg{
+    touch-action:none;
+  }
+  .hex-cell{
+    fill:#1a1a2e;
+    stroke:#2a2a4a;
+    stroke-width:1;
+    cursor:pointer;
+    transition:fill .12s;
+  }
+  .hex-cell:hover{fill:#252540;}
+  .hex-cell.blue{
+    fill:#4a9eff;
+    stroke:#6abbff;
+    filter:drop-shadow(0 0 4px #4a9eff88);
+  }
+  .hex-cell.red{
+    fill:#ff4466;
+    stroke:#ff6688;
+    filter:drop-shadow(0 0 4px #ff446688);
+  }
+  .hex-cell.win-path{
+    filter:drop-shadow(0 0 8px currentColor) brightness(1.3);
+    animation:winPulse 1s ease-in-out infinite alternate;
+  }
+  @keyframes winPulse{
+    from{filter:drop-shadow(0 0 6px currentColor) brightness(1.2);}
+    to  {filter:drop-shadow(0 0 14px currentColor) brightness(1.5);}
+  }
+
+  /* edge labels */
+  .edge-label{
+    font-size:11px;
+    font-weight:700;
+    pointer-events:none;
+    user-select:none;
+  }
+
+  /* move counter */
+  .move-counter{
+    font-size:.75rem;
+    color:#555;
+  }
+
+  /* ── Win screen ── */
+  #screen-win{
+    gap:1.25rem;
+    text-align:center;
+  }
+  .win-trophy{font-size:4rem;}
+  .win-title{
+    font-size:2rem;
+    font-weight:900;
+  }
+  .win-title.blue{color:#4a9eff;text-shadow:0 0 20px #4a9eff66;}
+  .win-title.red {color:#ff4466;text-shadow:0 0 20px #ff446666;}
+  .win-sub{color:#aaa;font-size:.95rem;}
+  .win-actions{display:flex;gap:.75rem;flex-wrap:wrap;justify-content:center;}
+</style>
+</head>
+<body>
+
+<!-- ── Back bar ── -->
+<div class="back-bar"><a href="/">← <span data-i18n="backToGames">Zurück zur Übersicht</span></a></div>
+
+<!-- ─────────────── SETUP SCREEN ─────────────── -->
+<div id="screen-setup" class="screen active">
+  <h1>HexBridge</h1>
+  <p class="subtitle" data-i18n="subtitle">Verbinde deine Seite – blockiere deinen Gegner!</p>
+
+  <div class="hint-box">
+    <span class="blue-text" data-i18n="player1hint">🔵 Spieler 1</span>
+    <span data-i18n="player1goal"> verbindet OBEN ↔ UNTEN</span><br>
+    <span class="red-text" data-i18n="player2hint">🔴 Spieler 2</span>
+    <span data-i18n="player2goal"> verbindet LINKS ↔ RECHTS</span><br><br>
+    <span data-i18n="ruleHint">Abwechselnd ein Feld besetzen. Wer zuerst seine Seiten verbindet, gewinnt. Kein Unentschieden möglich!</span>
+  </div>
+
+  <div class="player-inputs">
+    <div class="player-row">
+      <div class="player-dot blue"></div>
+      <label data-i18n="player1label">Spieler 1</label>
+      <input id="name1" type="text" maxlength="16" data-i18n-placeholder="name1placeholder">
+    </div>
+    <div class="player-row">
+      <div class="player-dot red"></div>
+      <label data-i18n="player2label">Spieler 2</label>
+      <input id="name2" type="text" maxlength="16" data-i18n-placeholder="name2placeholder">
+    </div>
+  </div>
+
+  <button class="btn" id="btn-start" data-i18n="startGame">Spiel starten</button>
+</div>
+
+<!-- ─────────────── TRANSITION SCREEN ─────────────── -->
+<div id="screen-transition" class="screen">
+  <div class="handoff-icon">📱</div>
+  <p id="transition-pass" data-i18n="passDevice">Gib das Gerät weiter an:</p>
+  <div class="handoff-name" id="transition-name">—</div>
+  <p class="handoff-sub" id="transition-sub"></p>
+  <div class="handoff-bar">
+    <div class="handoff-bar-fill" id="handoff-fill"></div>
+  </div>
+  <button class="btn" id="btn-ready" data-i18n="ready">Ich bin bereit!</button>
+</div>
+
+<!-- ─────────────── GAME SCREEN ─────────────── -->
+<div id="screen-game" class="screen">
+  <div class="turn-bar">
+    <div class="turn-dot" id="turn-dot"></div>
+    <span id="turn-name" class="turn-name"></span>
+    <span class="turn-task" id="turn-task"></span>
+  </div>
+
+  <div id="board-container">
+    <svg id="board-svg" xmlns="http://www.w3.org/2000/svg"></svg>
+  </div>
+
+  <div class="move-counter" id="move-counter"></div>
+</div>
+
+<!-- ─────────────── WIN SCREEN ─────────────── -->
+<div id="screen-win" class="screen">
+  <div class="win-trophy">🏆</div>
+  <div class="win-title" id="win-title">—</div>
+  <p class="win-sub" id="win-sub"></p>
+  <div class="win-actions">
+    <button class="btn" id="btn-rematch" data-i18n="rematch">Revanche!</button>
+    <button class="btn ghost" id="btn-menu" data-i18n="backMenu">Menü</button>
+  </div>
+</div>
+
+<!-- ── i18n ── -->
+<script src="/shared/i18n.js"></script>
+<script>
+const TRANSLATIONS = {
+  de: {
+    backToGames:'Zurück zur Übersicht',
+    subtitle:'Verbinde deine Seite – blockiere deinen Gegner!',
+    player1hint:'🔵 Spieler 1',
+    player1goal:' verbindet OBEN ↔ UNTEN',
+    player2hint:'🔴 Spieler 2',
+    player2goal:' verbindet LINKS ↔ RECHTS',
+    ruleHint:'Abwechselnd ein Feld besetzen. Wer zuerst seine Seiten verbindet, gewinnt. Kein Unentschieden möglich!',
+    player1label:'Spieler 1',
+    player2label:'Spieler 2',
+    name1placeholder:'Spieler 1',
+    name2placeholder:'Spieler 2',
+    startGame:'Spiel starten',
+    passDevice:'Gib das Gerät weiter an:',
+    ready:'Ich bin bereit!',
+    turnTask:' ist am Zug',
+    moveCount:'Züge: ',
+    topBottom:'OBEN → UNTEN',
+    leftRight:'LINKS → RECHTS',
+    youConnect:'Dein Ziel: ',
+    winTitle:' gewinnt!',
+    winSub:'Hat erfolgreich eine Brücke gebaut!',
+    rematch:'Revanche!',
+    backMenu:'Menü',
+  },
+  en: {
+    backToGames:'Back to Games',
+    subtitle:'Connect your sides – block your opponent!',
+    player1hint:'🔵 Player 1',
+    player1goal:' connects TOP ↔ BOTTOM',
+    player2hint:'🔴 Player 2',
+    player2goal:' connects LEFT ↔ RIGHT',
+    ruleHint:'Take turns placing stones. First to connect their two sides wins. Draws are impossible!',
+    player1label:'Player 1',
+    player2label:'Player 2',
+    name1placeholder:'Player 1',
+    name2placeholder:'Player 2',
+    startGame:'Start Game',
+    passDevice:'Pass the device to:',
+    ready:"I'm ready!",
+    turnTask:" is playing",
+    moveCount:'Moves: ',
+    topBottom:'TOP → BOTTOM',
+    leftRight:'LEFT → RIGHT',
+    youConnect:'Your goal: ',
+    winTitle:' wins!',
+    winSub:'Successfully built a bridge!',
+    rematch:'Rematch!',
+    backMenu:'Menu',
+  },
+  fr: {
+    backToGames:'Retour aux jeux',
+    subtitle:'Connecte tes bords – bloque ton adversaire !',
+    player1hint:'🔵 Joueur 1',
+    player1goal:' connecte HAUT ↔ BAS',
+    player2hint:'🔴 Joueur 2',
+    player2goal:' connecte GAUCHE ↔ DROITE',
+    ruleHint:'Posez des pierres à tour de rôle. Le premier à connecter ses deux côtés gagne. Match nul impossible !',
+    player1label:'Joueur 1',
+    player2label:'Joueur 2',
+    name1placeholder:'Joueur 1',
+    name2placeholder:'Joueur 2',
+    startGame:'Démarrer',
+    passDevice:'Passe l\'appareil à :',
+    ready:'Je suis prêt !',
+    turnTask:" joue",
+    moveCount:'Coups : ',
+    topBottom:'HAUT → BAS',
+    leftRight:'GAUCHE → DROITE',
+    youConnect:'Ton objectif : ',
+    winTitle:' gagne !',
+    winSub:'A construit un pont avec succès !',
+    rematch:'Revanche !',
+    backMenu:'Menu',
+  },
+  it: {
+    backToGames:'Torna ai giochi',
+    subtitle:'Connetti i tuoi lati – blocca l\'avversario!',
+    player1hint:'🔵 Giocatore 1',
+    player1goal:' collega ALTO ↔ BASSO',
+    player2hint:'🔴 Giocatore 2',
+    player2goal:' collega SINISTRA ↔ DESTRA',
+    ruleHint:'A turno, posizionate pietre. Chi per primo collega i propri lati vince. Pareggio impossibile!',
+    player1label:'Giocatore 1',
+    player2label:'Giocatore 2',
+    name1placeholder:'Giocatore 1',
+    name2placeholder:'Giocatore 2',
+    startGame:'Inizia',
+    passDevice:'Passa il dispositivo a:',
+    ready:'Sono pronto!',
+    turnTask:" gioca",
+    moveCount:'Mosse: ',
+    topBottom:'ALTO → BASSO',
+    leftRight:'SINISTRA → DESTRA',
+    youConnect:'Il tuo obiettivo: ',
+    winTitle:' vince!',
+    winSub:'Ha costruito un ponte con successo!',
+    rematch:'Rivincita!',
+    backMenu:'Menu',
+  },
+  es: {
+    backToGames:'Volver a los juegos',
+    subtitle:'¡Conecta tus lados – bloquea al rival!',
+    player1hint:'🔵 Jugador 1',
+    player1goal:' conecta ARRIBA ↔ ABAJO',
+    player2hint:'🔴 Jugador 2',
+    player2goal:' conecta IZQ ↔ DER',
+    ruleHint:'Colocad piedras por turnos. El primero en conectar sus dos lados gana. ¡Los empates son imposibles!',
+    player1label:'Jugador 1',
+    player2label:'Jugador 2',
+    name1placeholder:'Jugador 1',
+    name2placeholder:'Jugador 2',
+    startGame:'Iniciar',
+    passDevice:'Pasa el dispositivo a:',
+    ready:'¡Estoy listo!',
+    turnTask:" juega",
+    moveCount:'Movimientos: ',
+    topBottom:'ARRIBA → ABAJO',
+    leftRight:'IZQ → DER',
+    youConnect:'Tu objetivo: ',
+    winTitle:' ¡gana!',
+    winSub:'¡Ha construido un puente exitosamente!',
+    rematch:'¡Revancha!',
+    backMenu:'Menú',
+  },
+};
+const { t, onLangChange } = initI18n(TRANSLATIONS);
+</script>
+
+<!-- ── Game logic (inline module) ── -->
+<script type="module">
+// ── Import logic ──────────────────────────────────────────────────────────────
+import { HexBridgeGame, EMPTY, BLUE, RED } from './game-logic.js';
+
+// ── State ─────────────────────────────────────────────────────────────────────
+const BOARD_SIZE = 9;
+let game        = null;
+let players     = ['', ''];
+let pendingTransition = null; // player index after transition
+
+// ── DOM refs ──────────────────────────────────────────────────────────────────
+const screens = {
+  setup:      document.getElementById('screen-setup'),
+  transition: document.getElementById('screen-transition'),
+  game:       document.getElementById('screen-game'),
+  win:        document.getElementById('screen-win'),
+};
+const name1Input      = document.getElementById('name1');
+const name2Input      = document.getElementById('name2');
+const btnStart        = document.getElementById('btn-start');
+const btnReady        = document.getElementById('btn-ready');
+const btnRematch      = document.getElementById('btn-rematch');
+const btnMenu         = document.getElementById('btn-menu');
+const transitionName  = document.getElementById('transition-name');
+const transitionSub   = document.getElementById('transition-sub');
+const handoffFill     = document.getElementById('handoff-fill');
+const turnDot         = document.getElementById('turn-dot');
+const turnNameEl      = document.getElementById('turn-name');
+const turnTaskEl      = document.getElementById('turn-task');
+const moveCounterEl   = document.getElementById('move-counter');
+const winTitle        = document.getElementById('win-title');
+const winSub          = document.getElementById('win-sub');
+const boardSVG        = document.getElementById('board-svg');
+
+// ── Screen management ─────────────────────────────────────────────────────────
+function showScreen(name) {
+  Object.values(screens).forEach(s => s.classList.remove('active'));
+  screens[name].classList.add('active');
+}
+
+// ── Hex geometry (pointy-top) ─────────────────────────────────────────────────
+const HEX_R   = 18;   // circumradius
+const HEX_W   = Math.sqrt(3) * HEX_R;   // flat-to-flat width
+const HEX_H   = 2 * HEX_R;              // top-to-bottom height
+const H_SPACE = HEX_W;                  // horizontal centre distance
+const V_SPACE = HEX_H * 0.75;           // vertical centre distance
+const PAD     = 28;                     // padding around board for edge labels
+
+function hexCenter(row, col) {
+  const x = PAD + col * H_SPACE + row * H_SPACE * 0.5;
+  const y = PAD + row * V_SPACE;
+  return { x, y };
+}
+
+function hexPoints(cx, cy, r) {
+  const pts = [];
+  for (let i = 0; i < 6; i++) {
+    const a = (Math.PI / 3) * i - Math.PI / 6; // pointy-top
+    pts.push(`${(cx + r * Math.cos(a)).toFixed(2)},${(cy + r * Math.sin(a)).toFixed(2)}`);
+  }
+  return pts.join(' ');
+}
+
+// ── Board rendering ───────────────────────────────────────────────────────────
+let hexElements = []; // [row][col] → polygon element
+
+function buildBoard() {
+  boardSVG.innerHTML = '';
+  hexElements = [];
+
+  const n = BOARD_SIZE;
+  const lastCenter = hexCenter(n - 1, n - 1);
+  const svgW = lastCenter.x + HEX_W * 0.5 + PAD;
+  const svgH = lastCenter.y + HEX_R + PAD;
+
+  boardSVG.setAttribute('width',  svgW);
+  boardSVG.setAttribute('height', svgH);
+  boardSVG.setAttribute('viewBox', `0 0 ${svgW} ${svgH}`);
+
+  // ── Edge stripe polygons (coloured borders showing goals) ──
+  // Blue: top and bottom strips
+  const topEdge    = topEdgePoly(n);
+  const bottomEdge = bottomEdgePoly(n);
+  const leftEdge   = leftEdgePoly(n);
+  const rightEdge  = rightEdgePoly(n);
+  [topEdge, bottomEdge].forEach(p => {
+    p.setAttribute('fill', '#4a9eff33');
+    p.setAttribute('stroke', '#4a9eff');
+    p.setAttribute('stroke-width', '1.5');
+    p.setAttribute('pointer-events', 'none');
+    boardSVG.appendChild(p);
+  });
+  [leftEdge, rightEdge].forEach(p => {
+    p.setAttribute('fill', '#ff446633');
+    p.setAttribute('stroke', '#ff4466');
+    p.setAttribute('stroke-width', '1.5');
+    p.setAttribute('pointer-events', 'none');
+    boardSVG.appendChild(p);
+  });
+
+  // ── Edge labels ──
+  const labelData = [
+    { text: '▲', pos: edgeLabelPos('top',    n), cls: 'blue-label' },
+    { text: '▼', pos: edgeLabelPos('bottom', n), cls: 'blue-label' },
+    { text: '◀', pos: edgeLabelPos('left',   n), cls: 'red-label'  },
+    { text: '▶', pos: edgeLabelPos('right',  n), cls: 'red-label'  },
+  ];
+  labelData.forEach(({ text, pos, cls }) => {
+    const txt = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    txt.setAttribute('x', pos.x);
+    txt.setAttribute('y', pos.y);
+    txt.setAttribute('text-anchor', 'middle');
+    txt.setAttribute('dominant-baseline', 'middle');
+    txt.setAttribute('class', 'edge-label');
+    txt.setAttribute('fill', cls === 'blue-label' ? '#4a9eff' : '#ff4466');
+    txt.setAttribute('pointer-events', 'none');
+    txt.textContent = text;
+    boardSVG.appendChild(txt);
+  });
+
+  // ── Hex cells ──
+  for (let r = 0; r < n; r++) {
+    hexElements[r] = [];
+    for (let c = 0; c < n; c++) {
+      const { x, y } = hexCenter(r, c);
+      const poly = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+      poly.setAttribute('points', hexPoints(x, y, HEX_R - 1.5));
+      poly.setAttribute('class', 'hex-cell');
+      poly.dataset.row = r;
+      poly.dataset.col = c;
+      poly.addEventListener('click', onHexClick);
+      boardSVG.appendChild(poly);
+      hexElements[r][c] = poly;
+    }
+  }
+}
+
+// ── Edge polygon helpers ──────────────────────────────────────────────────────
+function topEdgePoly(n) {
+  // Triangle above row 0
+  const pts = [];
+  for (let c = 0; c < n; c++) {
+    const { x, y } = hexCenter(0, c);
+    // top two vertices of each hex
+    for (const i of [5, 0]) {
+      const a = (Math.PI / 3) * i - Math.PI / 6;
+      pts.push([x + HEX_R * Math.cos(a), y + HEX_R * Math.sin(a)]);
+    }
+  }
+  // Build outline: go right along top vertices of row 0, then back at y=0
+  const topV = pts.sort((a, b) => a[0] - b[0]);
+  const left  = hexCenter(0, 0);
+  const right = hexCenter(0, n - 1);
+  const pStr = [
+    `${left.x - HEX_W * 0.5},${left.y - HEX_R}`,
+    `${right.x + HEX_W * 0.5},${right.y - HEX_R}`,
+    `${right.x + HEX_W * 0.5},${right.y - 5}`,
+    `${left.x - HEX_W * 0.5},${left.y - 5}`,
+  ].join(' ');
+  const p = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+  p.setAttribute('points', pStr);
+  return p;
+}
+
+function bottomEdgePoly(n) {
+  const left  = hexCenter(n - 1, 0);
+  const right = hexCenter(n - 1, n - 1);
+  const pStr = [
+    `${left.x - HEX_W * 0.5},${left.y + 5}`,
+    `${right.x + HEX_W * 0.5},${right.y + 5}`,
+    `${right.x + HEX_W * 0.5},${right.y + HEX_R}`,
+    `${left.x - HEX_W * 0.5},${left.y + HEX_R}`,
+  ].join(' ');
+  const p = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+  p.setAttribute('points', pStr);
+  return p;
+}
+
+function leftEdgePoly(n) {
+  const top    = hexCenter(0, 0);
+  const bottom = hexCenter(n - 1, 0);
+  // Left edge: vertices on the left side of col 0
+  const pStr = [
+    `${top.x - HEX_W * 0.5},${top.y}`,
+    `${top.x - 5},${top.y}`,
+    `${bottom.x - 5},${bottom.y}`,
+    `${bottom.x - HEX_W * 0.5},${bottom.y}`,
+  ].join(' ');
+  const p = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+  p.setAttribute('points', pStr);
+  return p;
+}
+
+function rightEdgePoly(n) {
+  const top    = hexCenter(0, n - 1);
+  const bottom = hexCenter(n - 1, n - 1);
+  const pStr = [
+    `${top.x + 5},${top.y}`,
+    `${top.x + HEX_W * 0.5},${top.y}`,
+    `${bottom.x + HEX_W * 0.5},${bottom.y}`,
+    `${bottom.x + 5},${bottom.y}`,
+  ].join(' ');
+  const p = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+  p.setAttribute('points', pStr);
+  return p;
+}
+
+function edgeLabelPos(edge, n) {
+  switch (edge) {
+    case 'top': {
+      const { x, y } = hexCenter(0, Math.floor(n / 2));
+      return { x, y: y - HEX_R - 12 };
+    }
+    case 'bottom': {
+      const { x, y } = hexCenter(n - 1, Math.floor(n / 2));
+      return { x: x + HEX_W * 0.5 * (n - 1) / (n - 1), y: y + HEX_R + 14 };
+    }
+    case 'left': {
+      const { x, y } = hexCenter(Math.floor(n / 2), 0);
+      return { x: x - HEX_W * 0.5 - 12, y };
+    }
+    case 'right': {
+      const { x, y } = hexCenter(Math.floor(n / 2), n - 1);
+      return { x: x + HEX_W * 0.5 + 12, y };
+    }
+  }
+}
+
+// ── Update cell visuals ───────────────────────────────────────────────────────
+function updateCell(r, c) {
+  const el  = hexElements[r][c];
+  const val = game.board[r][c];
+  el.setAttribute('class', 'hex-cell' + (val === BLUE ? ' blue' : val === RED ? ' red' : ''));
+}
+
+function highlightWinPath(path) {
+  path.forEach(([r, c]) => {
+    const el = hexElements[r][c];
+    el.classList.add('win-path');
+  });
+}
+
+function updateTurnUI() {
+  const idx  = game.currentPlayer === BLUE ? 0 : 1;
+  const cls  = game.currentPlayer === BLUE ? 'blue' : 'red';
+  const name = players[idx];
+  turnDot.className  = `turn-dot ${cls}`;
+  turnNameEl.className = `turn-name ${cls}`;
+  turnNameEl.textContent = name;
+  turnTaskEl.textContent = t('turnTask');
+  moveCounterEl.textContent = t('moveCount') + game.moveCount;
+}
+
+// ── Hex click ─────────────────────────────────────────────────────────────────
+function onHexClick(e) {
+  if (!game || game.winner !== null) return;
+  const r = parseInt(e.target.dataset.row);
+  const c = parseInt(e.target.dataset.col);
+  const moved = game.place(r, c);
+  if (!moved) return;
+
+  updateCell(r, c);
+
+  if (game.winner !== null) {
+    // Show win
+    highlightWinPath(game.winPath);
+    setTimeout(showWinScreen, 800);
+    return;
+  }
+
+  // Transition to next player
+  updateTurnUI();
+  showTransition(game.currentPlayer === BLUE ? 0 : 1);
+}
+
+// ── Transition ────────────────────────────────────────────────────────────────
+function showTransition(playerIdx) {
+  const cls  = playerIdx === 0 ? 'blue' : 'red';
+  const name = players[playerIdx];
+  const goal = playerIdx === 0 ? t('topBottom') : t('leftRight');
+
+  transitionName.textContent  = name;
+  transitionName.className    = `handoff-name ${cls}`;
+  transitionSub.textContent   = t('youConnect') + goal;
+
+  handoffFill.className = `handoff-bar-fill ${cls}`;
+  // restart animation
+  handoffFill.style.animation = 'none';
+  void handoffFill.offsetHeight;
+  handoffFill.style.animation = '';
+
+  showScreen('transition');
+}
+
+// ── Win screen ────────────────────────────────────────────────────────────────
+function showWinScreen() {
+  const idx  = game.winner === BLUE ? 0 : 1;
+  const cls  = game.winner === BLUE ? 'blue' : 'red';
+  const name = players[idx];
+  winTitle.textContent  = name + t('winTitle');
+  winTitle.className    = `win-title ${cls}`;
+  winSub.textContent    = t('winSub');
+  showScreen('win');
+}
+
+// ── Start game ────────────────────────────────────────────────────────────────
+function startGame() {
+  const raw1 = name1Input.value.trim();
+  const raw2 = name2Input.value.trim();
+  players[0] = raw1 || t('name1placeholder');
+  players[1] = raw2 || t('name2placeholder');
+
+  game = new HexBridgeGame(BOARD_SIZE);
+  buildBoard();
+  updateTurnUI();
+  showTransition(0); // first turn: player 1 (Blue)
+}
+
+// ── Rematch ───────────────────────────────────────────────────────────────────
+function rematch() {
+  game = new HexBridgeGame(BOARD_SIZE);
+  buildBoard();
+  updateTurnUI();
+  showTransition(0);
+}
+
+// ── Event listeners ───────────────────────────────────────────────────────────
+btnStart.addEventListener('click', startGame);
+btnReady.addEventListener('click', () => {
+  showScreen('game');
+  updateTurnUI();
+});
+btnRematch.addEventListener('click', rematch);
+btnMenu.addEventListener('click', () => showScreen('setup'));
+
+// Keyboard: enter in name fields
+name1Input.addEventListener('keydown', e => { if (e.key === 'Enter') name2Input.focus(); });
+name2Input.addEventListener('keydown', e => { if (e.key === 'Enter') startGame(); });
+
+// Refresh UI on language change
+if (typeof onLangChange === 'function') {
+  onLangChange(() => {
+    if (game) updateTurnUI();
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+      el.textContent = t(el.dataset.i18n);
+    });
+    document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+      el.placeholder = t(el.dataset.i18nPlaceholder);
+    });
+  });
+}
+</script>
+</body>
+</html>
