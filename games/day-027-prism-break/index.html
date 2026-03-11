@@ -483,13 +483,19 @@ let raf = null;
 let mouseX = CANVAS_W / 2;
 let touchActive = false;
 
+function pickStartColor(blocks) {
+  const levelColors = [...new Set(blocks.filter(b => b.color !== PRISM).map(b => b.color))];
+  return levelColors[Math.floor(Math.random() * levelColors.length)] || COLORS[0];
+}
+
 function initGame() {
-  const startColor = COLORS[Math.floor(Math.random() * COLORS.length)];
+  const blocks = createLevel(1);
+  const startColor = pickStartColor(blocks);
   gs = {
     level:   1,
     lives:   MAX_LIVES,
     score:   0,
-    blocks:  createLevel(1),
+    blocks:  blocks,
     ball:    createBall(CANVAS_W/2, CANVAS_H-120, 2, -BALL_SPEED, startColor),
     paddle:  createPaddle(CANVAS_W/2 - PADDLE_W/2, PADDLE_Y, PADDLE_W, PADDLE_H),
     running: false,
@@ -501,9 +507,9 @@ function initGame() {
 }
 
 function startLevel(level) {
-  const startColor = COLORS[Math.floor(Math.random() * COLORS.length)];
   gs.level  = level;
   gs.blocks = createLevel(level);
+  const startColor = pickStartColor(gs.blocks);
   gs.ball   = createBall(CANVAS_W/2, CANVAS_H-120, 0, 0, startColor);
   gs.ballLaunched = false;
   gs.particles = [];
