@@ -1,0 +1,879 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>Prism Break – Daily Game #027</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #07071a;
+      color: #fff;
+      font-family: system-ui, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      overflow: hidden;
+      touch-action: none;
+    }
+
+    .back-bar {
+      width: 100%;
+      background: #0a0a1a;
+      padding: 0.5rem 1rem;
+      border-bottom: 1px solid #333;
+    }
+    .back-bar a {
+      color: #ffcc00;
+      text-decoration: none;
+      font-size: 0.9rem;
+      font-family: system-ui, sans-serif;
+    }
+    .back-bar a:hover { text-decoration: underline; }
+
+    /* HUD */
+    #hud {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 480px;
+      max-width: 100vw;
+      padding: 6px 12px;
+      background: #0d0d28;
+      border-bottom: 1px solid #222;
+      font-size: 0.8rem;
+      letter-spacing: 0.05em;
+    }
+    #hud .hud-item { display: flex; flex-direction: column; align-items: center; gap: 1px; }
+    #hud .hud-label { color: #666; font-size: 0.65rem; text-transform: uppercase; }
+    #hud .hud-val { color: #fff; font-size: 0.9rem; font-weight: 700; }
+
+    /* Ball color indicator */
+    #color-indicator {
+      display: flex; align-items: center; gap: 6px;
+    }
+    #color-dot {
+      width: 16px; height: 16px;
+      border-radius: 50%;
+      border: 2px solid rgba(255,255,255,0.4);
+      transition: background 0.2s, box-shadow 0.2s;
+    }
+
+    /* Lives dots */
+    #lives-dots { display: flex; gap: 4px; }
+    .life-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: #ff4466;
+      box-shadow: 0 0 6px #ff4466;
+    }
+    .life-dot.lost { background: #333; box-shadow: none; }
+
+    /* Canvas wrapper */
+    #game-wrap {
+      position: relative;
+      width: 480px;
+      max-width: 100vw;
+    }
+    canvas {
+      display: block;
+      width: 480px;
+      max-width: 100vw;
+      height: auto;
+      cursor: none;
+      touch-action: none;
+    }
+
+    /* Overlay screens */
+    .overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: rgba(7,7,26,0.92);
+      gap: 16px;
+      z-index: 10;
+    }
+    .overlay h1 {
+      font-size: 2rem;
+      font-weight: 900;
+      letter-spacing: 0.1em;
+      text-align: center;
+    }
+    .overlay p {
+      color: #aaa;
+      text-align: center;
+      max-width: 320px;
+      line-height: 1.5;
+      font-size: 0.9rem;
+    }
+    .overlay .btn {
+      padding: 12px 32px;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      letter-spacing: 0.05em;
+      transition: transform 0.1s, box-shadow 0.1s;
+    }
+    .overlay .btn:active { transform: scale(0.97); }
+    .btn-primary {
+      background: linear-gradient(135deg, #7c3aed, #4f46e5);
+      color: #fff;
+      box-shadow: 0 4px 20px rgba(124,58,237,0.5);
+    }
+    .btn-primary:hover { box-shadow: 0 4px 28px rgba(124,58,237,0.7); }
+
+    /* Prism rainbow title */
+    .prism-title {
+      background: linear-gradient(90deg, #ff4466, #ffcc00, #44ff88, #4499ff, #cc44ff);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    /* Color legend */
+    .legend {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 0.75rem;
+      color: #bbb;
+    }
+    .legend-dot {
+      width: 12px; height: 12px;
+      border-radius: 3px;
+    }
+
+    /* Level complete banner */
+    .level-stars {
+      display: flex;
+      gap: 8px;
+      font-size: 2rem;
+    }
+
+    /* Game over score */
+    .final-score {
+      font-size: 2.5rem;
+      font-weight: 900;
+      color: #ffcc00;
+      text-shadow: 0 0 20px #ffcc00;
+    }
+  </style>
+</head>
+<body>
+
+<div class="back-bar"><a href="/">← <span data-i18n="back">Zurück</span></a></div>
+
+<!-- HUD -->
+<div id="hud">
+  <div class="hud-item">
+    <span class="hud-label" data-i18n="hud_level">Level</span>
+    <span class="hud-val" id="hud-level">1</span>
+  </div>
+  <div class="hud-item">
+    <span class="hud-label" data-i18n="hud_score">Score</span>
+    <span class="hud-val" id="hud-score">0</span>
+  </div>
+  <div class="hud-item" id="color-indicator">
+    <span class="hud-label" data-i18n="hud_ball">Ball</span>
+    <div id="color-dot"></div>
+  </div>
+  <div class="hud-item">
+    <span class="hud-label" data-i18n="hud_lives">Leben</span>
+    <div id="lives-dots"></div>
+  </div>
+</div>
+
+<!-- Canvas -->
+<div id="game-wrap">
+  <canvas id="canvas" width="480" height="580"></canvas>
+
+  <!-- Start screen -->
+  <div class="overlay" id="overlay-start">
+    <h1 class="prism-title">PRISM BREAK</h1>
+    <p data-i18n="start_desc">Passe die Ballfarbe an die Blöcke an! Nur gleiche Farben zerstören Blöcke. Regenbogen-Prismen ändern deine Farbe – nutze sie klug!</p>
+    <div class="legend">
+      <div class="legend-item"><div class="legend-dot" style="background:#ff4466"></div><span data-i18n="col_red">Rot</span></div>
+      <div class="legend-item"><div class="legend-dot" style="background:#44ff88"></div><span data-i18n="col_green">Grün</span></div>
+      <div class="legend-item"><div class="legend-dot" style="background:#4499ff"></div><span data-i18n="col_blue">Blau</span></div>
+      <div class="legend-item"><div class="legend-dot" style="background:#ffcc00"></div><span data-i18n="col_yellow">Gelb</span></div>
+      <div class="legend-item"><div class="legend-dot" style="background:linear-gradient(90deg,#ff4466,#ffcc00,#44ff88,#4499ff)"></div><span data-i18n="col_prism">Prisma</span></div>
+    </div>
+    <button class="btn btn-primary" id="btn-start" data-i18n="btn_start">Spielen!</button>
+  </div>
+
+  <!-- Level complete -->
+  <div class="overlay" id="overlay-level" style="display:none">
+    <h1>✨ <span data-i18n="level_clear">Level geschafft!</span></h1>
+    <div class="level-stars" id="level-stars"></div>
+    <p id="level-score-text"></p>
+    <button class="btn btn-primary" id="btn-next" data-i18n="btn_next">Nächstes Level</button>
+  </div>
+
+  <!-- Game over -->
+  <div class="overlay" id="overlay-gameover" style="display:none">
+    <h1>💥 <span data-i18n="game_over">Game Over</span></h1>
+    <div class="final-score" id="final-score">0</div>
+    <p data-i18n="go_subtitle">Punkte</p>
+    <button class="btn btn-primary" id="btn-restart" data-i18n="btn_restart">Nochmal</button>
+  </div>
+
+  <!-- Victory -->
+  <div class="overlay" id="overlay-win" style="display:none">
+    <h1 class="prism-title">🏆 PRISMA MEISTER!</h1>
+    <div class="final-score" id="win-score">0</div>
+    <p data-i18n="win_subtitle">Glückwunsch! Alle 5 Level geschafft!</p>
+    <button class="btn btn-primary" id="btn-win-restart" data-i18n="btn_restart">Nochmal</button>
+  </div>
+</div>
+
+<script src="/shared/i18n.js"></script>
+<script>
+// ── Translations ────────────────────────────────────────────────────────────
+const TRANSLATIONS = {
+  de: {
+    back: 'Zurück',
+    hud_level: 'Level', hud_score: 'Score', hud_ball: 'Ball', hud_lives: 'Leben',
+    start_desc: 'Passe die Ballfarbe an die Blöcke an! Nur gleiche Farben zerstören Blöcke. Regenbogen-Prismen ändern deine Farbe.',
+    col_red: 'Rot', col_green: 'Grün', col_blue: 'Blau', col_yellow: 'Gelb', col_prism: 'Prisma',
+    btn_start: 'Spielen!', btn_next: 'Nächstes Level', btn_restart: 'Nochmal',
+    level_clear: 'Level geschafft!', game_over: 'Game Over',
+    go_subtitle: 'Punkte', win_subtitle: 'Glückwunsch! Alle 5 Level gemeistert!',
+    level_score: 'Score: {s}',
+  },
+  en: {
+    back: 'Back',
+    hud_level: 'Level', hud_score: 'Score', hud_ball: 'Ball', hud_lives: 'Lives',
+    start_desc: 'Match your ball color to the blocks! Only same-colored blocks get destroyed. Rainbow prisms change your color — use them wisely!',
+    col_red: 'Red', col_green: 'Green', col_blue: 'Blue', col_yellow: 'Yellow', col_prism: 'Prism',
+    btn_start: 'Play!', btn_next: 'Next Level', btn_restart: 'Play Again',
+    level_clear: 'Level Clear!', game_over: 'Game Over',
+    go_subtitle: 'Points', win_subtitle: 'Congrats! All 5 levels mastered!',
+    level_score: 'Score: {s}',
+  },
+  fr: {
+    back: 'Retour',
+    hud_level: 'Niveau', hud_score: 'Score', hud_ball: 'Balle', hud_lives: 'Vies',
+    start_desc: 'Faites correspondre la couleur de la balle aux blocs ! Seules les couleurs identiques détruisent. Les prismes changent votre couleur !',
+    col_red: 'Rouge', col_green: 'Vert', col_blue: 'Bleu', col_yellow: 'Jaune', col_prism: 'Prisme',
+    btn_start: 'Jouer !', btn_next: 'Niveau suivant', btn_restart: 'Rejouer',
+    level_clear: 'Niveau réussi !', game_over: 'Game Over',
+    go_subtitle: 'Points', win_subtitle: 'Félicitations ! 5 niveaux maîtrisés !',
+    level_score: 'Score : {s}',
+  },
+  it: {
+    back: 'Indietro',
+    hud_level: 'Livello', hud_score: 'Punti', hud_ball: 'Palla', hud_lives: 'Vite',
+    start_desc: 'Abbina il colore della palla ai blocchi! Solo i colori uguali distruggono. I prismi cambiano il tuo colore — usali con saggezza!',
+    col_red: 'Rosso', col_green: 'Verde', col_blue: 'Blu', col_yellow: 'Giallo', col_prism: 'Prisma',
+    btn_start: 'Gioca!', btn_next: 'Prossimo livello', btn_restart: 'Rigioca',
+    level_clear: 'Livello completato!', game_over: 'Game Over',
+    go_subtitle: 'Punti', win_subtitle: 'Complimenti! Tutti i 5 livelli completati!',
+    level_score: 'Punteggio: {s}',
+  },
+  es: {
+    back: 'Volver',
+    hud_level: 'Nivel', hud_score: 'Puntos', hud_ball: 'Bola', hud_lives: 'Vidas',
+    start_desc: '¡Haz coincidir el color de la bola con los bloques! Solo los del mismo color se destruyen. ¡Los prismas cambian tu color — úsalos con astucia!',
+    col_red: 'Rojo', col_green: 'Verde', col_blue: 'Azul', col_yellow: 'Amarillo', col_prism: 'Prisma',
+    btn_start: '¡Jugar!', btn_next: 'Siguiente nivel', btn_restart: 'Volver a jugar',
+    level_clear: '¡Nivel completado!', game_over: 'Game Over',
+    go_subtitle: 'Puntos', win_subtitle: '¡Felicitaciones! ¡5 niveles dominados!',
+    level_score: 'Puntos: {s}',
+  },
+};
+const { t, onLangChange } = initI18n(TRANSLATIONS);
+
+// ── Game constants ──────────────────────────────────────────────────────────
+const CANVAS_W = 480;
+const CANVAS_H = 580;
+const MAX_LIVES = 3;
+const MAX_LEVELS = 5;
+const BALL_SPEED = 5.5;
+const PADDLE_W = 80;
+const PADDLE_H = 12;
+const PADDLE_Y = 554;
+
+const COLOR_MAP = {
+  red:    '#ff4466',
+  green:  '#44ff88',
+  blue:   '#4499ff',
+  yellow: '#ffcc00',
+  prism:  null, // rendered as gradient
+};
+
+const GLOW_MAP = {
+  red:    'rgba(255,68,102,0.6)',
+  green:  'rgba(68,255,136,0.6)',
+  blue:   'rgba(68,153,255,0.6)',
+  yellow: 'rgba(255,204,0,0.6)',
+};
+
+// ── Inline game logic (mirrors game-logic.js for browser) ───────────────────
+const COLORS = ['red','green','blue','yellow'];
+const PRISM   = 'prism';
+
+function doColorsMatch(bc, blc) {
+  if (blc === PRISM) return true;
+  return bc === blc;
+}
+function createBall(x,y,vx,vy,color){ return {x,y,vx,vy,color,radius:8}; }
+function createBlock(x,y,w,h,color){ return {x,y,w,h,color,alive:true}; }
+function createPaddle(x,y,w,h){ return {x,y,w,h}; }
+function moveBall(ball,dt){ return {...ball, x:ball.x+ball.vx*dt, y:ball.y+ball.vy*dt}; }
+function bounceX(b){ return {...b, vx:-b.vx}; }
+function bounceY(b){ return {...b, vy:-b.vy}; }
+
+function checkWallCollision(ball, W, H) {
+  let b={...ball}, hit=false, lost=false;
+  if(b.x-b.radius<=0){ b={...bounceX(b),x:b.radius}; hit=true; }
+  if(b.x+b.radius>=W){ b={...bounceX(b),x:W-b.radius}; hit=true; }
+  if(b.y-b.radius<=0){ b={...bounceY(b),y:b.radius}; hit=true; }
+  if(H>0 && b.y-b.radius>H) lost=true;
+  return {ball:b, hit, lost};
+}
+
+function checkPaddleCollision(ball, paddle) {
+  if(ball.vy>0 &&
+     ball.y+ball.radius>=paddle.y &&
+     ball.y+ball.radius<=paddle.y+paddle.h+4 &&
+     ball.x>=paddle.x && ball.x<=paddle.x+paddle.w) {
+    const hitPos=(ball.x-paddle.x)/paddle.w;
+    const angle=(hitPos-0.5)*2;
+    const speed=Math.sqrt(ball.vx*ball.vx+ball.vy*ball.vy);
+    return {ball:{...ball,vy:-Math.abs(ball.vy),vx:angle*speed*0.85,y:paddle.y-ball.radius},hit:true};
+  }
+  return {ball,hit:false};
+}
+
+function checkBlockCollision(ball, block) {
+  if(!block.alive) return {ball,block,hit:false,destroyed:false};
+  const bL=ball.x-ball.radius, bR=ball.x+ball.radius,
+        bT=ball.y-ball.radius, bB=ball.y+ball.radius;
+  if(bR<block.x||bL>block.x+block.w||bB<block.y||bT>block.y+block.h)
+    return {ball,block,hit:false,destroyed:false};
+  const oL=bR-block.x, oR=(block.x+block.w)-bL,
+        oT=bB-block.y, oB=(block.y+block.h)-bT;
+  const min=Math.min(oL,oR,oT,oB);
+  let nb={...ball};
+  if(min===oT||min===oB) nb=bounceY(nb); else nb=bounceX(nb);
+  const match=doColorsMatch(ball.color,block.color);
+  let nblk={...block}, destroyed=false, nc=ball.color;
+  if(match){
+    nblk={...block,alive:false}; destroyed=true;
+    if(block.color===PRISM){
+      const pool=COLORS.filter(c=>c!==ball.color);
+      nc=pool[Math.floor(Math.random()*pool.length)];
+    }
+  }
+  return {ball:{...nb,color:nc},block:nblk,hit:true,destroyed};
+}
+
+function isLevelComplete(blocks){
+  return blocks.filter(b=>b.color!==PRISM).every(b=>!b.alive);
+}
+
+function clampPaddle(paddle,W){
+  let x=paddle.x;
+  if(x<0)x=0;
+  if(x+paddle.w>W)x=W-paddle.w;
+  return {...paddle,x};
+}
+
+// Level layout
+const BLOCK_W=54, BLOCK_H=18, GAP_X=4, GAP_Y=4, OFF_X=15, OFF_Y=72;
+const R='red',G='green',B='blue',Y='yellow',P=PRISM;
+
+function makeGrid(rows) {
+  const blocks=[];
+  rows.forEach((cols,row)=>{
+    cols.forEach((c,col)=>{
+      if(!c) return;
+      blocks.push(createBlock(
+        OFF_X+col*(BLOCK_W+GAP_X),
+        OFF_Y+row*(BLOCK_H+GAP_Y),
+        BLOCK_W, BLOCK_H, c));
+    });
+  });
+  return blocks;
+}
+
+function createLevel(level) {
+  switch(level){
+    case 1: return makeGrid([
+      [R,R,R,R,B,B,B,B],
+      [R,R,R,R,B,B,B,B],
+      [R,R,R,R,B,B,B,B],
+      [null,null,null,P,P,null,null,null],
+    ]);
+    case 2: return makeGrid([
+      [R,R,G,G,B,B,R,R],
+      [R,G,G,P,P,G,G,R],
+      [G,G,B,B,B,B,G,G],
+      [B,B,B,G,G,B,B,B],
+      [null,R,R,null,null,R,R,null],
+    ]);
+    case 3: return makeGrid([
+      [Y,Y,Y,Y,Y,Y,Y,Y],
+      [R,R,P,B,B,P,G,G],
+      [R,B,B,R,G,G,R,B],
+      [B,R,R,G,B,G,G,R],
+      [G,G,P,G,R,P,B,B],
+      [Y,Y,Y,Y,Y,Y,Y,Y],
+    ]);
+    case 4: return makeGrid([
+      [B,B,R,R,G,G,Y,Y],
+      [B,P,R,P,G,P,Y,P],
+      [R,R,G,G,Y,Y,B,B],
+      [R,P,G,P,Y,P,B,P],
+      [G,G,Y,Y,B,B,R,R],
+      [G,P,Y,P,B,P,R,P],
+      [Y,Y,B,B,R,R,G,G],
+    ]);
+    case 5: return makeGrid([
+      [P,R,G,B,Y,R,G,P],
+      [R,P,R,G,B,Y,P,G],
+      [G,R,P,R,G,P,Y,B],
+      [B,G,R,P,P,G,R,Y],
+      [Y,B,G,R,R,P,G,B],
+      [G,Y,B,G,P,R,B,R],
+      [R,G,Y,B,G,R,P,G],
+      [P,R,G,Y,B,G,R,P],
+    ]);
+    default: return createLevel(5);
+  }
+}
+
+// ── Game state ──────────────────────────────────────────────────────────────
+const canvas = document.getElementById('canvas');
+const ctx    = canvas.getContext('2d');
+
+// Create prism gradient (cached)
+let prismGrad = null;
+function getPrismGrad() {
+  if (!prismGrad) {
+    prismGrad = ctx.createLinearGradient(0,0,BLOCK_W,0);
+    prismGrad.addColorStop(0,   '#ff4466');
+    prismGrad.addColorStop(0.25,'#ffcc00');
+    prismGrad.addColorStop(0.5, '#44ff88');
+    prismGrad.addColorStop(0.75,'#4499ff');
+    prismGrad.addColorStop(1,   '#cc44ff');
+  }
+  return prismGrad;
+}
+
+let gs = {}; // game state
+let raf = null;
+let mouseX = CANVAS_W / 2;
+let touchActive = false;
+
+function initGame() {
+  const startColor = COLORS[Math.floor(Math.random() * COLORS.length)];
+  gs = {
+    level:   1,
+    lives:   MAX_LIVES,
+    score:   0,
+    blocks:  createLevel(1),
+    ball:    createBall(CANVAS_W/2, CANVAS_H-120, 2, -BALL_SPEED, startColor),
+    paddle:  createPaddle(CANVAS_W/2 - PADDLE_W/2, PADDLE_Y, PADDLE_W, PADDLE_H),
+    running: false,
+    paused:  false,
+    ballLaunched: false,
+    particles: [],
+  };
+  updateHUD();
+}
+
+function startLevel(level) {
+  const startColor = COLORS[Math.floor(Math.random() * COLORS.length)];
+  gs.level  = level;
+  gs.blocks = createLevel(level);
+  gs.ball   = createBall(CANVAS_W/2, CANVAS_H-120, 0, 0, startColor);
+  gs.ballLaunched = false;
+  gs.particles = [];
+  gs.running = true;
+  gs.paused  = false;
+  updateHUD();
+}
+
+// ── Particles ───────────────────────────────────────────────────────────────
+function spawnParticles(x, y, color, count=12) {
+  for (let i=0; i<count; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const speed = 1.5 + Math.random() * 3;
+    gs.particles.push({
+      x, y,
+      vx: Math.cos(angle)*speed,
+      vy: Math.sin(angle)*speed,
+      color: color === PRISM ? `hsl(${Math.random()*360},100%,70%)` : COLOR_MAP[color],
+      alpha: 1,
+      size:  2 + Math.random() * 3,
+    });
+  }
+}
+
+function updateParticles() {
+  gs.particles = gs.particles.filter(p => p.alpha > 0.05);
+  gs.particles.forEach(p => {
+    p.x += p.vx;
+    p.y += p.vy;
+    p.vy += 0.08; // gravity
+    p.alpha -= 0.035;
+    p.size  *= 0.97;
+  });
+}
+
+function drawParticles() {
+  gs.particles.forEach(p => {
+    ctx.globalAlpha = p.alpha;
+    ctx.fillStyle   = p.color;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.size, 0, Math.PI*2);
+    ctx.fill();
+  });
+  ctx.globalAlpha = 1;
+}
+
+// ── HUD updates ─────────────────────────────────────────────────────────────
+function updateHUD() {
+  document.getElementById('hud-level').textContent = gs.level;
+  document.getElementById('hud-score').textContent = gs.score;
+
+  // Ball color dot
+  const dot = document.getElementById('color-dot');
+  const ballColor = gs.ball?.color || 'red';
+  if (ballColor === PRISM) {
+    dot.style.background = 'linear-gradient(90deg,#ff4466,#ffcc00,#44ff88,#4499ff)';
+    dot.style.boxShadow  = '0 0 8px rgba(255,255,255,0.8)';
+  } else {
+    dot.style.background = COLOR_MAP[ballColor];
+    dot.style.boxShadow  = `0 0 8px ${GLOW_MAP[ballColor]}`;
+  }
+
+  // Lives
+  const livesEl = document.getElementById('lives-dots');
+  livesEl.innerHTML = '';
+  for (let i=0; i<MAX_LIVES; i++) {
+    const d = document.createElement('div');
+    d.className = 'life-dot' + (i < gs.lives ? '' : ' lost');
+    livesEl.appendChild(d);
+  }
+}
+
+// ── Drawing ─────────────────────────────────────────────────────────────────
+function drawBlock(block) {
+  if (!block.alive) return;
+
+  const {x, y, w, h, color} = block;
+
+  if (color === PRISM) {
+    // Save/restore transform so gradient stays absolute
+    ctx.save();
+    ctx.translate(x, y);
+    const g = ctx.createLinearGradient(0,0,w,0);
+    g.addColorStop(0,   '#ff4466');
+    g.addColorStop(0.25,'#ffcc00');
+    g.addColorStop(0.5, '#44ff88');
+    g.addColorStop(0.75,'#4499ff');
+    g.addColorStop(1,   '#cc44ff');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, w, h);
+    // Shimmer highlight
+    ctx.fillStyle = 'rgba(255,255,255,0.15)';
+    ctx.fillRect(0, 0, w, 4);
+    ctx.restore();
+  } else {
+    const c = COLOR_MAP[color];
+    ctx.fillStyle = c;
+    ctx.fillRect(x, y, w, h);
+    // Top highlight
+    ctx.fillStyle = 'rgba(255,255,255,0.20)';
+    ctx.fillRect(x, y, w, 4);
+    // Dark bottom
+    ctx.fillStyle = 'rgba(0,0,0,0.25)';
+    ctx.fillRect(x, y+h-3, w, 3);
+  }
+
+  // Block border
+  ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+  ctx.lineWidth   = 1;
+  ctx.strokeRect(x+0.5, y+0.5, w-1, h-1);
+}
+
+function drawBall(ball) {
+  const {x, y, radius, color} = ball;
+  const c = color === PRISM
+    ? '#fff'
+    : COLOR_MAP[color];
+
+  // Glow
+  if (color !== PRISM) {
+    ctx.shadowColor = GLOW_MAP[color];
+    ctx.shadowBlur  = 18;
+  }
+  ctx.fillStyle = c;
+  ctx.beginPath();
+  ctx.arc(x, y, radius, 0, Math.PI*2);
+  ctx.fill();
+  ctx.shadowBlur = 0;
+
+  // Highlight
+  ctx.fillStyle = 'rgba(255,255,255,0.5)';
+  ctx.beginPath();
+  ctx.arc(x-2, y-2, radius*0.4, 0, Math.PI*2);
+  ctx.fill();
+}
+
+function drawPaddle(paddle) {
+  const {x, y, w, h} = paddle;
+  // Body
+  const g = ctx.createLinearGradient(x, y, x, y+h);
+  g.addColorStop(0, '#c0c0ff');
+  g.addColorStop(1, '#6060cc');
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.roundRect(x, y, w, h, 6);
+  ctx.fill();
+  // Highlight
+  ctx.fillStyle = 'rgba(255,255,255,0.3)';
+  ctx.beginPath();
+  ctx.roundRect(x+2, y+1, w-4, 4, 3);
+  ctx.fill();
+}
+
+function drawLaunchHint(ball) {
+  if (gs.ballLaunched) return;
+  ctx.fillStyle = 'rgba(255,255,255,0.35)';
+  ctx.font = '13px system-ui';
+  ctx.textAlign = 'center';
+  ctx.fillText('▲  Click / Tap to launch  ▲', CANVAS_W/2, ball.y - 20);
+}
+
+function drawBackground() {
+  ctx.fillStyle = '#07071a';
+  ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+  // Subtle grid lines
+  ctx.strokeStyle = 'rgba(255,255,255,0.02)';
+  ctx.lineWidth = 1;
+  for (let x=0; x<CANVAS_W; x+=40) {
+    ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,CANVAS_H); ctx.stroke();
+  }
+  for (let y=0; y<CANVAS_H; y+=40) {
+    ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(CANVAS_W,y); ctx.stroke();
+  }
+}
+
+// ── Game loop ───────────────────────────────────────────────────────────────
+let lastTime = 0;
+
+function gameLoop(ts) {
+  const dt = Math.min((ts - lastTime) / 16.67, 3); // cap at 3 frames
+  lastTime = ts;
+
+  if (!gs.running || gs.paused) {
+    render();
+    raf = requestAnimationFrame(gameLoop);
+    return;
+  }
+
+  // Move paddle to mouse position
+  const targetX = mouseX - gs.paddle.w / 2;
+  gs.paddle = clampPaddle({ ...gs.paddle, x: targetX }, CANVAS_W);
+
+  if (gs.ballLaunched) {
+    // Move ball
+    gs.ball = moveBall(gs.ball, dt);
+
+    // Wall collisions
+    const wall = checkWallCollision(gs.ball, CANVAS_W, CANVAS_H);
+    gs.ball = wall.ball;
+
+    if (wall.lost) {
+      // Lost a life
+      gs.lives--;
+      updateHUD();
+      if (gs.lives <= 0) {
+        // Game over
+        gs.running = false;
+        showOverlay('overlay-gameover');
+        document.getElementById('final-score').textContent = gs.score;
+        return;
+      } else {
+        // Reset ball
+        gs.ball = createBall(
+          gs.paddle.x + gs.paddle.w/2,
+          PADDLE_Y - 20,
+          0, 0,
+          gs.ball.color
+        );
+        gs.ballLaunched = false;
+      }
+    }
+
+    // Paddle collision
+    const pad = checkPaddleCollision(gs.ball, gs.paddle);
+    gs.ball = pad.ball;
+
+    // Block collisions
+    let colorChanged = false;
+    for (let i=0; i<gs.blocks.length; i++) {
+      const res = checkBlockCollision(gs.ball, gs.blocks[i]);
+      if (res.hit) {
+        gs.ball      = res.ball;
+        gs.blocks[i] = res.block;
+
+        if (res.destroyed) {
+          const blk = gs.blocks[i];
+          const pts = blk.color === PRISM ? 50 : 10;
+          gs.score += pts;
+          spawnParticles(blk.x + blk.w/2, blk.y + blk.h/2, blk.color === PRISM ? PRISM : res.block.color, blk.color===PRISM?20:10);
+          if (res.ball.color !== gs.ball.color) colorChanged = true;
+          gs.ball = res.ball; // apply potential color change from prism
+        }
+        break; // one block per frame
+      }
+    }
+
+    if (colorChanged || pad.hit) updateHUD();
+
+    // Check level complete
+    if (isLevelComplete(gs.blocks)) {
+      gs.running = false;
+      if (gs.level >= MAX_LEVELS) {
+        // Victory!
+        showOverlay('overlay-win');
+        document.getElementById('win-score').textContent = gs.score;
+      } else {
+        showOverlay('overlay-level');
+        document.getElementById('level-score-text').textContent =
+          t('level_score').replace('{s}', gs.score);
+      }
+      updateHUD();
+      return;
+    }
+  } else {
+    // Ball follows paddle before launch
+    gs.ball = {
+      ...gs.ball,
+      x: gs.paddle.x + gs.paddle.w / 2,
+      y: PADDLE_Y - gs.ball.radius - 2,
+    };
+  }
+
+  updateParticles();
+  render();
+  raf = requestAnimationFrame(gameLoop);
+}
+
+function render() {
+  drawBackground();
+  gs.blocks.forEach(drawBlock);
+  drawParticles();
+  drawBall(gs.ball);
+  drawPaddle(gs.paddle);
+  if (!gs.ballLaunched && gs.running) drawLaunchHint(gs.ball);
+}
+
+// ── Overlays ─────────────────────────────────────────────────────────────────
+function hideAllOverlays() {
+  ['overlay-start','overlay-level','overlay-gameover','overlay-win'].forEach(id=>{
+    document.getElementById(id).style.display = 'none';
+  });
+}
+
+function showOverlay(id) {
+  hideAllOverlays();
+  document.getElementById(id).style.display = 'flex';
+}
+
+// ── Input handling ───────────────────────────────────────────────────────────
+canvas.addEventListener('mousemove', e => {
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = CANVAS_W / rect.width;
+  mouseX = (e.clientX - rect.left) * scaleX;
+});
+
+canvas.addEventListener('touchmove', e => {
+  e.preventDefault();
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = CANVAS_W / rect.width;
+  mouseX = (e.touches[0].clientX - rect.left) * scaleX;
+}, { passive: false });
+
+function launchBall() {
+  if (!gs.running || gs.ballLaunched) return;
+  const angle = -Math.PI/2 + (Math.random()-0.5)*0.5; // roughly upward
+  gs.ball = {
+    ...gs.ball,
+    vx: Math.cos(angle) * BALL_SPEED,
+    vy: Math.sin(angle) * BALL_SPEED,
+  };
+  gs.ballLaunched = true;
+}
+
+canvas.addEventListener('click', launchBall);
+canvas.addEventListener('touchstart', e => {
+  e.preventDefault();
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = CANVAS_W / rect.width;
+  mouseX = (e.touches[0].clientX - rect.left) * scaleX;
+  launchBall();
+}, { passive: false });
+
+document.addEventListener('keydown', e => {
+  if (e.code === 'Space' || e.code === 'Enter') { e.preventDefault(); launchBall(); }
+});
+
+// ── Buttons ──────────────────────────────────────────────────────────────────
+document.getElementById('btn-start').addEventListener('click', () => {
+  hideAllOverlays();
+  initGame();
+  startLevel(1);
+  raf = requestAnimationFrame(gameLoop);
+});
+
+document.getElementById('btn-next').addEventListener('click', () => {
+  hideAllOverlays();
+  startLevel(gs.level + 1);
+});
+
+document.getElementById('btn-restart').addEventListener('click', () => {
+  hideAllOverlays();
+  initGame();
+  startLevel(1);
+});
+
+document.getElementById('btn-win-restart').addEventListener('click', () => {
+  hideAllOverlays();
+  initGame();
+  startLevel(1);
+});
+
+// Re-translate dynamic text on lang change
+onLangChange(() => {
+  if (document.getElementById('level-score-text').textContent) {
+    document.getElementById('level-score-text').textContent =
+      t('level_score').replace('{s}', gs.score);
+  }
+});
+
+// ── Boot ─────────────────────────────────────────────────────────────────────
+initGame();
+// Draw background behind start screen
+drawBackground();
+raf = requestAnimationFrame(ts => { lastTime = ts; gameLoop(ts); });
+</script>
+</body>
+</html>
