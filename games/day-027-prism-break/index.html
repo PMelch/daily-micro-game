@@ -362,13 +362,17 @@ function checkBlockCollision(ball, block) {
   if(!block.alive) return {ball,block,hit:false,destroyed:false};
   const bL=ball.x-ball.radius, bR=ball.x+ball.radius,
         bT=ball.y-ball.radius, bB=ball.y+ball.radius;
-  if(bR<block.x||bL>block.x+block.w||bB<block.y||bT>block.y+block.h)
+  if(bR<=block.x||bL>=block.x+block.w||bB<=block.y||bT>=block.y+block.h)
     return {ball,block,hit:false,destroyed:false};
   const oL=bR-block.x, oR=(block.x+block.w)-bL,
         oT=bB-block.y, oB=(block.y+block.h)-bT;
   const min=Math.min(oL,oR,oT,oB);
   let nb={...ball};
-  if(min===oT||min===oB) nb=bounceY(nb); else nb=bounceX(nb);
+  // Bounce AND reposition ball outside the block
+  if(min===oT) { nb=bounceY(nb); nb.y=block.y-ball.radius; }
+  else if(min===oB) { nb=bounceY(nb); nb.y=block.y+block.h+ball.radius; }
+  else if(min===oL) { nb=bounceX(nb); nb.x=block.x-ball.radius; }
+  else { nb=bounceX(nb); nb.x=block.x+block.w+ball.radius; }
   const match=doColorsMatch(ball.color,block.color);
   let nblk={...block}, destroyed=false, nc=ball.color;
   if(match){

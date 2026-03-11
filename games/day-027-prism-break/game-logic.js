@@ -134,15 +134,15 @@ export function checkBlockCollision(ball, block, rng = Math.random) {
 
   // AABB overlap test
   if (
-    bRight  < block.x ||
-    bLeft   > block.x + block.w ||
-    bBottom < block.y ||
-    bTop    > block.y + block.h
+    bRight  <= block.x ||
+    bLeft   >= block.x + block.w ||
+    bBottom <= block.y ||
+    bTop    >= block.y + block.h
   ) {
     return { ball, block, hit: false, destroyed: false };
   }
 
-  // Minimum-overlap axis bounce
+  // Minimum-overlap axis bounce + reposition ball outside block
   const overlapLeft   = bRight  - block.x;
   const overlapRight  = (block.x + block.w) - bLeft;
   const overlapTop    = bBottom - block.y;
@@ -150,10 +150,18 @@ export function checkBlockCollision(ball, block, rng = Math.random) {
   const minOverlap    = Math.min(overlapLeft, overlapRight, overlapTop, overlapBottom);
 
   let newBall = { ...ball };
-  if (minOverlap === overlapTop || minOverlap === overlapBottom) {
+  if (minOverlap === overlapTop) {
     newBall = bounceY(newBall);
+    newBall.y = block.y - ball.radius;
+  } else if (minOverlap === overlapBottom) {
+    newBall = bounceY(newBall);
+    newBall.y = block.y + block.h + ball.radius;
+  } else if (minOverlap === overlapLeft) {
+    newBall = bounceX(newBall);
+    newBall.x = block.x - ball.radius;
   } else {
     newBall = bounceX(newBall);
+    newBall.x = block.x + block.w + ball.radius;
   }
 
   const colorMatch = doColorsMatch(ball.color, block.color);
