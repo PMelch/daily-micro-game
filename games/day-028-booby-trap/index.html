@@ -1,0 +1,1147 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Booby Trap 🪤</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0d1117;
+      --bg2: #161b22;
+      --bg3: #21262d;
+      --border: #30363d;
+      --gold: #f0c040;
+      --trap-color: #e05050;
+      --treasure-color: #50e090;
+      --probe-color: #5090e0;
+      --text: #e6edf3;
+      --text-dim: #8b949e;
+      --p1: #ff7b72;
+      --p2: #79c0ff;
+      --heart: #ff4444;
+      --empty-hit: #3a4050;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: system-ui, -apple-system, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .back-bar {
+      width: 100%;
+      background: #0a0a1a;
+      padding: 0.5rem 1rem;
+      border-bottom: 1px solid #333;
+    }
+    .back-bar a {
+      color: #ffcc00;
+      text-decoration: none;
+      font-size: 0.9rem;
+      font-family: system-ui, sans-serif;
+    }
+    .back-bar a:hover { text-decoration: underline; }
+
+    /* ===== SCREENS ===== */
+    .screen {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      padding: 1.5rem 1rem;
+      width: 100%;
+      max-width: 480px;
+      gap: 1rem;
+    }
+    .screen.active { display: flex; }
+
+    h1 {
+      font-size: 2.2rem;
+      font-weight: 800;
+      text-align: center;
+      line-height: 1.1;
+    }
+    .subtitle {
+      color: var(--text-dim);
+      text-align: center;
+      font-size: 0.9rem;
+    }
+
+    /* ===== NAME ENTRY ===== */
+    .name-group {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+    .name-group label {
+      font-size: 0.85rem;
+      color: var(--text-dim);
+      font-weight: 600;
+    }
+    .name-group input {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 1.1rem;
+      padding: 0.6rem 0.8rem;
+      width: 100%;
+      outline: none;
+    }
+    .name-group input:focus { border-color: var(--gold); }
+
+    /* ===== BUTTONS ===== */
+    .btn {
+      padding: 0.75rem 1.5rem;
+      border: none;
+      border-radius: 10px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.1s, opacity 0.1s;
+      width: 100%;
+    }
+    .btn:active { transform: scale(0.97); }
+    .btn-primary {
+      background: var(--gold);
+      color: #0d1117;
+    }
+    .btn-secondary {
+      background: var(--bg3);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    /* ===== HANDOFF ===== */
+    .handoff-box {
+      background: var(--bg2);
+      border: 2px solid var(--border);
+      border-radius: 16px;
+      padding: 2rem 1.5rem;
+      text-align: center;
+      width: 100%;
+    }
+    .handoff-box .emoji { font-size: 4rem; margin-bottom: 0.5rem; }
+    .handoff-box h2 { font-size: 1.4rem; margin-bottom: 0.5rem; }
+    .handoff-box p { color: var(--text-dim); font-size: 0.9rem; }
+
+    /* ===== SETUP PHASE ===== */
+    .setup-header {
+      width: 100%;
+      background: var(--bg2);
+      border-radius: 12px;
+      padding: 0.75rem 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .player-badge {
+      font-size: 1.5rem;
+      font-weight: 800;
+    }
+    .p1-color { color: var(--p1); }
+    .p2-color { color: var(--p2); }
+
+    .setup-legend {
+      display: flex;
+      gap: 1rem;
+      font-size: 0.85rem;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+    }
+
+    .placement-mode {
+      display: flex;
+      gap: 0.5rem;
+      width: 100%;
+    }
+    .mode-btn {
+      flex: 1;
+      padding: 0.6rem 0.5rem;
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      background: var(--bg3);
+      color: var(--text);
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.15s;
+    }
+    .mode-btn.active-trap { border-color: var(--trap-color); background: rgba(224,80,80,0.15); color: var(--trap-color); }
+    .mode-btn.active-treasure { border-color: var(--treasure-color); background: rgba(80,224,144,0.15); color: var(--treasure-color); }
+
+    /* ===== GRID ===== */
+    .grid-wrap {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .game-grid {
+      display: grid;
+      gap: 4px;
+      padding: 8px;
+      background: var(--bg3);
+      border-radius: 12px;
+      border: 1px solid var(--border);
+    }
+
+    .cell {
+      width: 42px;
+      height: 42px;
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.4rem;
+      transition: transform 0.1s, background 0.2s;
+      user-select: none;
+      position: relative;
+      background: var(--bg2);
+      border: 1px solid var(--border);
+    }
+    .cell:hover { transform: scale(1.05); }
+    .cell:active { transform: scale(0.95); }
+    .cell.has-trap { background: rgba(224,80,80,0.2); border-color: var(--trap-color); }
+    .cell.has-treasure { background: rgba(80,224,144,0.2); border-color: var(--treasure-color); }
+    .cell.revealed-empty { background: var(--empty-hit); cursor: default; }
+    .cell.revealed-empty:hover { transform: none; }
+    .cell.revealed-trap { background: rgba(224,80,80,0.3); cursor: default; animation: shake 0.3s; }
+    .cell.revealed-treasure { background: rgba(80,224,144,0.3); cursor: default; animation: pop 0.3s; }
+    .cell.probed { cursor: default; }
+    .cell.probed:hover { transform: none; }
+
+    @keyframes shake {
+      0%,100% { transform: translateX(0); }
+      25% { transform: translateX(-4px); }
+      75% { transform: translateX(4px); }
+    }
+    @keyframes pop {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.3); }
+      100% { transform: scale(1); }
+    }
+
+    /* ===== STATUS BAR ===== */
+    .status-bar {
+      width: 100%;
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      gap: 0.5rem;
+      align-items: center;
+    }
+    .player-status {
+      background: var(--bg2);
+      border-radius: 10px;
+      padding: 0.6rem 0.8rem;
+      border: 1px solid var(--border);
+    }
+    .player-status.active-turn {
+      border-color: var(--gold);
+      background: rgba(240, 192, 64, 0.08);
+    }
+    .player-status .pname {
+      font-size: 0.8rem;
+      font-weight: 700;
+      margin-bottom: 0.2rem;
+    }
+    .player-status .lives { font-size: 1.1rem; letter-spacing: 2px; }
+    .player-status .score { font-size: 0.85rem; color: var(--gold); font-weight: 600; }
+    .vs-badge {
+      font-size: 1rem;
+      font-weight: 800;
+      color: var(--text-dim);
+    }
+
+    /* ===== TURN INDICATOR ===== */
+    .turn-indicator {
+      background: var(--bg2);
+      border-radius: 12px;
+      padding: 0.75rem 1rem;
+      text-align: center;
+      width: 100%;
+      border: 1px solid var(--border);
+    }
+    .turn-indicator .who {
+      font-size: 1.1rem;
+      font-weight: 700;
+    }
+    .turn-indicator .what {
+      font-size: 0.85rem;
+      color: var(--text-dim);
+      margin-top: 0.2rem;
+    }
+
+    /* ===== HINT MARKERS ===== */
+    .hint-row {
+      width: 100%;
+      text-align: center;
+      font-size: 0.8rem;
+      color: var(--text-dim);
+    }
+
+    /* ===== RESULT SCREEN ===== */
+    .result-box {
+      background: var(--bg2);
+      border-radius: 16px;
+      padding: 1.5rem;
+      text-align: center;
+      width: 100%;
+      border: 2px solid var(--gold);
+    }
+    .result-box .winner-emoji { font-size: 3.5rem; }
+    .result-box h2 { font-size: 1.5rem; margin: 0.5rem 0; }
+    .result-box .final-scores {
+      display: flex;
+      justify-content: center;
+      gap: 2rem;
+      margin-top: 1rem;
+    }
+    .score-col { text-align: center; }
+    .score-col .big-score { font-size: 2rem; font-weight: 800; }
+    .score-col .sname { font-size: 0.85rem; color: var(--text-dim); }
+
+    /* ===== GRIDS REVEAL ===== */
+    .reveal-grids {
+      display: flex;
+      gap: 1rem;
+      width: 100%;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .reveal-grid-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.3rem;
+    }
+    .reveal-grid-wrap .grid-label {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-dim);
+    }
+    .reveal-grid-wrap .game-grid .cell {
+      width: 32px;
+      height: 32px;
+      font-size: 1rem;
+    }
+
+    /* ===== PROBE FEEDBACK ===== */
+    .probe-feedback {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0);
+      font-size: 3rem;
+      z-index: 100;
+      pointer-events: none;
+      transition: transform 0.1s, opacity 0.3s;
+      opacity: 0;
+    }
+    .probe-feedback.show {
+      transform: translate(-50%, -50%) scale(1.5);
+      opacity: 1;
+    }
+
+    /* ===== COUNTER BADGE ===== */
+    .counter-row {
+      display: flex;
+      gap: 0.75rem;
+      justify-content: center;
+    }
+    .counter-badge {
+      padding: 0.3rem 0.75rem;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+    .counter-badge.traps { background: rgba(224,80,80,0.15); color: var(--trap-color); border: 1px solid rgba(224,80,80,0.3); }
+    .counter-badge.treasures { background: rgba(80,224,144,0.15); color: var(--treasure-color); border: 1px solid rgba(80,224,144,0.3); }
+
+    /* Responsive small screens */
+    @media (max-width: 360px) {
+      .cell { width: 36px; height: 36px; font-size: 1.1rem; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="back-bar">
+  <a href="/">← <span data-i18n="backToGames">Back to Games</span></a>
+</div>
+
+<!-- Probe feedback overlay -->
+<div class="probe-feedback" id="probeFeedback">💎</div>
+
+<!-- =================== SCREEN: START =================== -->
+<div class="screen active" id="screenStart">
+  <h1>🪤 Booby Trap</h1>
+  <p class="subtitle" data-i18n="startSubtitle">Pflanze Fallen, finde Schätze, überliste deinen Gegner!</p>
+
+  <div style="background:var(--bg2);border-radius:12px;padding:1rem;width:100%;border:1px solid var(--border);">
+    <p style="font-size:0.85rem;color:var(--text-dim);margin-bottom:0.5rem;" data-i18n="howItWorksTitle">So geht's:</p>
+    <ul style="font-size:0.85rem;padding-left:1.2rem;display:flex;flex-direction:column;gap:0.3rem;">
+      <li data-i18n="how1">Jeder Spieler platziert 4 Fallen 🪤 und 3 Schätze 💎 heimlich auf seinem Raster</li>
+      <li data-i18n="how2">Dann sucht ihr abwechselnd auf dem Raster des Gegners</li>
+      <li data-i18n="how3">💎 Schatz gefunden = +2 Punkte, 🪤 Falle getroffen = ❤️ verloren</li>
+      <li data-i18n="how4">Wer alle Schätze findet oder den Gegner entwaffnet, gewinnt!</li>
+    </ul>
+  </div>
+
+  <div class="name-group">
+    <label data-i18n="player1name">Spieler 1 Name</label>
+    <input type="text" id="inputP1" value="Spieler 1" maxlength="15">
+  </div>
+  <div class="name-group">
+    <label data-i18n="player2name">Spieler 2 Name</label>
+    <input type="text" id="inputP2" value="Spieler 2" maxlength="15">
+  </div>
+
+  <button class="btn btn-primary" id="btnStart" data-i18n="startGame">Spiel starten</button>
+</div>
+
+<!-- =================== SCREEN: HANDOFF =================== -->
+<div class="screen" id="screenHandoff">
+  <div class="handoff-box">
+    <div class="emoji" id="handoffEmoji">🙈</div>
+    <h2 id="handoffTitle">Weitergeben!</h2>
+    <p id="handoffMsg">Gib das Gerät weiter</p>
+  </div>
+  <button class="btn btn-primary" id="btnHandoffReady" data-i18n="iAmReady">Ich bin bereit!</button>
+</div>
+
+<!-- =================== SCREEN: SETUP =================== -->
+<div class="screen" id="screenSetup">
+  <div class="setup-header">
+    <div>
+      <div class="player-badge" id="setupPlayerBadge">P1</div>
+      <div style="font-size:0.85rem;color:var(--text-dim);" id="setupPlayerName">Spieler 1</div>
+    </div>
+    <div style="flex:1;">
+      <div style="font-size:0.85rem;font-weight:600;" data-i18n="setupTitle">Platziere deine Fallen & Schätze</div>
+      <div class="counter-row" style="margin-top:0.3rem;">
+        <span class="counter-badge traps" id="trapCounter">🪤 4/4</span>
+        <span class="counter-badge treasures" id="treasureCounter">💎 3/3</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="placement-mode">
+    <button class="mode-btn active-trap" id="modeTraps" onclick="selectMode('trap')">
+      🪤 <span data-i18n="placeTraps">Fallen</span>
+    </button>
+    <button class="mode-btn" id="modeTreasures" onclick="selectMode('treasure')">
+      💎 <span data-i18n="placeTreasures">Schätze</span>
+    </button>
+    <button class="mode-btn" id="modeErase" onclick="selectMode('erase')">
+      🗑 <span data-i18n="erase">Löschen</span>
+    </button>
+  </div>
+
+  <div class="grid-wrap">
+    <div class="game-grid" id="setupGrid"></div>
+  </div>
+
+  <p style="font-size:0.8rem;color:var(--text-dim);text-align:center;" data-i18n="setupHint">Tippe auf Felder, um sie zu belegen. Tippe nochmal zum Entfernen.</p>
+
+  <button class="btn btn-primary" id="btnSetupDone" data-i18n="doneSetup" disabled>✓ Fertig</button>
+</div>
+
+<!-- =================== SCREEN: HUNT =================== -->
+<div class="screen" id="screenHunt">
+  <div class="status-bar">
+    <div class="player-status" id="huntP1Status">
+      <div class="pname p1-color" id="huntP1Name">P1</div>
+      <div class="lives" id="huntP1Lives">❤️❤️❤️</div>
+      <div class="score" id="huntP1Score">0 Pts</div>
+    </div>
+    <div class="vs-badge">VS</div>
+    <div class="player-status" id="huntP2Status" style="text-align:right;">
+      <div class="pname p2-color" id="huntP2Name">P2</div>
+      <div class="lives" id="huntP2Lives">❤️❤️❤️</div>
+      <div class="score" id="huntP2Score">0 Pts</div>
+    </div>
+  </div>
+
+  <div class="turn-indicator">
+    <div class="who" id="turnWho">Spieler 1 sucht</div>
+    <div class="what" data-i18n="huntInstruction">Tippe auf ein Feld im Raster des Gegners</div>
+  </div>
+
+  <div class="grid-wrap">
+    <div class="game-grid" id="huntGrid"></div>
+  </div>
+
+  <div class="hint-row" id="huntHint"></div>
+</div>
+
+<!-- =================== SCREEN: RESULT =================== -->
+<div class="screen" id="screenResult">
+  <div class="result-box">
+    <div class="winner-emoji" id="resultEmoji">🏆</div>
+    <h2 id="resultTitle">Spieler 1 gewinnt!</h2>
+    <p id="resultReason" style="color:var(--text-dim);font-size:0.9rem;margin-top:0.3rem;"></p>
+    <div class="final-scores">
+      <div class="score-col">
+        <div class="big-score p1-color" id="resultP1Score">0</div>
+        <div class="sname" id="resultP1Name">P1</div>
+      </div>
+      <div class="score-col">
+        <div class="big-score p2-color" id="resultP2Score">0</div>
+        <div class="sname" id="resultP2Name">P2</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="reveal-grids" id="revealGrids"></div>
+
+  <button class="btn btn-primary" id="btnPlayAgain" data-i18n="playAgain">Nochmal spielen</button>
+  <button class="btn btn-secondary" onclick="location.href='/'" data-i18n="backToGames2">← Alle Spiele</button>
+</div>
+
+<script src="/shared/i18n.js"></script>
+<script>
+const TRANSLATIONS = {
+  de: {
+    backToGames: 'Zurück zu den Spielen',
+    backToGames2: '← Alle Spiele',
+    startSubtitle: 'Pflanze Fallen, finde Schätze, überliste deinen Gegner!',
+    howItWorksTitle: 'So geht\'s:',
+    how1: 'Jeder Spieler platziert 4 Fallen 🪤 und 3 Schätze 💎 heimlich auf seinem Raster',
+    how2: 'Dann sucht ihr abwechselnd auf dem Raster des Gegners',
+    how3: '💎 Schatz gefunden = +2 Punkte, 🪤 Falle getroffen = ❤️ verloren',
+    how4: 'Wer alle Schätze findet oder den Gegner entwaffnet, gewinnt!',
+    player1name: 'Spieler 1 Name',
+    player2name: 'Spieler 2 Name',
+    startGame: 'Spiel starten',
+    iAmReady: 'Ich bin bereit!',
+    setupTitle: 'Platziere deine Fallen & Schätze',
+    placeTraps: 'Fallen',
+    placeTreasures: 'Schätze',
+    erase: 'Löschen',
+    setupHint: 'Tippe auf Felder, um sie zu belegen. Tippe nochmal zum Entfernen.',
+    doneSetup: '✓ Fertig',
+    huntInstruction: 'Tippe auf ein Feld im Raster des Gegners',
+    playAgain: 'Nochmal spielen',
+    ptsLabel: 'Pkt',
+    trapRemaining: 'verbleibende Fallen',
+    treasuresFound: 'Schätze gefunden',
+    handoffSetup: (name) => `Gib das Gerät an ${name} weiter — NICHT reinschauen! 🙈`,
+    handoffHunt: (name) => `Gib das Gerät an ${name} weiter`,
+    setupInstructions: (name) => `${name}, platziere deine Fallen und Schätze`,
+    turnMsg: (name) => `${name} ist dran`,
+    winByTreasure: (name) => `${name} hat alle Schätze gefunden! 🏆`,
+    winByLives: (name) => `${name} hat alle Leben verloren! 💀`,
+    reasonTreasure: 'Alle Schätze gefunden!',
+    reasonLives: 'Alle Leben verbraucht!',
+    foundTreasure: '+2 Punkte! 💎',
+    hitTrap: '❤️ Leben verloren! 🪤',
+    emptyCell: 'Nichts hier... 😅',
+    gridsReveal: 'Die versteckten Raster:',
+    p1grid: (name) => `${name}'s Versteck`,
+    p2grid: (name) => `${name}'s Versteck`,
+    trapRemainingSetup: (n, max) => `🪤 ${n}/${max} gesetzt`,
+    treasureRemainingSetup: (n, max) => `💎 ${n}/${max} gesetzt`,
+  },
+  en: {
+    backToGames: 'Back to Games',
+    backToGames2: '← All Games',
+    startSubtitle: 'Plant traps, find treasure, outsmart your opponent!',
+    howItWorksTitle: 'How it works:',
+    how1: 'Each player secretly places 4 traps 🪤 and 3 treasures 💎 on their grid',
+    how2: 'Then take turns probing your opponent\'s grid',
+    how3: '💎 Found treasure = +2 pts, 🪤 Hit a trap = lose a ❤️',
+    how4: 'Find all treasures or drain your opponent\'s lives to win!',
+    player1name: 'Player 1 Name',
+    player2name: 'Player 2 Name',
+    startGame: 'Start Game',
+    iAmReady: 'I\'m ready!',
+    setupTitle: 'Place your traps & treasures',
+    placeTraps: 'Traps',
+    placeTreasures: 'Treasures',
+    erase: 'Erase',
+    setupHint: 'Tap cells to place items. Tap again to remove.',
+    doneSetup: '✓ Done',
+    huntInstruction: 'Tap a cell on your opponent\'s grid',
+    playAgain: 'Play Again',
+    ptsLabel: 'pts',
+    handoffSetup: (name) => `Pass the device to ${name} — NO PEEKING! 🙈`,
+    handoffHunt: (name) => `Pass the device to ${name}`,
+    setupInstructions: (name) => `${name}, place your traps and treasures`,
+    turnMsg: (name) => `${name}'s turn`,
+    winByTreasure: (name) => `${name} found all the treasure! 🏆`,
+    winByLives: (name) => `${name} ran out of lives! 💀`,
+    reasonTreasure: 'All treasures found!',
+    reasonLives: 'All lives lost!',
+    foundTreasure: '+2 points! 💎',
+    hitTrap: 'Lost a life! 🪤',
+    emptyCell: 'Nothing here... 😅',
+    gridsReveal: 'The hidden grids:',
+    p1grid: (name) => `${name}'s Hideout`,
+    p2grid: (name) => `${name}'s Hideout`,
+    trapRemainingSetup: (n, max) => `🪤 ${n}/${max} set`,
+    treasureRemainingSetup: (n, max) => `💎 ${n}/${max} set`,
+  },
+  fr: {
+    backToGames: 'Retour aux Jeux',
+    backToGames2: '← Tous les jeux',
+    startSubtitle: 'Pose des pièges, trouve des trésors, déjoue ton adversaire !',
+    howItWorksTitle: 'Comment ça marche :',
+    how1: 'Chaque joueur place secrètement 4 pièges 🪤 et 3 trésors 💎 sur sa grille',
+    how2: 'Puis explorez à tour de rôle la grille de l\'adversaire',
+    how3: '💎 Trésor trouvé = +2 pts, 🪤 Piège déclenché = perte d\'une ❤️',
+    how4: 'Trouvez tous les trésors ou épuisez les vies adverses pour gagner !',
+    player1name: 'Nom Joueur 1',
+    player2name: 'Nom Joueur 2',
+    startGame: 'Démarrer',
+    iAmReady: 'Je suis prêt !',
+    setupTitle: 'Place tes pièges & trésors',
+    placeTraps: 'Pièges',
+    placeTreasures: 'Trésors',
+    erase: 'Effacer',
+    setupHint: 'Touche les cases pour placer des objets. Retouche pour retirer.',
+    doneSetup: '✓ Terminé',
+    huntInstruction: 'Touche une case sur la grille adverse',
+    playAgain: 'Rejouer',
+    ptsLabel: 'pts',
+    handoffSetup: (name) => `Passe l'appareil à ${name} — NE REGARDE PAS ! 🙈`,
+    handoffHunt: (name) => `Passe l'appareil à ${name}`,
+    setupInstructions: (name) => `${name}, place tes pièges et trésors`,
+    turnMsg: (name) => `Tour de ${name}`,
+    winByTreasure: (name) => `${name} a trouvé tous les trésors ! 🏆`,
+    winByLives: (name) => `${name} n'a plus de vies ! 💀`,
+    reasonTreasure: 'Tous les trésors trouvés !',
+    reasonLives: 'Toutes les vies perdues !',
+    foundTreasure: '+2 points ! 💎',
+    hitTrap: 'Vie perdue ! 🪤',
+    emptyCell: 'Rien ici... 😅',
+    gridsReveal: 'Les grilles cachées :',
+    p1grid: (name) => `Cachette de ${name}`,
+    p2grid: (name) => `Cachette de ${name}`,
+    trapRemainingSetup: (n, max) => `🪤 ${n}/${max} posés`,
+    treasureRemainingSetup: (n, max) => `💎 ${n}/${max} posés`,
+  },
+  it: {
+    backToGames: 'Torna ai Giochi',
+    backToGames2: '← Tutti i giochi',
+    startSubtitle: 'Pianta trappole, trova tesori, supera il tuo avversario!',
+    howItWorksTitle: 'Come funziona:',
+    how1: 'Ogni giocatore piazza segretamente 4 trappole 🪤 e 3 tesori 💎 sulla sua griglia',
+    how2: 'Poi esplorate a turno la griglia dell\'avversario',
+    how3: '💎 Tesoro trovato = +2 punti, 🪤 Trappola colpita = perde una ❤️',
+    how4: 'Trova tutti i tesori o esaurisci le vite avversarie per vincere!',
+    player1name: 'Nome Giocatore 1',
+    player2name: 'Nome Giocatore 2',
+    startGame: 'Inizia',
+    iAmReady: 'Sono pronto!',
+    setupTitle: 'Piazza trappole e tesori',
+    placeTraps: 'Trappole',
+    placeTreasures: 'Tesori',
+    erase: 'Cancella',
+    setupHint: 'Tocca le celle per posizionare. Tocca di nuovo per rimuovere.',
+    doneSetup: '✓ Fatto',
+    huntInstruction: 'Tocca una cella nella griglia avversaria',
+    playAgain: 'Gioca ancora',
+    ptsLabel: 'pti',
+    handoffSetup: (name) => `Passa il dispositivo a ${name} — NON SPIARE! 🙈`,
+    handoffHunt: (name) => `Passa il dispositivo a ${name}`,
+    setupInstructions: (name) => `${name}, piazza le tue trappole e tesori`,
+    turnMsg: (name) => `Turno di ${name}`,
+    winByTreasure: (name) => `${name} ha trovato tutti i tesori! 🏆`,
+    winByLives: (name) => `${name} ha esaurito le vite! 💀`,
+    reasonTreasure: 'Tutti i tesori trovati!',
+    reasonLives: 'Tutte le vite esaurite!',
+    foundTreasure: '+2 punti! 💎',
+    hitTrap: 'Vita persa! 🪤',
+    emptyCell: 'Niente qui... 😅',
+    gridsReveal: 'Le griglie nascoste:',
+    p1grid: (name) => `Nascondiglio di ${name}`,
+    p2grid: (name) => `Nascondiglio di ${name}`,
+    trapRemainingSetup: (n, max) => `🪤 ${n}/${max} piazzati`,
+    treasureRemainingSetup: (n, max) => `💎 ${n}/${max} piazzati`,
+  },
+  es: {
+    backToGames: 'Volver a Juegos',
+    backToGames2: '← Todos los juegos',
+    startSubtitle: '¡Planta trampas, encuentra tesoros, supera a tu rival!',
+    howItWorksTitle: 'Cómo funciona:',
+    how1: 'Cada jugador coloca secretamente 4 trampas 🪤 y 3 tesoros 💎 en su cuadrícula',
+    how2: 'Luego explorad por turnos la cuadrícula del rival',
+    how3: '💎 Tesoro encontrado = +2 pts, 🪤 Trampa activada = pierde una ❤️',
+    how4: '¡Encuentra todos los tesoros o agota las vidas del rival para ganar!',
+    player1name: 'Nombre Jugador 1',
+    player2name: 'Nombre Jugador 2',
+    startGame: 'Iniciar',
+    iAmReady: '¡Estoy listo!',
+    setupTitle: 'Coloca tus trampas y tesoros',
+    placeTraps: 'Trampas',
+    placeTreasures: 'Tesoros',
+    erase: 'Borrar',
+    setupHint: 'Toca las casillas para colocar objetos. Toca de nuevo para quitar.',
+    doneSetup: '✓ Listo',
+    huntInstruction: 'Toca una casilla en la cuadrícula rival',
+    playAgain: 'Jugar de nuevo',
+    ptsLabel: 'pts',
+    handoffSetup: (name) => `Pasa el dispositivo a ${name} — ¡NO MIRES! 🙈`,
+    handoffHunt: (name) => `Pasa el dispositivo a ${name}`,
+    setupInstructions: (name) => `${name}, coloca tus trampas y tesoros`,
+    turnMsg: (name) => `Turno de ${name}`,
+    winByTreasure: (name) => `¡${name} encontró todos los tesoros! 🏆`,
+    winByLives: (name) => `¡${name} se quedó sin vidas! 💀`,
+    reasonTreasure: '¡Todos los tesoros encontrados!',
+    reasonLives: '¡Todas las vidas agotadas!',
+    foundTreasure: '+2 puntos! 💎',
+    hitTrap: '¡Vida perdida! 🪤',
+    emptyCell: 'Nada aquí... 😅',
+    gridsReveal: 'Las cuadrículas ocultas:',
+    p1grid: (name) => `Escondite de ${name}`,
+    p2grid: (name) => `Escondite de ${name}`,
+    trapRemainingSetup: (n, max) => `🪤 ${n}/${max} colocadas`,
+    treasureRemainingSetup: (n, max) => `💎 ${n}/${max} colocados`,
+  },
+};
+
+const { t, lang, translatePage } = initI18n(TRANSLATIONS);
+
+// ===================== GAME STATE =====================
+const COLS = 7, ROWS = 5;
+const MAX_TRAPS = 4, MAX_TREASURES = 3;
+const MAX_LIVES = 3;
+
+let state = null;
+let setupPlayerIdx = 0;
+let currentMode = 'trap';
+let huntCurrentPlayer = 0; // which player is currently hunting (0 or 1)
+let handoffCallback = null;
+
+// ===================== GRID LOGIC =====================
+function createGrid() {
+  const cells = [];
+  for (let i = 0; i < ROWS * COLS; i++) {
+    cells.push({ type: 'empty', revealed: false });
+  }
+  return { cols: COLS, rows: ROWS, cells };
+}
+
+function cellIdx(x, y) { return y * COLS + x; }
+
+function canPlace(grid, x, y) {
+  if (x < 0 || x >= COLS || y < 0 || y >= ROWS) return false;
+  return grid.cells[cellIdx(x, y)].type === 'empty';
+}
+
+function toggleCell(grid, x, y, type) {
+  if (x < 0 || x >= COLS || y < 0 || y >= ROWS) return false;
+  const cell = grid.cells[cellIdx(x, y)];
+  if (type === 'erase') {
+    cell.type = 'empty';
+    return true;
+  }
+  if (cell.type === type) {
+    cell.type = 'empty'; // toggle off
+    return true;
+  }
+  if (cell.type !== 'empty') return false; // occupied
+  cell.type = type;
+  return true;
+}
+
+function probeCell(grid, x, y) {
+  if (x < 0 || x >= COLS || y < 0 || y >= ROWS) return null;
+  const cell = grid.cells[cellIdx(x, y)];
+  if (cell.revealed) return null;
+  cell.revealed = true;
+  return cell.type;
+}
+
+function countType(grid, type, revealedOnly = false) {
+  return grid.cells.filter(c => (!revealedOnly || c.revealed) && c.type === type).length;
+}
+
+// ===================== SCREEN UTILS =====================
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  translatePage();
+}
+
+// ===================== START =====================
+document.getElementById('btnStart').addEventListener('click', () => {
+  const p1Name = document.getElementById('inputP1').value.trim() || 'Spieler 1';
+  const p2Name = document.getElementById('inputP2').value.trim() || 'Spieler 2';
+
+  state = {
+    players: [
+      { name: p1Name, lives: MAX_LIVES, score: 0 },
+      { name: p2Name, lives: MAX_LIVES, score: 0 },
+    ],
+    grids: [createGrid(), createGrid()],
+  };
+
+  setupPlayerIdx = 0;
+  startSetupPhase(0);
+});
+
+// ===================== HANDOFF =====================
+function showHandoff(emoji, title, msg, callback) {
+  document.getElementById('handoffEmoji').textContent = emoji;
+  document.getElementById('handoffTitle').textContent = title;
+  document.getElementById('handoffMsg').textContent = msg;
+  handoffCallback = callback;
+  showScreen('screenHandoff');
+}
+
+document.getElementById('btnHandoffReady').addEventListener('click', () => {
+  if (handoffCallback) handoffCallback();
+});
+
+// ===================== SETUP PHASE =====================
+function startSetupPhase(playerIdx) {
+  const player = state.players[playerIdx];
+  currentMode = 'trap';
+
+  // Show handoff first
+  const txt = TRANSLATIONS[lang()];
+  const msg = txt.handoffSetup ? txt.handoffSetup(player.name) : `Gib das Gerät an ${player.name}`;
+  showHandoff('🙈', player.name, msg, () => {
+    renderSetupScreen(playerIdx);
+    showScreen('screenSetup');
+  });
+}
+
+function renderSetupScreen(playerIdx) {
+  const player = state.players[playerIdx];
+  const grid = state.grids[playerIdx];
+  const badge = document.getElementById('setupPlayerBadge');
+  badge.textContent = `P${playerIdx + 1}`;
+  badge.className = 'player-badge ' + (playerIdx === 0 ? 'p1-color' : 'p2-color');
+  document.getElementById('setupPlayerName').textContent = player.name;
+
+  selectMode('trap');
+  updateSetupCounters(grid);
+  renderSetupGrid(grid, playerIdx);
+}
+
+function selectMode(mode) {
+  currentMode = mode;
+  ['trap', 'treasure', 'erase'].forEach(m => {
+    const btn = document.getElementById('mode' + m.charAt(0).toUpperCase() + m.slice(1) + 's');
+    if (!btn) return;
+    btn.className = 'mode-btn';
+  });
+  document.getElementById('modeTraps').className = 'mode-btn' + (mode === 'trap' ? ' active-trap' : '');
+  document.getElementById('modeTreasures').className = 'mode-btn' + (mode === 'treasure' ? ' active-treasure' : '');
+  document.getElementById('modeErase').className = 'mode-btn' + (mode === 'erase' ? ' active-erase' : '');
+}
+
+function updateSetupCounters(grid) {
+  const traps = countType(grid, 'trap');
+  const treasures = countType(grid, 'treasure');
+  const txt = TRANSLATIONS[lang()];
+  document.getElementById('trapCounter').textContent = txt.trapRemainingSetup
+    ? txt.trapRemainingSetup(traps, MAX_TRAPS)
+    : `🪤 ${traps}/${MAX_TRAPS}`;
+  document.getElementById('treasureCounter').textContent = txt.treasureRemainingSetup
+    ? txt.treasureRemainingSetup(treasures, MAX_TREASURES)
+    : `💎 ${treasures}/${MAX_TREASURES}`;
+
+  const canDone = traps === MAX_TRAPS && treasures === MAX_TREASURES;
+  document.getElementById('btnSetupDone').disabled = !canDone;
+}
+
+function renderSetupGrid(grid, playerIdx) {
+  const container = document.getElementById('setupGrid');
+  container.style.gridTemplateColumns = `repeat(${COLS}, 42px)`;
+  container.innerHTML = '';
+  for (let y = 0; y < ROWS; y++) {
+    for (let x = 0; x < COLS; x++) {
+      const cell = document.createElement('div');
+      cell.className = 'cell';
+      const c = grid.cells[cellIdx(x, y)];
+      if (c.type === 'trap') { cell.classList.add('has-trap'); cell.textContent = '🪤'; }
+      else if (c.type === 'treasure') { cell.classList.add('has-treasure'); cell.textContent = '💎'; }
+      cell.addEventListener('click', () => {
+        const g = state.grids[playerIdx];
+        const cur = g.cells[cellIdx(x, y)].type;
+        // If erasing or toggling off
+        if (currentMode === 'erase') {
+          g.cells[cellIdx(x, y)].type = 'empty';
+        } else if (cur === currentMode) {
+          g.cells[cellIdx(x, y)].type = 'empty'; // toggle off
+        } else if (cur !== 'empty') {
+          // occupied by different type - do nothing
+        } else {
+          // Check limits
+          const count = countType(g, currentMode);
+          const max = currentMode === 'trap' ? MAX_TRAPS : MAX_TREASURES;
+          if (count >= max) return; // already at max
+          g.cells[cellIdx(x, y)].type = currentMode;
+        }
+        updateSetupCounters(g);
+        renderSetupGrid(g, playerIdx);
+      });
+      container.appendChild(cell);
+    }
+  }
+}
+
+document.getElementById('btnSetupDone').addEventListener('click', () => {
+  if (setupPlayerIdx === 0) {
+    setupPlayerIdx = 1;
+    startSetupPhase(1);
+  } else {
+    // Both setup done, start hunting
+    huntCurrentPlayer = 0;
+    const txt = TRANSLATIONS[lang()];
+    const p1 = state.players[0];
+    const msg = txt.handoffHunt ? txt.handoffHunt(p1.name) : `Gib das Gerät an ${p1.name}`;
+    showHandoff('🎯', '🎮 Los geht\'s!', msg, () => {
+      renderHuntScreen();
+      showScreen('screenHunt');
+    });
+  }
+});
+
+// ===================== HUNT PHASE =====================
+function renderHuntScreen() {
+  const hunter = state.players[huntCurrentPlayer];
+  const prey = state.players[1 - huntCurrentPlayer];
+
+  // Update status bars
+  document.getElementById('huntP1Name').textContent = state.players[0].name;
+  document.getElementById('huntP2Name').textContent = state.players[1].name;
+  updateLivesDisplay();
+  updateScoreDisplay();
+
+  // Active turn highlight
+  document.getElementById('huntP1Status').classList.toggle('active-turn', huntCurrentPlayer === 0);
+  document.getElementById('huntP2Status').classList.toggle('active-turn', huntCurrentPlayer === 1);
+
+  // Turn indicator
+  const txt = TRANSLATIONS[lang()];
+  const turnMsg = txt.turnMsg ? txt.turnMsg(hunter.name) : `${hunter.name} ist dran`;
+  document.getElementById('turnWho').textContent = turnMsg;
+
+  // Render the OPPONENT's grid (the one being hunted)
+  const opponentGrid = state.grids[1 - huntCurrentPlayer];
+  renderHuntGrid(opponentGrid);
+}
+
+function updateLivesDisplay() {
+  ['huntP1Lives', 'huntP2Lives'].forEach((id, i) => {
+    const lives = state.players[i].lives;
+    document.getElementById(id).textContent = '❤️'.repeat(lives) + '🖤'.repeat(MAX_LIVES - lives);
+  });
+}
+
+function updateScoreDisplay() {
+  const txt = TRANSLATIONS[lang()];
+  const label = txt.ptsLabel || 'Pkt';
+  document.getElementById('huntP1Score').textContent = `${state.players[0].score} ${label}`;
+  document.getElementById('huntP2Score').textContent = `${state.players[1].score} ${label}`;
+}
+
+function renderHuntGrid(grid) {
+  const container = document.getElementById('huntGrid');
+  container.style.gridTemplateColumns = `repeat(${COLS}, 42px)`;
+  container.innerHTML = '';
+
+  for (let y = 0; y < ROWS; y++) {
+    for (let x = 0; x < COLS; x++) {
+      const cell = document.createElement('div');
+      cell.className = 'cell';
+      const c = grid.cells[cellIdx(x, y)];
+
+      if (c.revealed) {
+        cell.classList.add('probed');
+        if (c.type === 'empty') { cell.classList.add('revealed-empty'); cell.textContent = '·'; }
+        else if (c.type === 'trap') { cell.classList.add('revealed-trap'); cell.textContent = '🪤'; }
+        else if (c.type === 'treasure') { cell.classList.add('revealed-treasure'); cell.textContent = '💎'; }
+      } else {
+        cell.addEventListener('click', () => onProbeCell(x, y));
+      }
+      container.appendChild(cell);
+    }
+  }
+
+  // Update hint
+  const opponentGrid = state.grids[1 - huntCurrentPlayer];
+  const treasLeft = countType(opponentGrid, 'treasure') - countType(opponentGrid, 'treasure', true);
+  const trapCount = countType(opponentGrid, 'trap') - countType(opponentGrid, 'trap', true);
+  document.getElementById('huntHint').textContent = `💎 ${treasLeft} · 🪤 ${trapCount}`;
+}
+
+function onProbeCell(x, y) {
+  const opponentGrid = state.grids[1 - huntCurrentPlayer];
+  const result = probeCell(opponentGrid, x, y);
+  if (result === null) return;
+
+  const txt = TRANSLATIONS[lang()];
+  const hunter = state.players[huntCurrentPlayer];
+
+  showProbeFeedback(result);
+
+  if (result === 'treasure') {
+    hunter.score += 2;
+    showToast(txt.foundTreasure || '+2 Punkte! 💎', 'treasure');
+  } else if (result === 'trap') {
+    const prey = state.players[1 - huntCurrentPlayer]; // actually the current hunter loses a life when they hit a trap
+    hunter.lives -= 1;
+    showToast(txt.hitTrap || '❤️ Leben verloren! 🪤', 'trap');
+  } else {
+    showToast(txt.emptyCell || 'Nichts hier... 😅', 'empty');
+  }
+
+  // Check game over
+  setTimeout(() => {
+    const gameOver = checkGameOver();
+    if (gameOver) {
+      showResultScreen(gameOver);
+    } else {
+      // Switch turn
+      huntCurrentPlayer = 1 - huntCurrentPlayer;
+      const nextPlayer = state.players[huntCurrentPlayer];
+      const msg = txt.handoffHunt ? txt.handoffHunt(nextPlayer.name) : `Gib das Gerät an ${nextPlayer.name}`;
+      showHandoff('🎯', nextPlayer.name, msg, () => {
+        renderHuntScreen();
+        showScreen('screenHunt');
+      });
+    }
+  }, 900);
+}
+
+function checkGameOver() {
+  const players = state.players;
+  const grids = state.grids;
+  const txt = TRANSLATIONS[lang()];
+
+  // Check lives
+  for (let i = 0; i < 2; i++) {
+    if (players[i].lives <= 0) {
+      const winner = 1 - i;
+      return { winner, loser: i, reason: 'lives' };
+    }
+  }
+
+  // Check all treasures found on either grid
+  for (let i = 0; i < 2; i++) {
+    const total = countType(grids[i], 'treasure');
+    const found = countType(grids[i], 'treasure', true);
+    if (total > 0 && found >= total) {
+      const winner = 1 - i;
+      return { winner, loser: i, reason: 'treasures' };
+    }
+  }
+  return null;
+}
+
+// ===================== FEEDBACK =====================
+function showProbeFeedback(type) {
+  const el = document.getElementById('probeFeedback');
+  if (type === 'treasure') el.textContent = '💎';
+  else if (type === 'trap') el.textContent = '🪤';
+  else el.textContent = '💨';
+
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 500);
+}
+
+let toastTimeout = null;
+function showToast(msg, type) {
+  // Use hint area for toast
+  const hint = document.getElementById('huntHint');
+  hint.textContent = msg;
+  hint.style.color = type === 'treasure' ? 'var(--treasure-color)' : type === 'trap' ? 'var(--trap-color)' : 'var(--text-dim)';
+  if (toastTimeout) clearTimeout(toastTimeout);
+  toastTimeout = setTimeout(() => {
+    hint.style.color = '';
+  }, 800);
+}
+
+// ===================== RESULT =====================
+function showResultScreen(gameOver) {
+  const txt = TRANSLATIONS[lang()];
+  const winner = state.players[gameOver.winner];
+  const loser = state.players[gameOver.loser];
+
+  document.getElementById('resultEmoji').textContent = gameOver.reason === 'treasure' ? '🏆' : '💀';
+  document.getElementById('resultTitle').textContent =
+    gameOver.reason === 'treasure'
+      ? (txt.winByTreasure ? txt.winByTreasure(winner.name) : `${winner.name} gewinnt!`)
+      : (txt.winByLives ? txt.winByLives(loser.name) : `${loser.name} hat keine Leben mehr!`);
+  document.getElementById('resultReason').textContent =
+    gameOver.reason === 'treasure' ? (txt.reasonTreasure || 'Alle Schätze gefunden!') : (txt.reasonLives || 'Alle Leben weg!');
+
+  document.getElementById('resultP1Score').textContent = state.players[0].score;
+  document.getElementById('resultP2Score').textContent = state.players[1].score;
+  document.getElementById('resultP1Name').textContent = state.players[0].name;
+  document.getElementById('resultP2Name').textContent = state.players[1].name;
+
+  // Reveal grids
+  const container = document.getElementById('revealGrids');
+  container.innerHTML = '';
+  const gridsRevealLabel = document.createElement('p');
+  gridsRevealLabel.style.cssText = 'width:100%;text-align:center;font-size:0.85rem;color:var(--text-dim);';
+  gridsRevealLabel.textContent = txt.gridsReveal || 'Die versteckten Raster:';
+  container.appendChild(gridsRevealLabel);
+
+  for (let pi = 0; pi < 2; pi++) {
+    const wrap = document.createElement('div');
+    wrap.className = 'reveal-grid-wrap';
+    const label = document.createElement('div');
+    label.className = 'grid-label ' + (pi === 0 ? 'p1-color' : 'p2-color');
+    const labelFn = pi === 0 ? txt.p1grid : txt.p2grid;
+    label.textContent = labelFn ? labelFn(state.players[pi].name) : state.players[pi].name;
+    wrap.appendChild(label);
+
+    const gridEl = document.createElement('div');
+    gridEl.className = 'game-grid';
+    gridEl.style.gridTemplateColumns = `repeat(${COLS}, 32px)`;
+
+    const grid = state.grids[pi];
+    for (let y = 0; y < ROWS; y++) {
+      for (let x = 0; x < COLS; x++) {
+        const cell = document.createElement('div');
+        cell.className = 'cell';
+        const c = grid.cells[cellIdx(x, y)];
+        if (c.type === 'trap') {
+          cell.classList.add(c.revealed ? 'revealed-trap' : 'has-trap');
+          cell.textContent = '🪤';
+        } else if (c.type === 'treasure') {
+          cell.classList.add(c.revealed ? 'revealed-treasure' : 'has-treasure');
+          cell.textContent = '💎';
+        } else if (c.revealed) {
+          cell.classList.add('revealed-empty');
+          cell.textContent = '·';
+        }
+        gridEl.appendChild(cell);
+      }
+    }
+    wrap.appendChild(gridEl);
+    container.appendChild(wrap);
+  }
+
+  showScreen('screenResult');
+}
+
+// ===================== PLAY AGAIN =====================
+document.getElementById('btnPlayAgain').addEventListener('click', () => {
+  document.getElementById('inputP1').value = state.players[0].name;
+  document.getElementById('inputP2').value = state.players[1].name;
+  showScreen('screenStart');
+  translatePage();
+});
+</script>
+</body>
+</html>
