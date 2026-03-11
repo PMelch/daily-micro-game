@@ -693,25 +693,62 @@ function gameLoop(ts) {
   gs.paddle = clampPaddle({ ...gs.paddle, x: targetX }, CANVAS_W);
 
   if (gs.ballLaunched) {
-    // Move ball
-    gs.ball = moveBall(gs.ball, dt);
+    // Sub-step ball movement to prevent tunneling through blocks
+    const SUB_STEP_SIZE = 4; // max pixels per sub-step (< ball radius)
+    const totalSpeed = Math.sqrt(gs.ball.vx * gs.ball.vx + gs.ball.vy * gs.ball.vy);
+    const totalDist = totalSpeed * dt;
+    const numSteps = Math.max(1, Math.ceil(totalDist / SUB_STEP_SIZE));
+    const subDt = dt / numSteps;
+    let lost = false;
+    let colorChanged = false;
+    let padHit = false;
 
-    // Wall collisions
-    const wall = checkWallCollision(gs.ball, CANVAS_W, CANVAS_H);
-    gs.ball = wall.ball;
+    for (let step = 0; step < numSteps; step++) {
+      gs.ball = moveBall(gs.ball, subDt);
 
-    if (wall.lost) {
-      // Lost a life
+      // Wall collisions
+      const wall = checkWallCollision(gs.ball, CANVAS_W, CANVAS_H);
+      gs.ball = wall.ball;
+
+      if (wall.lost) {
+        lost = true;
+        break;
+      }
+
+      // Paddle collision
+      const pad = checkPaddleCollision(gs.ball, gs.paddle);
+      gs.ball = pad.ball;
+      if (pad.hit) padHit = true;
+
+      // Block collisions (check ALL blocks per sub-step, not just one)
+      for (let i = 0; i < gs.blocks.length; i++) {
+        const res = checkBlockCollision(gs.ball, gs.blocks[i]);
+        if (res.hit) {
+          gs.ball      = res.ball;
+          gs.blocks[i] = res.block;
+
+          if (res.destroyed) {
+            const blk = gs.blocks[i];
+            const pts = blk.color === PRISM ? 50 : 10;
+            gs.score += pts;
+            spawnParticles(blk.x + blk.w/2, blk.y + blk.h/2, blk.color === PRISM ? PRISM : res.block.color, blk.color===PRISM?20:10);
+            if (res.ball.color !== gs.ball.color) colorChanged = true;
+            gs.ball = res.ball;
+          }
+          break; // one block per sub-step is fine (sub-steps are small enough)
+        }
+      }
+    }
+
+    if (lost) {
       gs.lives--;
       updateHUD();
       if (gs.lives <= 0) {
-        // Game over
         gs.running = false;
         showOverlay('overlay-gameover');
         document.getElementById('final-score').textContent = gs.score;
         return;
       } else {
-        // Reset ball
         gs.ball = createBall(
           gs.paddle.x + gs.paddle.w/2,
           PADDLE_Y - 20,
@@ -722,31 +759,7 @@ function gameLoop(ts) {
       }
     }
 
-    // Paddle collision
-    const pad = checkPaddleCollision(gs.ball, gs.paddle);
-    gs.ball = pad.ball;
-
-    // Block collisions
-    let colorChanged = false;
-    for (let i=0; i<gs.blocks.length; i++) {
-      const res = checkBlockCollision(gs.ball, gs.blocks[i]);
-      if (res.hit) {
-        gs.ball      = res.ball;
-        gs.blocks[i] = res.block;
-
-        if (res.destroyed) {
-          const blk = gs.blocks[i];
-          const pts = blk.color === PRISM ? 50 : 10;
-          gs.score += pts;
-          spawnParticles(blk.x + blk.w/2, blk.y + blk.h/2, blk.color === PRISM ? PRISM : res.block.color, blk.color===PRISM?20:10);
-          if (res.ball.color !== gs.ball.color) colorChanged = true;
-          gs.ball = res.ball; // apply potential color change from prism
-        }
-        break; // one block per frame
-      }
-    }
-
-    if (colorChanged || pad.hit) updateHUD();
+    if (colorChanged || padHit) updateHUD();
 
     // Check level complete
     if (isLevelComplete(gs.blocks)) {
