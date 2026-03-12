@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title data-i18n="pageTitle">Neon Stack</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #0a0a1a;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      height: 100dvh;
+      font-family: system-ui, -apple-system, sans-serif;
+    }
+
+    .back-bar {
+      width: 100%;
+      background: #0a0a1a;
+      padding: 0.5rem 1rem;
+      border-bottom: 1px solid #333;
+    }
+    .back-bar a {
+      color: #ffcc00;
+      text-decoration: none;
+      font-size: 0.9rem;
+    }
+    .back-bar a:hover { text-decoration: underline; }
+
+    #canvas-wrapper {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      overflow: hidden;
+    }
+
+    canvas {
+      display: block;
+      touch-action: none;
+      cursor: pointer;
+      image-rendering: pixelated;
+    }
+  </style>
+</head>
+<body>
+  <div class="back-bar"><a href="/" data-i18n="backLink">← Zurück</a></div>
+  <div id="canvas-wrapper">
+    <canvas id="gameCanvas"></canvas>
+  </div>
+
+  <script src="/shared/i18n.js"></script>
+  <script type="module">
+    import {
+      calculateOverlap,
+      isPerfectDrop,
+      getNextSpeed,
+      computeScore,
+      getPlatformScreenY,
+      clampMoving,
+    } from './game-logic.js';
+
+    // ─── Translations ────────────────────────────────────────────────────────────
+    const TRANSLATIONS = {
+      de: {
+        pageTitle: 'Neon Stack',
+        backLink: '← Zurück',
+        tapToStart: 'Tippen zum Starten',
+        tapToDrop: 'Tippen zum Fallen',
+        perfect: 'PERFEKT! ✦',
+        perfectBonus: '+STREAK BONUS!',
+        gameOver: 'GAME OVER',
+        scoreLabel: 'PUNKTE',
+        levelLabel: 'LEVEL',
+        bestLabel: 'REKORD',
+        tapToRestart: 'Nochmal tippen',
+        newRecord: '🏆 NEUER REKORD!',
+        instructions: 'Tippe um den Block fallen zu lassen',
+        subtitle: 'Wie hoch kannst du stapeln?',
+        howToPlay: 'LEERTASTE  /  TIPPEN  /  KLICKEN',
+      },
+      en: {
+        pageTitle: 'Neon Stack',
+        backLink: '← Back to Games',
+        tapToStart: 'Tap to Start',
+        tapToDrop: 'Tap to Drop',
+        perfect: 'PERFECT! ✦',
+        perfectBonus: '+STREAK BONUS!',
+        gameOver: 'GAME OVER',
+        scoreLabel: 'SCORE',
+        levelLabel: 'LEVEL',
+        bestLabel: 'BEST',
+        tapToRestart: 'Tap to Play Again',
+        newRecord: '🏆 NEW RECORD!',
+        instructions: 'Tap to drop the block',
+        subtitle: 'How high can you stack?',
+        howToPlay: 'SPACE  /  TAP  /  CLICK',
+      },
+      fr: {
+        pageTitle: 'Neon Stack',
+        backLink: '← Retour',
+        tapToStart: 'Toucher pour Commencer',
+        tapToDrop: 'Toucher pour Poser',
+        perfect: 'PARFAIT! ✦',
+        perfectBonus: '+BONUS SÉRIE!',
+        gameOver: 'FIN DE PARTIE',
+        scoreLabel: 'SCORE',
+        levelLabel: 'NIVEAU',
+        bestLabel: 'RECORD',
+        tapToRestart: 'Toucher pour Rejouer',
+        newRecord: '🏆 NOUVEAU RECORD!',
+        instructions: 'Touche pour poser le bloc',
+        subtitle: 'Jusqu\'où peux-tu empiler?',
+        howToPlay: 'ESPACE  /  TOUCHER  /  CLIQUER',
+      },
+      it: {
+        pageTitle: 'Neon Stack',
+        backLink: '← Indietro',
+        tapToStart: 'Tocca per Iniziare',
+        tapToDrop: 'Tocca per Posare',
+        perfect: 'PERFETTO! ✦',
+        perfectBonus: '+BONUS SERIE!',
+        gameOver: 'GAME OVER',
+        scoreLabel: 'PUNTI',
+        levelLabel: 'LIVELLO',
+        bestLabel: 'RECORD',
+        tapToRestart: 'Tocca per Ricominciare',
+        newRecord: '🏆 NUOVO RECORD!',
+        instructions: 'Tocca per posare il blocco',
+        subtitle: 'Quanto in alto puoi impilare?',
+        howToPlay: 'SPAZIO  /  TOCCA  /  CLICCA',
+      },
+      es: {
+        pageTitle: 'Neon Stack',
+        backLink: '← Volver',
+        tapToStart: 'Tocar para Empezar',
+        tapToDrop: 'Tocar para Soltar',
+        perfect: '¡PERFECTO! ✦',
+        perfectBonus: '¡+BONO RACHA!',
+        gameOver: 'FIN DEL JUEGO',
+        scoreLabel: 'PUNTOS',
+        levelLabel: 'NIVEL',
+        bestLabel: 'RÉCORD',
+        tapToRestart: 'Toca para Volver a Jugar',
+        newRecord: '🏆 ¡NUEVO RÉCORD!',
+        instructions: 'Toca para soltar el bloque',
+        subtitle: '¿Qué tan alto puedes apilar?',
+        howToPlay: 'ESPACIO  /  TOCAR  /  CLIC',
+      },
+    };
+
+    const { t, onLangChange } = initI18n(TRANSLATIONS);
+
+    // ─── Constants ───────────────────────────────────────────────────────────────
+    const NATIVE_W = 360;
+    const NATIVE_H = 640;
+    const PLATFORM_H = 22;
+    const ACTIVE_Y = 95;   // Moving platform screen Y (in native coords)
+    const BASE_WIDTH = 260;
+    const PERFECT_THRESHOLD = 3;
+
+    const COLORS = [
+      '#ff6b6b', '#feca57', '#48dbfb', '#ff9ff3', '#54a0ff',
+      '#5f27cd', '#00d2d3', '#ff9f43', '#2ecc71', '#e74c3c',
+      '#3498db', '#9b59b6', '#1abc9c', '#f39c12', '#e91e63',
+      '#fd79a8', '#6c5ce7', '#00cec9', '#fdcb6e', '#a29bfe',
+    ];
+
+    // ─── Canvas Setup ────────────────────────────────────────────────────────────
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    function resizeCanvas() {
+      const wrapper = document.getElementById('canvas-wrapper');
+      const maxW = wrapper.clientWidth;
+      const maxH = wrapper.clientHeight;
+      const aspect = NATIVE_W / NATIVE_H;
+      let w, h;
+      if (maxW / maxH < aspect) {
+        w = maxW;
+        h = w / aspect;
+      } else {
+        h = maxH;
+        w = h * aspect;
+      }
+      canvas.width = Math.floor(w);
+      canvas.height = Math.floor(h);
+      canvas.style.width = canvas.width + 'px';
+      canvas.style.height = canvas.height + 'px';
+    }
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+
+    // ─── Game State ──────────────────────────────────────────────────────────────
+    let state;
+
+    function initGame() {
+      state = {
+        phase: 'title',   // 'title' | 'playing' | 'gameover'
+        platforms: [{
+          x: (NATIVE_W - BASE_WIDTH) / 2,
+          width: BASE_WIDTH,
+          color: COLORS[0],
+          level: 0,
+        }],
+        moving: {
+          x: -BASE_WIDTH,
+          width: BASE_WIDTH,
+          direction: 1,
+          speed: getNextSpeed(0),
+          color: COLORS[1],
+        },
+        currentLevel: 1,
+        score: 0,
+        bestScore: parseInt(localStorage.getItem('neonstack-best') || '0'),
+        perfectStreak: 0,
+        // Flash effects
+        perfectFlashTimer: 0,
+        streakBonusTimer: 0,
+        dropFlashTimer: 0,
+        gameOverTimer: 0,
+        // Particles
+        particles: [],
+        // Title animation
+        titleFrame: 0,
+        // Perfect snap animation
+        snapEffect: 0,
+      };
+    }
+
+    // ─── Drop Logic ──────────────────────────────────────────────────────────────
+    function drop() {
+      if (state.phase !== 'playing') return;
+
+      const prev = state.platforms[state.platforms.length - 1];
+      const { overlapX, overlapWidth } = calculateOverlap(state.moving, prev);
+
+      if (overlapWidth <= 0) {
+        // Missed completely — game over
+        spawnMissParticles();
+        state.phase = 'gameover';
+        state.gameOverTimer = 0;
+        if (state.score >= state.bestScore && state.score > 0) {
+          localStorage.setItem('neonstack-best', state.score);
+          state.bestScore = state.score;
+        }
+        return;
+      }
+
+      const perfect = isPerfectDrop(state.moving, prev, PERFECT_THRESHOLD);
+      let newX, newWidth;
+
+      if (perfect) {
+        // Snap to exact previous position for satisfying feel
+        newX = prev.x;
+        newWidth = prev.width;
+        state.perfectStreak++;
+        state.perfectFlashTimer = 90;
+        if (state.perfectStreak >= 3) state.streakBonusTimer = 60;
+        state.snapEffect = 12;
+      } else {
+        newX = overlapX;
+        newWidth = overlapWidth;
+        // Spawn chop particles
+        spawnChopParticles(prev);
+        state.perfectStreak = 0;
+        state.dropFlashTimer = 8;
+      }
+
+      const pts = computeScore(perfect, perfect ? state.perfectStreak - 1 : 0);
+      state.score += pts;
+
+      // Place the new platform
+      state.platforms.push({
+        x: newX,
+        width: newWidth,
+        color: state.moving.color,
+        level: state.currentLevel,
+      });
+
+      state.currentLevel++;
+
+      // Prepare next moving platform
+      const nextSpeed = getNextSpeed(state.currentLevel);
+      const nextColor = COLORS[state.currentLevel % COLORS.length];
+      const fromLeft = state.currentLevel % 2 === 1;
+
+      state.moving = {
+        x: fromLeft ? -newWidth : NATIVE_W,
+        width: newWidth,
+        direction: fromLeft ? 1 : -1,
+        speed: nextSpeed,
+        color: nextColor,
+      };
+    }
+
+    function spawnChopParticles(prev) {
+      const movingRight = state.moving.x + state.moving.width / 2 >
+                          prev.x + prev.width / 2;
+
+      const choppedX = movingRight
+        ? prev.x + prev.width // piece falling to the right... wait
+        : state.moving.x;
+
+      // Determine which side was chopped
+      const { overlapX, overlapWidth } = calculateOverlap(state.moving, prev);
+      const choppedWidth = state.moving.width - overlapWidth;
+      const chopX = state.moving.x < prev.x
+        ? state.moving.x
+        : overlapX + overlapWidth;
+
+      const baseY = getPlatformScreenY(state.currentLevel, state.currentLevel, ACTIVE_Y, PLATFORM_H);
+
+      for (let i = 0; i < 12; i++) {
+        state.particles.push({
+          x: chopX + Math.random() * Math.max(choppedWidth, 4),
+          y: baseY + Math.random() * PLATFORM_H,
+          vx: (Math.random() - 0.5) * 4 + (state.moving.x < prev.x ? -1 : 1) * 1.5,
+          vy: -Math.random() * 3 - 1,
+          color: state.moving.color,
+          life: 50 + Math.floor(Math.random() * 20),
+          maxLife: 70,
+          size: Math.random() * 5 + 2,
+        });
+      }
+    }
+
+    function spawnMissParticles() {
+      const baseY = ACTIVE_Y;
+      for (let i = 0; i < 20; i++) {
+        state.particles.push({
+          x: state.moving.x + Math.random() * state.moving.width,
+          y: baseY + Math.random() * PLATFORM_H,
+          vx: (Math.random() - 0.5) * 6,
+          vy: -Math.random() * 4 - 2,
+          color: state.moving.color,
+          life: 80,
+          maxLife: 80,
+          size: Math.random() * 7 + 3,
+        });
+      }
+    }
+
+    // ─── Update ──────────────────────────────────────────────────────────────────
+    function update() {
+      state.titleFrame++;
+
+      if (state.phase === 'playing') {
+        // Move the platform
+        state.moving.x += state.moving.direction * state.moving.speed;
+        // Clamp with direction reversal
+        const clamped = clampMoving(state.moving, NATIVE_W);
+        state.moving.direction = clamped.direction;
+
+        // Decrement flash timers
+        if (state.perfectFlashTimer > 0) state.perfectFlashTimer--;
+        if (state.streakBonusTimer > 0) state.streakBonusTimer--;
+        if (state.dropFlashTimer > 0) state.dropFlashTimer--;
+        if (state.snapEffect > 0) state.snapEffect--;
+      }
+
+      if (state.phase === 'gameover') {
+        state.gameOverTimer++;
+      }
+
+      // Update particles
+      state.particles = state.particles.filter(p => p.life > 0);
+      state.particles.forEach(p => {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vy += 0.18;
+        p.vx *= 0.98;
+        p.life--;
+      });
+    }
+
+    // ─── Draw Helpers ─────────────────────────────────────────────────────────────
+    function scaleX() { return canvas.width / NATIVE_W; }
+    function scaleY() { return canvas.height / NATIVE_H; }
+    function sx(v)   { return v * scaleX(); }
+    function sy(v)   { return v * scaleY(); }
+
+    function drawRect(x, y, w, h, color, glow = 0) {
+      if (glow > 0) {
+        ctx.shadowColor = color;
+        ctx.shadowBlur = glow;
+      }
+      ctx.fillStyle = color;
+      ctx.fillRect(sx(x), sy(y), sx(w), sy(h));
+      if (glow > 0) ctx.shadowBlur = 0;
+    }
+
+    function drawPlatform(platform, screenY, isMoving = false) {
+      const { x, width, color } = platform;
+      const h = PLATFORM_H;
+      const px = sx(x), py = sy(screenY), pw = sx(width), ph = sy(h);
+
+      ctx.shadowColor = color;
+      ctx.shadowBlur = isMoving ? 22 : 12;
+
+      // Body gradient
+      const grad = ctx.createLinearGradient(px, py, px, py + ph);
+      const light = lighten(color, 40);
+      grad.addColorStop(0, light);
+      grad.addColorStop(0.5, color);
+      grad.addColorStop(1, darken(color, 20));
+      ctx.fillStyle = grad;
+      ctx.fillRect(px, py, pw, ph);
+
+      // Top shine
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = 'rgba(255,255,255,0.25)';
+      ctx.fillRect(px, py, pw, sy(h * 0.3));
+
+      // Moving platform shimmer
+      if (isMoving) {
+        const t2 = (Date.now() / 400) % (Math.PI * 2);
+        const alpha = 0.12 + 0.08 * Math.sin(t2);
+        ctx.fillStyle = `rgba(255,255,255,${alpha})`;
+        ctx.fillRect(px, py, pw, ph);
+
+        // Side arrows hinting direction
+        const arrowAlpha = 0.4 + 0.3 * Math.sin(t2 * 2);
+        ctx.fillStyle = `rgba(255,255,255,${arrowAlpha})`;
+        ctx.font = `bold ${sy(10)}px system-ui`;
+        ctx.textAlign = 'center';
+        const arrow = platform.direction > 0 ? '▶' : '◀';
+        ctx.fillText(arrow, sx(x + width / 2), sy(screenY + h / 2 + 3));
+      }
+
+      ctx.shadowBlur = 0;
+    }
+
+    function lighten(hex, amt) {
+      return adjustColor(hex, amt);
+    }
+    function darken(hex, amt) {
+      return adjustColor(hex, -amt);
+    }
+    function adjustColor(hex, amt) {
+      const r = Math.min(255, Math.max(0, parseInt(hex.slice(1, 3), 16) + amt));
+      const g = Math.min(255, Math.max(0, parseInt(hex.slice(3, 5), 16) + amt));
+      const b = Math.min(255, Math.max(0, parseInt(hex.slice(5, 7), 16) + amt));
+      return `rgb(${r},${g},${b})`;
+    }
+
+    function drawBackground() {
+      ctx.fillStyle = '#0a0a1a';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Subtle scanlines for retro feel
+      for (let y = 0; y < canvas.height; y += sy(4)) {
+        ctx.fillStyle = 'rgba(0,0,0,0.08)';
+        ctx.fillRect(0, y, canvas.width, sy(1.5));
+      }
+
+      // Faint vertical guide lines
+      ctx.strokeStyle = 'rgba(255,255,255,0.025)';
+      ctx.lineWidth = 0.5;
+      for (let x = 0; x <= NATIVE_W; x += 40) {
+        ctx.beginPath();
+        ctx.moveTo(sx(x), 0);
+        ctx.lineTo(sx(x), canvas.height);
+        ctx.stroke();
+      }
+    }
+
+    function drawHUD() {
+      // Score
+      ctx.fillStyle = 'rgba(255,255,255,0.9)';
+      ctx.font = `bold ${sy(20)}px system-ui`;
+      ctx.textAlign = 'left';
+      ctx.shadowColor = 'rgba(255,255,255,0.3)';
+      ctx.shadowBlur = 4;
+      ctx.fillText(t('scoreLabel') + ' ' + state.score, sx(14), sy(40));
+
+      // Level
+      ctx.textAlign = 'right';
+      ctx.fillText(t('levelLabel') + ' ' + state.currentLevel, sx(NATIVE_W - 14), sy(40));
+      ctx.shadowBlur = 0;
+
+      // Best
+      if (state.bestScore > 0) {
+        ctx.fillStyle = 'rgba(255,204,0,0.7)';
+        ctx.font = `${sy(13)}px system-ui`;
+        ctx.textAlign = 'left';
+        ctx.fillText(t('bestLabel') + ' ' + state.bestScore, sx(14), sy(60));
+      }
+
+      // Perfect flash
+      if (state.perfectFlashTimer > 0) {
+        const alpha = Math.min(1, state.perfectFlashTimer / 25);
+        const bounce = Math.sin(state.perfectFlashTimer / 90 * Math.PI) * sy(8);
+        ctx.fillStyle = `rgba(255,230,0,${alpha})`;
+        ctx.font = `bold ${sy(26)}px system-ui`;
+        ctx.textAlign = 'center';
+        ctx.shadowColor = '#ffcc00';
+        ctx.shadowBlur = 20 * alpha;
+        ctx.fillText(t('perfect'), sx(NATIVE_W / 2), sy(75) - bounce);
+        ctx.shadowBlur = 0;
+      }
+
+      // Streak bonus flash
+      if (state.streakBonusTimer > 0) {
+        const alpha = Math.min(1, state.streakBonusTimer / 20);
+        ctx.fillStyle = `rgba(100,255,150,${alpha})`;
+        ctx.font = `bold ${sy(16)}px system-ui`;
+        ctx.textAlign = 'center';
+        ctx.shadowColor = '#00ff88';
+        ctx.shadowBlur = 15 * alpha;
+        ctx.fillText(t('perfectBonus'), sx(NATIVE_W / 2), sy(105));
+        ctx.shadowBlur = 0;
+      }
+
+      // Snap effect ring
+      if (state.snapEffect > 0) {
+        const last = state.platforms[state.platforms.length - 1];
+        const sy2 = getPlatformScreenY(last.level, state.currentLevel, ACTIVE_Y, PLATFORM_H);
+        const prog = 1 - state.snapEffect / 12;
+        const r = prog * sx(last.width * 0.6);
+        const alpha = (1 - prog) * 0.7;
+        ctx.strokeStyle = `rgba(255,230,0,${alpha})`;
+        ctx.lineWidth = sy(3);
+        ctx.shadowColor = '#ffcc00';
+        ctx.shadowBlur = 10;
+        ctx.beginPath();
+        ctx.arc(sx(last.x + last.width / 2), sy(sy2 + PLATFORM_H / 2), r, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+      }
+    }
+
+    function drawTitleScreen() {
+      const frame = state.titleFrame;
+
+      // Big neon title
+      const bobY = Math.sin(frame / 40) * sy(5);
+
+      ctx.font = `bold ${sy(60)}px system-ui`;
+      ctx.textAlign = 'center';
+
+      // "NEON" — cyan glow
+      ctx.shadowColor = '#48dbfb';
+      ctx.shadowBlur = 30;
+      ctx.fillStyle = '#ffffff';
+      ctx.fillText('NEON', sx(NATIVE_W / 2), sy(200) + bobY);
+
+      // "STACK" — pink glow
+      ctx.shadowColor = '#ff9ff3';
+      ctx.shadowBlur = 30;
+      ctx.fillStyle = '#48dbfb';
+      ctx.fillText('STACK', sx(NATIVE_W / 2), sy(270) + bobY);
+      ctx.shadowBlur = 0;
+
+      // Subtitle
+      ctx.fillStyle = 'rgba(255,255,255,0.5)';
+      ctx.font = `${sy(15)}px system-ui`;
+      ctx.fillText(t('subtitle'), sx(NATIVE_W / 2), sy(330));
+
+      // Blinking start prompt
+      const blink = Math.floor(frame / 30) % 2 === 0;
+      if (blink) {
+        ctx.fillStyle = 'rgba(255,255,255,0.9)';
+        ctx.font = `bold ${sy(20)}px system-ui`;
+        ctx.shadowColor = '#ffffff';
+        ctx.shadowBlur = 10;
+        ctx.fillText(t('tapToStart'), sx(NATIVE_W / 2), sy(420));
+        ctx.shadowBlur = 0;
+      }
+
+      // Controls hint
+      ctx.fillStyle = 'rgba(255,255,255,0.3)';
+      ctx.font = `${sy(12)}px system-ui`;
+      ctx.fillText(t('howToPlay'), sx(NATIVE_W / 2), sy(470));
+
+      // Decorative floating blocks
+      drawDecorativePlatforms(frame);
+    }
+
+    function drawDecorativePlatforms(frame) {
+      const deco = [
+        { x: 30, y: 520, w: 60, color: '#ff6b6b' },
+        { x: 110, y: 545, w: 80, color: '#feca57' },
+        { x: 210, y: 535, w: 70, color: '#48dbfb' },
+        { x: 270, y: 560, w: 50, color: '#ff9ff3' },
+      ];
+      deco.forEach((d, i) => {
+        const bobY = Math.sin(frame / 30 + i * 0.8) * sy(4);
+        const alpha = 0.4 + 0.2 * Math.sin(frame / 25 + i);
+        ctx.shadowColor = d.color;
+        ctx.shadowBlur = 8;
+        ctx.fillStyle = d.color.replace(')', `,${alpha})`).replace('rgb', 'rgba');
+        // fallback: draw with globalAlpha
+        ctx.globalAlpha = alpha;
+        ctx.fillStyle = d.color;
+        ctx.fillRect(sx(d.x), sy(d.y) + bobY, sx(d.w), sy(PLATFORM_H));
+        ctx.globalAlpha = 1;
+        ctx.shadowBlur = 0;
+      });
+    }
+
+    function drawGameOver() {
+      // Dark overlay
+      const overlayAlpha = Math.min(0.75, state.gameOverTimer / 30);
+      ctx.fillStyle = `rgba(0,0,0,${overlayAlpha})`;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      if (state.gameOverTimer < 15) return;
+
+      const slideIn = Math.min(1, (state.gameOverTimer - 15) / 20);
+      const centerX = sx(NATIVE_W / 2);
+      const baseY = sy(200 + (1 - slideIn) * 40);
+
+      // Game Over text
+      ctx.fillStyle = '#ff6b6b';
+      ctx.font = `bold ${sy(38)}px system-ui`;
+      ctx.textAlign = 'center';
+      ctx.shadowColor = '#ff6b6b';
+      ctx.shadowBlur = 25;
+      ctx.fillText(t('gameOver'), centerX, baseY);
+      ctx.shadowBlur = 0;
+
+      // Score
+      ctx.fillStyle = '#ffffff';
+      ctx.font = `bold ${sy(30)}px system-ui`;
+      ctx.fillText(state.score, centerX, sy(270));
+
+      ctx.fillStyle = 'rgba(255,255,255,0.5)';
+      ctx.font = `${sy(14)}px system-ui`;
+      ctx.fillText(t('scoreLabel'), centerX, sy(295));
+
+      // New record
+      const isNewRecord = state.score > 0 && state.score >= state.bestScore;
+      if (isNewRecord) {
+        ctx.fillStyle = '#feca57';
+        ctx.font = `bold ${sy(18)}px system-ui`;
+        ctx.shadowColor = '#feca57';
+        ctx.shadowBlur = 12;
+        ctx.fillText(t('newRecord'), centerX, sy(340));
+        ctx.shadowBlur = 0;
+      } else if (state.bestScore > 0) {
+        ctx.fillStyle = 'rgba(255,204,0,0.6)';
+        ctx.font = `${sy(14)}px system-ui`;
+        ctx.fillText(t('bestLabel') + ': ' + state.bestScore, centerX, sy(340));
+      }
+
+      // Level info
+      ctx.fillStyle = 'rgba(255,255,255,0.5)';
+      ctx.font = `${sy(14)}px system-ui`;
+      ctx.fillText(t('levelLabel') + ' ' + state.currentLevel, centerX, sy(375));
+
+      // Tap to restart (blinking)
+      if (state.gameOverTimer > 60) {
+        const blink = Math.floor(state.gameOverTimer / 30) % 2 === 0;
+        if (blink) {
+          ctx.fillStyle = 'rgba(255,255,255,0.85)';
+          ctx.font = `bold ${sy(18)}px system-ui`;
+          ctx.shadowColor = '#ffffff';
+          ctx.shadowBlur = 8;
+          ctx.fillText(t('tapToRestart'), centerX, sy(440));
+          ctx.shadowBlur = 0;
+        }
+      }
+    }
+
+    // ─── Main Draw ───────────────────────────────────────────────────────────────
+    function draw() {
+      drawBackground();
+
+      if (state.phase === 'title') {
+        drawTitleScreen();
+        return;
+      }
+
+      // Draw placed platforms (only visible ones)
+      const visibleLevels = Math.ceil(NATIVE_H / PLATFORM_H) + 2;
+      const minLevel = Math.max(0, state.currentLevel - visibleLevels);
+
+      for (let i = minLevel; i < state.platforms.length; i++) {
+        const p = state.platforms[i];
+        const screenY = getPlatformScreenY(p.level, state.currentLevel, ACTIVE_Y, PLATFORM_H);
+        if (screenY > NATIVE_H + PLATFORM_H || screenY < -PLATFORM_H) continue;
+        drawPlatform(p, screenY, false);
+      }
+
+      // Landing zone ghost on previous platform
+      if (state.phase === 'playing') {
+        const prev = state.platforms[state.platforms.length - 1];
+        const prevY = getPlatformScreenY(prev.level, state.currentLevel, ACTIVE_Y, PLATFORM_H);
+        ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([5, 5]);
+        ctx.strokeRect(sx(prev.x), sy(prevY), sx(prev.width), sy(PLATFORM_H));
+        ctx.setLineDash([]);
+
+        // Draw moving platform
+        drawPlatform(state.moving, ACTIVE_Y, true);
+      }
+
+      // Draw particles
+      state.particles.forEach(p => {
+        const alpha = Math.max(0, p.life / p.maxLife);
+        ctx.fillStyle = p.color;
+        ctx.globalAlpha = alpha;
+        ctx.shadowColor = p.color;
+        ctx.shadowBlur = 6;
+        ctx.fillRect(sx(p.x), sy(p.y), sx(p.size), sy(p.size));
+      });
+      ctx.globalAlpha = 1;
+      ctx.shadowBlur = 0;
+
+      drawHUD();
+
+      if (state.phase === 'gameover') {
+        drawGameOver();
+      }
+    }
+
+    // ─── Input ───────────────────────────────────────────────────────────────────
+    function handleTap() {
+      if (state.phase === 'title') {
+        state.phase = 'playing';
+      } else if (state.phase === 'playing') {
+        drop();
+      } else if (state.phase === 'gameover' && state.gameOverTimer >= 60) {
+        initGame();
+        state.phase = 'playing';
+      }
+    }
+
+    canvas.addEventListener('click', handleTap);
+    canvas.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      handleTap();
+    }, { passive: false });
+    document.addEventListener('keydown', (e) => {
+      if (e.code === 'Space' || e.code === 'ArrowDown' || e.code === 'Enter') {
+        e.preventDefault();
+        handleTap();
+      }
+    });
+
+    // ─── Game Loop ───────────────────────────────────────────────────────────────
+    function loop() {
+      update();
+      draw();
+      requestAnimationFrame(loop);
+    }
+
+    initGame();
+    loop();
+
+    // Re-render on language change (canvas text will pick up on next frame automatically)
+    onLangChange(() => { /* t() is called on each draw */ });
+  </script>
+</body>
+</html>
