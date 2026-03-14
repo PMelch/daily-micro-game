@@ -14,6 +14,7 @@
   /* ── Screens ── */
   .screen{display:none;flex-direction:column;align-items:center;justify-content:center;flex:1;width:100%;max-width:520px;padding:1.5rem 1rem;text-align:center;gap:1rem;}
   .screen.active{display:flex;}
+  #screen-game.active{justify-content:flex-start;gap:0.3rem;padding:0.5rem 0.5rem;overflow:hidden;}
 
   h1{font-size:2.4rem;font-weight:900;letter-spacing:2px;text-shadow:0 0 20px #0ff,0 0 40px #0ff;}
   .tagline{color:#aaa;font-size:0.95rem;}
@@ -43,8 +44,17 @@
   #gameCanvas{display:block;width:100%;border-radius:8px;border:1px solid #222;}
   #overlay{position:absolute;top:0;left:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;pointer-events:none;}
 
+  /* ── Scoreboard compact on mobile ── */
+  @media (max-height: 700px) {
+    .scoreboard{padding:0.2rem 0;gap:1rem;}
+    .score-val{font-size:1.5rem;}
+    .dpad{width:min(160px,42vw);margin:0.4rem auto;}
+    .dpad-btn{height:44px;font-size:1.2rem;}
+    .phase-header{margin-bottom:0.4rem;}
+  }
+
   /* ── D-pad ── */
-  .dpad{display:grid;grid-template-areas:"  up  " "left ok right" " down ";grid-template-columns:1fr 1fr 1fr;gap:4px;width:min(180px,45vw);margin:0.8rem auto;}
+  .dpad{display:grid;grid-template-areas:". up ." "left ok right" ". down .";grid-template-columns:1fr 1fr 1fr;grid-template-rows:auto auto auto;gap:4px;width:min(180px,45vw);margin:0.8rem auto;}
   .dpad-btn{background:#1a1a2e;border:1px solid #333;border-radius:8px;color:#fff;cursor:pointer;font-size:1.4rem;height:52px;transition:background .1s;}
   .dpad-btn:active,.dpad-btn.pressed{background:#0ff3;border-color:#0ff;}
   #btn-up   {grid-area:up;}
@@ -681,6 +691,32 @@ window.addEventListener('keydown',e=>{
 // Set placeholder text after i18n init
 document.getElementById('inp-p1').placeholder = t('p1Default');
 document.getElementById('inp-p2').placeholder = t('p2Default');
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Responsive canvas sizing — fit game + D-pad into viewport
+// ═══════════════════════════════════════════════════════════════════════════
+function resizeCanvas() {
+  const gameScreen = document.getElementById('screen-game');
+  if (!gameScreen.classList.contains('active')) return;
+
+  const vh = window.innerHeight;
+  // Reserve: back-bar(36) + scoreboard(70) + phase-header(65) + dpad(3rows*56=168) + margins/gaps(60)
+  const reserved = 400;
+  const available = Math.max(160, vh - reserved);
+  const maxW = Math.min(available, 500, window.innerWidth - 20);
+  const wrap = document.getElementById('canvas-wrap');
+  wrap.style.maxWidth = maxW + 'px';
+}
+
+// Resize on orientation change and window resize
+window.addEventListener('resize', resizeCanvas);
+
+// Also call when switching to game screen
+const origShowScreen = showScreen;
+showScreen = function(id) {
+  origShowScreen(id);
+  if (id === 'screen-game') setTimeout(resizeCanvas, 50);
+};
 
 // Initial render (empty grid)
 drawGrid();
