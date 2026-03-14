@@ -1,0 +1,892 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Two-Thirds | Daily Games</title>
+<script src="/shared/i18n.js"></script>
+<style>
+  :root {
+    --bg: #050510;
+    --surface: #0d0d2b;
+    --card: #141438;
+    --accent: #7c3aed;
+    --accent2: #a855f7;
+    --gold: #f59e0b;
+    --green: #10b981;
+    --red: #ef4444;
+    --text: #e2e8f0;
+    --muted: #94a3b8;
+    --border: #1e1e4a;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: system-ui, sans-serif; min-height: 100vh; }
+  .back-bar { width:100%; background:#0a0a1a; padding:0.5rem 1rem; border-bottom:1px solid #333; }
+  .back-bar a { color:#ffcc00; text-decoration:none; font-size:0.9rem; font-family:system-ui,sans-serif; }
+  .back-bar a:hover { text-decoration:underline; }
+
+  .container { max-width: 480px; margin: 0 auto; padding: 1rem; }
+
+  /* === SCREENS === */
+  .screen { display: none; flex-direction: column; align-items: center; gap: 1rem; }
+  .screen.active { display: flex; }
+
+  /* === HEADER === */
+  .game-title {
+    font-size: 2.2rem; font-weight: 900; letter-spacing: -1px;
+    background: linear-gradient(135deg, var(--accent2), var(--gold));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    text-align: center; margin-top: 0.5rem;
+  }
+  .game-subtitle { color: var(--muted); font-size: 0.9rem; text-align: center; }
+
+  /* === CARDS === */
+  .card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 16px; padding: 1.2rem; width: 100%;
+  }
+
+  /* === INPUTS === */
+  input[type=text] {
+    background: var(--surface); border: 1px solid var(--border);
+    color: var(--text); border-radius: 10px; padding: 0.75rem 1rem;
+    font-size: 1rem; width: 100%; outline: none;
+    transition: border-color 0.2s;
+  }
+  input[type=text]:focus { border-color: var(--accent2); }
+
+  /* === BUTTONS === */
+  .btn {
+    padding: 0.85rem 1.5rem; border: none; border-radius: 12px;
+    font-size: 1rem; font-weight: 700; cursor: pointer;
+    transition: all 0.15s; width: 100%;
+  }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { background: var(--accent2); transform: translateY(-1px); }
+  .btn-secondary { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
+  .btn-secondary:hover { border-color: var(--accent2); }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+  /* === ROOM CODE === */
+  .room-code-display {
+    font-size: 2.5rem; font-weight: 900; letter-spacing: 0.3em;
+    color: var(--gold); text-align: center; font-family: monospace;
+    padding: 0.5rem 1rem; background: var(--surface);
+    border-radius: 12px; border: 2px dashed var(--gold);
+  }
+  .room-code-label { color: var(--muted); font-size: 0.8rem; text-align: center; }
+
+  /* === PLAYERS LIST === */
+  .player-list { display: flex; flex-direction: column; gap: 0.5rem; }
+  .player-item {
+    display: flex; align-items: center; gap: 0.75rem;
+    background: var(--surface); border-radius: 10px; padding: 0.6rem 1rem;
+  }
+  .player-dot { width: 10px; height: 10px; border-radius: 50%; }
+  .player-name { flex: 1; font-weight: 600; }
+  .player-score { color: var(--gold); font-weight: 700; }
+  .host-badge { font-size: 0.7rem; background: var(--accent); color: #fff; padding: 2px 6px; border-radius: 6px; }
+
+  /* === GUESS SLIDER === */
+  .guess-section { width: 100%; display: flex; flex-direction: column; gap: 1rem; align-items: center; }
+  .number-display {
+    font-size: 5rem; font-weight: 900; text-align: center;
+    background: linear-gradient(135deg, var(--accent2), var(--gold));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    line-height: 1; min-width: 150px;
+  }
+  .slider-wrap { width: 100%; position: relative; }
+  input[type=range] {
+    -webkit-appearance: none; width: 100%; height: 8px;
+    border-radius: 4px; outline: none; cursor: pointer;
+    background: linear-gradient(to right, var(--accent) 0%, var(--accent) var(--val, 50%), var(--surface) var(--val, 50%));
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 28px; height: 28px;
+    border-radius: 50%; background: var(--accent2);
+    border: 3px solid var(--bg); cursor: pointer;
+    box-shadow: 0 0 12px var(--accent2);
+  }
+  .slider-labels { display: flex; justify-content: space-between; color: var(--muted); font-size: 0.8rem; margin-top: 4px; }
+
+  /* === ROUND PROGRESS === */
+  .round-info {
+    display: flex; justify-content: space-between; align-items: center;
+    width: 100%; color: var(--muted); font-size: 0.85rem;
+  }
+  .round-badge {
+    background: var(--accent); color: #fff; border-radius: 20px;
+    padding: 4px 12px; font-weight: 700; font-size: 0.9rem;
+  }
+
+  /* === WAITING DOTS === */
+  .waiting-players { display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: center; }
+  .waiting-chip {
+    display: flex; align-items: center; gap: 0.4rem;
+    background: var(--surface); border-radius: 20px; padding: 0.35rem 0.75rem;
+    font-size: 0.85rem;
+  }
+  .waiting-chip.guessed { border: 1px solid var(--green); }
+  .waiting-chip .check { color: var(--green); }
+  .waiting-chip .pending { color: var(--muted); }
+
+  /* === TIMER === */
+  .timer-bar { width: 100%; height: 6px; background: var(--surface); border-radius: 3px; overflow: hidden; }
+  .timer-fill { height: 100%; border-radius: 3px; transition: width 1s linear; }
+  .timer-fill.green { background: var(--green); }
+  .timer-fill.yellow { background: var(--gold); }
+  .timer-fill.red { background: var(--red); }
+  .timer-text { text-align: center; font-size: 1.4rem; font-weight: 700; }
+
+  /* === REVEAL === */
+  .reveal-card {
+    width: 100%; background: var(--card); border-radius: 16px;
+    padding: 1.2rem; border: 1px solid var(--border);
+  }
+  .target-display {
+    font-size: 3.5rem; font-weight: 900; text-align: center;
+    color: var(--gold);
+  }
+  .target-label { color: var(--muted); text-align: center; font-size: 0.85rem; }
+  .guess-result-list { display: flex; flex-direction: column; gap: 0.4rem; margin-top: 0.8rem; }
+  .guess-result-item {
+    display: flex; align-items: center; gap: 0.75rem;
+    background: var(--surface); border-radius: 10px; padding: 0.55rem 0.9rem;
+  }
+  .guess-result-item.winner { border: 1px solid var(--gold); background: #1a1200; }
+  .guess-val { font-size: 1.3rem; font-weight: 700; font-family: monospace; min-width: 38px; text-align: right; }
+  .guess-name { flex: 1; }
+  .guess-dist { color: var(--muted); font-size: 0.8rem; }
+  .winner-crown { font-size: 1.2rem; }
+
+  /* === MATH EXPLANATION === */
+  .math-box {
+    background: var(--surface); border-radius: 10px; padding: 0.75rem 1rem;
+    font-size: 0.85rem; color: var(--muted); text-align: center; width: 100%;
+  }
+  .math-box span { color: var(--text); font-weight: 700; }
+
+  /* === FINAL LEADERBOARD === */
+  .leaderboard { width: 100%; display: flex; flex-direction: column; gap: 0.5rem; }
+  .lb-item {
+    display: flex; align-items: center; gap: 0.75rem;
+    background: var(--surface); border-radius: 12px; padding: 0.75rem 1rem;
+  }
+  .lb-item:first-child { background: #1a1200; border: 1px solid var(--gold); }
+  .lb-rank { font-size: 1.3rem; min-width: 30px; }
+  .lb-name { flex: 1; font-weight: 600; }
+  .lb-score { font-size: 1.2rem; font-weight: 700; color: var(--gold); }
+
+  /* === INFO HINT === */
+  .hint-box {
+    background: #0d1a2d; border: 1px solid #1e3a5f;
+    border-radius: 10px; padding: 0.75rem 1rem;
+    font-size: 0.82rem; color: #7ea8d4; text-align: center; width: 100%;
+  }
+  .hint-box strong { color: #a8d4f8; }
+
+  /* === STATUS TEXT === */
+  .status-text { color: var(--muted); text-align: center; font-size: 0.9rem; }
+  .error-text { color: var(--red); text-align: center; font-size: 0.85rem; }
+
+  /* === MY LOCKED GUESS === */
+  .locked-guess {
+    font-size: 3rem; font-weight: 900; text-align: center;
+    color: var(--green); font-family: monospace;
+  }
+  .locked-label { color: var(--muted); text-align: center; font-size: 0.85rem; }
+
+  /* === Stagger animation === */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .fadein { animation: fadeUp 0.3s ease-out both; }
+
+  /* === Pulse winner === */
+  @keyframes winPulse {
+    0%,100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+  }
+  .winner-pulse { animation: winPulse 0.6s ease 2; }
+</style>
+</head>
+<body>
+<div class="back-bar"><a href="/">← <span data-i18n="backToGames">Back to Games</span></a></div>
+<div class="container">
+
+  <!-- ===== MENU SCREEN ===== -->
+  <div class="screen active" id="screen-menu">
+    <div class="game-title">⅔</div>
+    <div style="font-size:1.4rem;font-weight:800;color:var(--text);text-align:center" data-i18n="gameTitle">Two-Thirds</div>
+    <div class="game-subtitle" data-i18n="gameSubtitle">Der klassische Spieltheorie-Trick</div>
+
+    <div class="hint-box">
+      <strong data-i18n="rulesTitle">Die Regel:</strong>
+      <span data-i18n="rulesText"> Wähle eine Zahl zwischen 0 und 100. Die Person, die am nächsten an ⅔ des Gruppendurchschnitts liegt, gewinnt!</span>
+    </div>
+
+    <div class="card" style="display:flex;flex-direction:column;gap:0.75rem">
+      <div style="font-weight:600;font-size:0.9rem;color:var(--muted)" data-i18n="yourName">Dein Name</div>
+      <input type="text" id="menu-name" data-i18n-placeholder="namePlaceholder" maxlength="16">
+      <button class="btn btn-primary" id="btn-create" data-i18n="createRoom">Raum erstellen</button>
+
+      <div style="display:flex;align-items:center;gap:0.5rem;color:var(--muted);font-size:0.8rem">
+        <div style="flex:1;height:1px;background:var(--border)"></div>
+        <span data-i18n="or">oder</span>
+        <div style="flex:1;height:1px;background:var(--border)"></div>
+      </div>
+
+      <input type="text" id="menu-code" data-i18n-placeholder="roomCodePlaceholder" maxlength="4" style="text-transform:uppercase;letter-spacing:0.2em;text-align:center;font-size:1.2rem">
+      <button class="btn btn-secondary" id="btn-join" data-i18n="joinRoom">Raum beitreten</button>
+    </div>
+    <div class="error-text" id="menu-error"></div>
+  </div>
+
+  <!-- ===== LOBBY SCREEN ===== -->
+  <div class="screen" id="screen-lobby">
+    <div class="game-title" style="font-size:1.6rem">⅔ <span data-i18n="gameTitle">Two-Thirds</span></div>
+
+    <div class="room-code-label" data-i18n="shareCode">Teile diesen Code:</div>
+    <div class="room-code-display" id="lobby-code">····</div>
+
+    <div class="card">
+      <div style="font-size:0.8rem;color:var(--muted);margin-bottom:0.6rem" data-i18n="players">Spieler</div>
+      <div class="player-list" id="lobby-players"></div>
+    </div>
+
+    <div class="hint-box" data-i18n="lobbyHint">Warte auf alle Spieler. Der Host startet das Spiel (mind. 2 Spieler).</div>
+
+    <button class="btn btn-primary" id="btn-start" style="display:none" data-i18n="startGame">Spiel starten!</button>
+    <div class="status-text" id="lobby-waiting"></div>
+    <div class="error-text" id="lobby-error"></div>
+  </div>
+
+  <!-- ===== GUESSING SCREEN ===== -->
+  <div class="screen" id="screen-guess">
+    <div class="round-info">
+      <span class="round-badge" id="guess-round-badge">R 1/5</span>
+      <span id="guess-timer-text" class="timer-text">30</span>
+    </div>
+    <div class="timer-bar"><div class="timer-fill green" id="guess-timer-fill" style="width:100%"></div></div>
+
+    <div class="card fadein" id="guess-prompt-card" style="text-align:center">
+      <div style="font-size:0.85rem;color:var(--muted);margin-bottom:0.4rem" data-i18n="pickYourNumber">Wähle deine Zahl (0–100):</div>
+      <div class="number-display" id="guess-number">50</div>
+
+      <div class="slider-wrap">
+        <input type="range" id="guess-slider" min="0" max="100" value="50">
+        <div class="slider-labels"><span>0</span><span>50</span><span>100</span></div>
+      </div>
+
+      <div style="margin-top:0.4rem;font-size:0.8rem;color:var(--muted)" data-i18n="thinkAboutIt">
+        💭 Denk daran: ⅔ des Durchschnitts!
+      </div>
+    </div>
+
+    <!-- Locked state -->
+    <div class="card" id="guess-locked-card" style="display:none;text-align:center">
+      <div class="locked-label" data-i18n="yourGuess">Deine Schätzung</div>
+      <div class="locked-guess" id="guess-locked-value">50</div>
+      <div style="margin-top:0.5rem;font-size:0.8rem;color:var(--green)" data-i18n="guessLocked">✓ Gesperrt! Warte auf andere...</div>
+    </div>
+
+    <div class="card" id="guess-btn-card">
+      <button class="btn btn-primary" id="btn-submit-guess" data-i18n="lockIn">🔒 Einloggen!</button>
+    </div>
+
+    <div class="card">
+      <div style="font-size:0.8rem;color:var(--muted);margin-bottom:0.5rem" data-i18n="waitingFor">Warten auf:</div>
+      <div class="waiting-players" id="guess-waiting"></div>
+    </div>
+  </div>
+
+  <!-- ===== REVEAL SCREEN ===== -->
+  <div class="screen" id="screen-reveal">
+    <div class="round-info">
+      <span class="round-badge" id="reveal-round-badge">R 1/5</span>
+      <span style="color:var(--muted);font-size:0.85rem" data-i18n="roundResult">Rundenresultat</span>
+    </div>
+
+    <div class="reveal-card fadein" style="text-align:center">
+      <div class="target-label" data-i18n="twoThirdsTarget">⅔ des Durchschnitts =</div>
+      <div class="target-display" id="reveal-target">—</div>
+      <div class="math-box" id="reveal-math-box"></div>
+    </div>
+
+    <div class="card fadein">
+      <div style="font-size:0.8rem;color:var(--muted);margin-bottom:0.5rem" data-i18n="allGuesses">Alle Schätzungen</div>
+      <div class="guess-result-list" id="reveal-guesses"></div>
+    </div>
+
+    <div class="card fadein" id="reveal-winner-card" style="text-align:center">
+      <div style="font-size:2rem">🏆</div>
+      <div style="font-weight:700;font-size:1.1rem" id="reveal-winner-names"></div>
+      <div style="color:var(--muted);font-size:0.8rem" data-i18n="winsRound">gewinnt die Runde!</div>
+    </div>
+
+    <div class="status-text" data-i18n="nextRoundSoon">Nächste Runde startet in Kürze...</div>
+    <div id="reveal-scores-section" style="width:100%">
+      <div style="font-size:0.8rem;color:var(--muted);margin-bottom:0.4rem" data-i18n="currentScores">Aktueller Stand</div>
+      <div class="player-list" id="reveal-scores"></div>
+    </div>
+  </div>
+
+  <!-- ===== FINISHED SCREEN ===== -->
+  <div class="screen" id="screen-finished">
+    <div class="game-title" style="font-size:1.8rem">🏆 <span data-i18n="finalResults">Endergebnis</span></div>
+
+    <div class="leaderboard" id="finished-leaderboard"></div>
+
+    <div class="card fadein" style="text-align:center">
+      <div style="font-size:0.85rem;color:var(--muted);margin-bottom:0.4rem" data-i18n="didYouKnow">Wusstest du?</div>
+      <div style="font-size:0.85rem;line-height:1.5" data-i18n="gameTheoryFact">
+        Die Nash-Gleichgewichts-Lösung ist <strong style="color:var(--gold)">0</strong>. Wenn alle rational denken, konvergiert die Antwort zu 0. In der Praxis gewinnt aber meist jemand mit ~22–33!
+      </div>
+    </div>
+
+    <button class="btn btn-primary" id="btn-play-again" data-i18n="playAgain">Nochmal spielen!</button>
+  </div>
+
+</div><!-- /container -->
+
+<script>
+const TRANSLATIONS = {
+  de: {
+    backToGames: 'Zurück zu den Spielen',
+    gameTitle: 'Two-Thirds',
+    gameSubtitle: 'Der klassische Spieltheorie-Trick',
+    rulesTitle: 'Die Regel:',
+    rulesText: ' Wähle eine Zahl zwischen 0 und 100. Die Person, die am nächsten an ⅔ des Gruppendurchschnitts liegt, gewinnt!',
+    yourName: 'Dein Name',
+    namePlaceholder: 'Name eingeben...',
+    roomCodePlaceholder: 'ROOM CODE',
+    createRoom: 'Raum erstellen',
+    joinRoom: 'Raum beitreten',
+    or: 'oder',
+    shareCode: 'Teile diesen Code:',
+    players: 'Spieler',
+    lobbyHint: 'Warte auf alle Spieler. Der Host startet das Spiel (mind. 2 Spieler).',
+    startGame: 'Spiel starten!',
+    pickYourNumber: 'Wähle deine Zahl (0–100):',
+    thinkAboutIt: '💭 Denk daran: ⅔ des Durchschnitts!',
+    yourGuess: 'Deine Schätzung',
+    guessLocked: '✓ Gesperrt! Warte auf andere...',
+    lockIn: '🔒 Einloggen!',
+    waitingFor: 'Warten auf:',
+    roundResult: 'Rundenresultat',
+    twoThirdsTarget: '⅔ des Durchschnitts =',
+    allGuesses: 'Alle Schätzungen',
+    winsRound: 'gewinnt die Runde!',
+    nextRoundSoon: 'Nächste Runde startet in Kürze...',
+    currentScores: 'Aktueller Stand',
+    finalResults: 'Endergebnis',
+    didYouKnow: 'Wusstest du?',
+    gameTheoryFact: 'Die Nash-Gleichgewichts-Lösung ist <strong style="color:var(--gold)">0</strong>. Wenn alle rational denken, konvergiert die Antwort zu 0. In der Praxis gewinnt aber meist jemand mit ~22–33!',
+    playAgain: 'Nochmal spielen!',
+    host: 'Host',
+    you: 'Du',
+    dist: 'Abstand',
+    pts: 'Pts',
+    avg: 'Ø',
+    target: 'Ziel',
+    errorNameRequired: 'Bitte gib einen Namen ein.',
+    errorCodeRequired: 'Bitte gib einen Raum-Code ein.',
+    errorRoomNotFound: 'Raum nicht gefunden.',
+    errorGameStarted: 'Spiel bereits gestartet.',
+    errorRoomFull: 'Raum ist voll.',
+    errorNameTaken: 'Name bereits vergeben.',
+    errorNeedMorePlayers: 'Mindestens 2 Spieler benötigt.',
+    errorGeneric: 'Fehler. Bitte versuche es erneut.',
+    waitingForHost: 'Warte darauf, dass der Host startet...',
+  },
+  en: {
+    backToGames: 'Back to Games',
+    gameTitle: 'Two-Thirds',
+    gameSubtitle: 'The classic game theory trick',
+    rulesTitle: 'The Rule:',
+    rulesText: ' Pick a number between 0 and 100. Whoever is closest to ⅔ of the group average wins!',
+    yourName: 'Your Name',
+    namePlaceholder: 'Enter name...',
+    roomCodePlaceholder: 'ROOM CODE',
+    createRoom: 'Create Room',
+    joinRoom: 'Join Room',
+    or: 'or',
+    shareCode: 'Share this code:',
+    players: 'Players',
+    lobbyHint: 'Waiting for players. Host starts when ready (min 2 players).',
+    startGame: 'Start Game!',
+    pickYourNumber: 'Pick your number (0–100):',
+    thinkAboutIt: '💭 Remember: ⅔ of the average!',
+    yourGuess: 'Your guess',
+    guessLocked: '✓ Locked! Waiting for others...',
+    lockIn: '🔒 Lock In!',
+    waitingFor: 'Waiting for:',
+    roundResult: 'Round Result',
+    twoThirdsTarget: '⅔ of average =',
+    allGuesses: 'All Guesses',
+    winsRound: 'wins the round!',
+    nextRoundSoon: 'Next round starting soon...',
+    currentScores: 'Current Scores',
+    finalResults: 'Final Results',
+    didYouKnow: 'Did you know?',
+    gameTheoryFact: 'The Nash equilibrium solution is <strong style="color:var(--gold)">0</strong>. If everyone thinks rationally, answers converge to 0. In practice, someone with ~22–33 usually wins!',
+    playAgain: 'Play Again!',
+    host: 'Host',
+    you: 'You',
+    dist: 'dist',
+    pts: 'pts',
+    avg: 'avg',
+    target: 'target',
+    errorNameRequired: 'Please enter a name.',
+    errorCodeRequired: 'Please enter a room code.',
+    errorRoomNotFound: 'Room not found.',
+    errorGameStarted: 'Game already started.',
+    errorRoomFull: 'Room is full.',
+    errorNameTaken: 'Name already taken.',
+    errorNeedMorePlayers: 'Need at least 2 players.',
+    errorGeneric: 'Error. Please try again.',
+    waitingForHost: 'Waiting for host to start...',
+  },
+  fr: {
+    backToGames: 'Retour aux jeux',
+    gameTitle: 'Two-Thirds',
+    gameSubtitle: 'Le classique de la théorie des jeux',
+    rulesTitle: 'La règle :',
+    rulesText: ' Choisissez un nombre entre 0 et 100. Qui est le plus proche de ⅔ de la moyenne du groupe gagne !',
+    yourName: 'Ton nom',
+    namePlaceholder: 'Entrer le nom...',
+    roomCodePlaceholder: 'CODE SALLE',
+    createRoom: 'Créer une salle',
+    joinRoom: 'Rejoindre une salle',
+    or: 'ou',
+    shareCode: 'Partage ce code :',
+    players: 'Joueurs',
+    lobbyHint: 'En attente des joueurs. L\'hôte démarre quand prêt (min. 2 joueurs).',
+    startGame: 'Commencer !',
+    pickYourNumber: 'Choisissez votre nombre (0–100) :',
+    thinkAboutIt: '💭 Souviens-toi : ⅔ de la moyenne !',
+    yourGuess: 'Ton choix',
+    guessLocked: '✓ Verrouillé ! Attente des autres...',
+    lockIn: '🔒 Verrouiller !',
+    waitingFor: 'En attente de :',
+    roundResult: 'Résultat du tour',
+    twoThirdsTarget: '⅔ de la moyenne =',
+    allGuesses: 'Tous les choix',
+    winsRound: 'gagne le tour !',
+    nextRoundSoon: 'Prochain tour bientôt...',
+    currentScores: 'Score actuel',
+    finalResults: 'Résultats finaux',
+    didYouKnow: 'Le savais-tu ?',
+    gameTheoryFact: 'La solution d\'équilibre de Nash est <strong style="color:var(--gold)">0</strong>. Si tout le monde pense rationnellement, les réponses convergent vers 0. En pratique, ~22–33 gagne souvent !',
+    playAgain: 'Rejouer !',
+    host: 'Hôte', you: 'Toi', dist: 'écart', pts: 'pts', avg: 'moy', target: 'cible',
+    errorNameRequired: 'Veuillez entrer un nom.',
+    errorCodeRequired: 'Veuillez entrer un code de salle.',
+    errorRoomNotFound: 'Salle introuvable.',
+    errorGameStarted: 'Jeu déjà commencé.',
+    errorRoomFull: 'Salle pleine.',
+    errorNameTaken: 'Nom déjà pris.',
+    errorNeedMorePlayers: 'Besoin d\'au moins 2 joueurs.',
+    errorGeneric: 'Erreur. Veuillez réessayer.',
+    waitingForHost: 'En attente du début par l\'hôte...',
+  },
+  it: {
+    backToGames: 'Torna ai giochi',
+    gameTitle: 'Two-Thirds',
+    gameSubtitle: 'Il classico trucco della teoria dei giochi',
+    rulesTitle: 'La regola:',
+    rulesText: ' Scegli un numero tra 0 e 100. Vince chi è più vicino a ⅔ della media del gruppo!',
+    yourName: 'Il tuo nome',
+    namePlaceholder: 'Inserisci nome...',
+    roomCodePlaceholder: 'CODICE STANZA',
+    createRoom: 'Crea stanza',
+    joinRoom: 'Unisciti a stanza',
+    or: 'o',
+    shareCode: 'Condividi questo codice:',
+    players: 'Giocatori',
+    lobbyHint: 'In attesa dei giocatori. L\'host avvia quando pronto (min. 2 giocatori).',
+    startGame: 'Inizia il gioco!',
+    pickYourNumber: 'Scegli il tuo numero (0–100):',
+    thinkAboutIt: '💭 Ricorda: ⅔ della media!',
+    yourGuess: 'La tua scelta',
+    guessLocked: '✓ Bloccato! In attesa degli altri...',
+    lockIn: '🔒 Blocca!',
+    waitingFor: 'In attesa di:',
+    roundResult: 'Risultato round',
+    twoThirdsTarget: '⅔ della media =',
+    allGuesses: 'Tutte le scelte',
+    winsRound: 'vince il round!',
+    nextRoundSoon: 'Prossimo round a breve...',
+    currentScores: 'Punteggio attuale',
+    finalResults: 'Risultati finali',
+    didYouKnow: 'Lo sapevi?',
+    gameTheoryFact: 'La soluzione di equilibrio di Nash è <strong style="color:var(--gold)">0</strong>. Se tutti pensano razionalmente, le risposte convergono a 0. In pratica, ~22–33 vince spesso!',
+    playAgain: 'Gioca ancora!',
+    host: 'Host', you: 'Tu', dist: 'dist', pts: 'pts', avg: 'media', target: 'obiettivo',
+    errorNameRequired: 'Inserisci un nome.',
+    errorCodeRequired: 'Inserisci un codice stanza.',
+    errorRoomNotFound: 'Stanza non trovata.',
+    errorGameStarted: 'Gioco già iniziato.',
+    errorRoomFull: 'Stanza piena.',
+    errorNameTaken: 'Nome già preso.',
+    errorNeedMorePlayers: 'Servono almeno 2 giocatori.',
+    errorGeneric: 'Errore. Riprova.',
+    waitingForHost: 'In attesa che l\'host inizi...',
+  },
+  es: {
+    backToGames: 'Volver a los juegos',
+    gameTitle: 'Two-Thirds',
+    gameSubtitle: 'El truco clásico de la teoría de juegos',
+    rulesTitle: 'La regla:',
+    rulesText: ' Elige un número entre 0 y 100. ¡Quien esté más cerca de ⅔ del promedio del grupo gana!',
+    yourName: 'Tu nombre',
+    namePlaceholder: 'Escribe tu nombre...',
+    roomCodePlaceholder: 'CÓDIGO SALA',
+    createRoom: 'Crear sala',
+    joinRoom: 'Unirse a sala',
+    or: 'o',
+    shareCode: 'Comparte este código:',
+    players: 'Jugadores',
+    lobbyHint: 'Esperando jugadores. El host empieza cuando esté listo (mín. 2 jugadores).',
+    startGame: '¡Empezar el juego!',
+    pickYourNumber: 'Elige tu número (0–100):',
+    thinkAboutIt: '💭 Recuerda: ⅔ del promedio!',
+    yourGuess: 'Tu elección',
+    guessLocked: '✓ ¡Bloqueado! Esperando a otros...',
+    lockIn: '🔒 ¡Bloquear!',
+    waitingFor: 'Esperando a:',
+    roundResult: 'Resultado de ronda',
+    twoThirdsTarget: '⅔ del promedio =',
+    allGuesses: 'Todas las elecciones',
+    winsRound: '¡gana la ronda!',
+    nextRoundSoon: 'La siguiente ronda empieza pronto...',
+    currentScores: 'Puntuación actual',
+    finalResults: 'Resultados finales',
+    didYouKnow: '¿Sabías que?',
+    gameTheoryFact: 'La solución de equilibrio de Nash es <strong style="color:var(--gold)">0</strong>. Si todos piensan racionalmente, las respuestas convergen a 0. ¡En la práctica, ~22–33 suele ganar!',
+    playAgain: '¡Jugar de nuevo!',
+    host: 'Host', you: 'Tú', dist: 'dist', pts: 'pts', avg: 'media', target: 'objetivo',
+    errorNameRequired: 'Por favor ingresa un nombre.',
+    errorCodeRequired: 'Por favor ingresa un código de sala.',
+    errorRoomNotFound: 'Sala no encontrada.',
+    errorGameStarted: 'El juego ya empezó.',
+    errorRoomFull: 'Sala llena.',
+    errorNameTaken: 'Nombre ya tomado.',
+    errorNeedMorePlayers: 'Se necesitan al menos 2 jugadores.',
+    errorGeneric: 'Error. Por favor inténtalo de nuevo.',
+    waitingForHost: 'Esperando que el host empiece...',
+  }
+};
+
+const { t, lang, onLangChange } = initI18n(TRANSLATIONS);
+
+// ===== WS setup =====
+const WS_URL = 'wss://day-031-two-thirds.lab.gogerl.com';
+let ws = null;
+let myName = '';
+let myRoom = '';
+let isHost = false;
+let roomState = null;
+let timerInterval = null;
+let timerSeconds = 30;
+
+const PLAYER_COLORS = ['#7c3aed','#10b981','#f59e0b','#ef4444','#3b82f6','#ec4899'];
+
+function connect(onOpen) {
+  ws = new WebSocket(WS_URL);
+  ws.onopen = onOpen;
+  ws.onmessage = (e) => handleMessage(JSON.parse(e.data));
+  ws.onerror = () => showError('menu-error', t('errorGeneric'));
+  ws.onclose = () => {};
+}
+
+function send(type, payload = {}) {
+  if (ws && ws.readyState === 1) ws.send(JSON.stringify({ type, payload }));
+}
+
+function handleMessage(msg) {
+  if (msg.type === 'error') {
+    const errMap = {
+      room_not_found: 'errorRoomNotFound',
+      game_started: 'errorGameStarted',
+      room_full: 'errorRoomFull',
+      name_taken: 'errorNameTaken',
+      need_more_players: 'errorNeedMorePlayers',
+    };
+    const key = errMap[msg.error] || 'errorGeneric';
+    showError('menu-error', t(key));
+    showError('lobby-error', t(key));
+    return;
+  }
+  if (msg.type === 'state') {
+    roomState = msg.room;
+    renderState(msg.room);
+  }
+}
+
+function renderState(room) {
+  const { state } = room;
+  if (state === 'lobby') showScreen('screen-lobby'), renderLobby(room);
+  else if (state === 'guessing') showScreen('screen-guess'), renderGuessing(room);
+  else if (state === 'reveal') showScreen('screen-reveal'), renderReveal(room);
+  else if (state === 'finished') showScreen('screen-finished'), renderFinished(room);
+}
+
+// ===== SCREENS =====
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function showError(elId, msg) {
+  const el = document.getElementById(elId);
+  if (el) el.textContent = msg;
+}
+
+// ===== LOBBY =====
+function renderLobby(room) {
+  document.getElementById('lobby-code').textContent = room.code;
+  const list = document.getElementById('lobby-players');
+  list.innerHTML = '';
+  room.players.forEach((p, i) => {
+    const div = document.createElement('div');
+    div.className = 'player-item';
+    div.innerHTML = `
+      <div class="player-dot" style="background:${PLAYER_COLORS[i%PLAYER_COLORS.length]}"></div>
+      <div class="player-name">${p.name} ${p.name === myName ? `<span style="color:var(--accent2);font-size:0.8rem">(${t('you')})</span>` : ''}</div>
+      ${p.name === room.host ? `<span class="host-badge">${t('host')}</span>` : ''}
+    `;
+    list.appendChild(div);
+  });
+
+  const startBtn = document.getElementById('btn-start');
+  const waitTxt = document.getElementById('lobby-waiting');
+  if (isHost) {
+    startBtn.style.display = room.players.length >= 2 ? 'block' : 'none';
+    waitTxt.textContent = room.players.length < 2 ? '' : '';
+  } else {
+    startBtn.style.display = 'none';
+    waitTxt.textContent = t('waitingForHost');
+  }
+}
+
+// ===== GUESSING =====
+let guessLocked = false;
+let timerStartedAt = null;
+
+function renderGuessing(room) {
+  document.getElementById('guess-round-badge').textContent = `R ${room.currentRound}/${room.totalRounds}`;
+
+  const me = room.players.find(p => p.name === myName);
+  const alreadyGuessed = room.guessedPlayers.includes(myName);
+
+  if (alreadyGuessed && !guessLocked) guessLocked = true;
+
+  document.getElementById('guess-prompt-card').style.display = alreadyGuessed ? 'none' : 'block';
+  document.getElementById('guess-locked-card').style.display = alreadyGuessed ? 'block' : 'none';
+  document.getElementById('guess-btn-card').style.display = alreadyGuessed ? 'none' : 'block';
+
+  if (!alreadyGuessed) guessLocked = false;
+
+  // Timer
+  if (!timerStartedAt || roomState?.currentRound !== room.currentRound) {
+    timerStartedAt = Date.now();
+    timerSeconds = 30;
+    startTimer(30);
+  }
+
+  // Waiting chips
+  const container = document.getElementById('guess-waiting');
+  container.innerHTML = '';
+  room.players.filter(p => p.connected).forEach((p, i) => {
+    const guessed = room.guessedPlayers.includes(p.name);
+    const chip = document.createElement('div');
+    chip.className = `waiting-chip ${guessed ? 'guessed' : ''}`;
+    chip.innerHTML = `
+      <span style="color:${PLAYER_COLORS[i%PLAYER_COLORS.length]}">●</span>
+      <span>${p.name}</span>
+      <span class="${guessed ? 'check' : 'pending'}">${guessed ? '✓' : '…'}</span>
+    `;
+    container.appendChild(chip);
+  });
+}
+
+function startTimer(seconds) {
+  if (timerInterval) clearInterval(timerInterval);
+  let remaining = seconds;
+  const fill = document.getElementById('guess-timer-fill');
+  const text = document.getElementById('guess-timer-text');
+  function tick() {
+    remaining--;
+    if (remaining < 0) { clearInterval(timerInterval); return; }
+    text.textContent = remaining;
+    const pct = (remaining / seconds) * 100;
+    fill.style.width = pct + '%';
+    fill.className = 'timer-fill ' + (pct > 60 ? 'green' : pct > 30 ? 'yellow' : 'red');
+  }
+  timerInterval = setInterval(tick, 1000);
+}
+
+// ===== REVEAL =====
+function renderReveal(room) {
+  if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+  timerStartedAt = null;
+
+  const last = room.roundHistory[room.roundHistory.length - 1];
+  if (!last) return;
+
+  document.getElementById('reveal-round-badge').textContent = `R ${last.round}/${room.totalRounds}`;
+  document.getElementById('reveal-target').textContent = last.target;
+
+  // Math explanation
+  const mathBox = document.getElementById('reveal-math-box');
+  const guessVals = Object.values(last.guesses).join(' + ');
+  mathBox.innerHTML = `${t('avg')}: (${guessVals}) ÷ ${Object.keys(last.guesses).length} = <span>${last.average}</span> &nbsp;→&nbsp; ${t('target')}: ⅔ × ${last.average} = <span>${last.target}</span>`;
+
+  // Guess results
+  const list = document.getElementById('reveal-guesses');
+  list.innerHTML = '';
+  const sorted = Object.entries(last.guesses).sort(([,a],[,b]) => {
+    const da = Math.abs(a - last.target), db = Math.abs(b - last.target);
+    return da - db;
+  });
+  sorted.forEach(([name, guess], idx) => {
+    const isWinner = last.winners.includes(name);
+    const dist = Math.abs(guess - last.target);
+    const pIdx = room.players.findIndex(p => p.name === name);
+    const color = PLAYER_COLORS[pIdx % PLAYER_COLORS.length];
+    const item = document.createElement('div');
+    item.className = `guess-result-item ${isWinner ? 'winner winner-pulse' : ''}`;
+    item.innerHTML = `
+      ${isWinner ? '<span class="winner-crown">👑</span>' : `<span style="color:var(--muted);min-width:20px">${idx+1}</span>`}
+      <div class="player-dot" style="background:${color}"></div>
+      <span class="guess-name">${name} ${name === myName ? `(${t('you')})` : ''}</span>
+      <span class="guess-val" style="color:${isWinner?'var(--gold)':'var(--text)'}">${guess}</span>
+      <span class="guess-dist">${t('dist')}: ${dist}</span>
+    `;
+    list.appendChild(item);
+  });
+
+  // Winner
+  document.getElementById('reveal-winner-names').textContent = last.winners.join(' & ');
+
+  // Scores
+  const scoresEl = document.getElementById('reveal-scores');
+  scoresEl.innerHTML = '';
+  [...room.players].sort((a,b) => b.score - a.score).forEach((p, i) => {
+    const pIdx = room.players.findIndex(pp => pp.name === p.name);
+    const color = PLAYER_COLORS[pIdx % PLAYER_COLORS.length];
+    const div = document.createElement('div');
+    div.className = 'player-item';
+    div.innerHTML = `
+      <div class="player-dot" style="background:${color}"></div>
+      <div class="player-name">${p.name}</div>
+      <div class="player-score">${p.score} ${t('pts')}</div>
+    `;
+    scoresEl.appendChild(div);
+  });
+}
+
+// ===== FINISHED =====
+function renderFinished(room) {
+  if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+  const lb = document.getElementById('finished-leaderboard');
+  lb.innerHTML = '';
+  const sorted = [...room.players].sort((a,b) => b.score - a.score);
+  const medals = ['🥇','🥈','🥉'];
+  sorted.forEach((p, i) => {
+    const pIdx = room.players.findIndex(pp => pp.name === p.name);
+    const color = PLAYER_COLORS[pIdx % PLAYER_COLORS.length];
+    const div = document.createElement('div');
+    div.className = 'lb-item fadein';
+    div.style.animationDelay = `${i*0.1}s`;
+    div.innerHTML = `
+      <div class="lb-rank">${medals[i] || `#${i+1}`}</div>
+      <div class="player-dot" style="background:${color}"></div>
+      <div class="lb-name">${p.name} ${p.name === myName ? `(${t('you')})` : ''}</div>
+      <div class="lb-score">${p.score} ${t('pts')}</div>
+    `;
+    lb.appendChild(div);
+  });
+
+  // Translate the fact
+  document.querySelectorAll('[data-i18n-html]').forEach(el => {
+    el.innerHTML = t(el.getAttribute('data-i18n-html'));
+  });
+}
+
+// ===== SLIDER =====
+const slider = document.getElementById('guess-slider');
+const numberDisplay = document.getElementById('guess-number');
+
+function updateSlider() {
+  const val = slider.value;
+  numberDisplay.textContent = val;
+  slider.style.setProperty('--val', `${val}%`);
+}
+slider.addEventListener('input', updateSlider);
+updateSlider();
+
+// ===== SUBMIT GUESS =====
+document.getElementById('btn-submit-guess').addEventListener('click', () => {
+  if (guessLocked) return;
+  const val = parseInt(slider.value);
+  guessLocked = true;
+  document.getElementById('guess-locked-value').textContent = val;
+  document.getElementById('guess-prompt-card').style.display = 'none';
+  document.getElementById('guess-locked-card').style.display = 'block';
+  document.getElementById('guess-btn-card').style.display = 'none';
+  send('guess', { guess: val });
+});
+
+// ===== MENU =====
+function getOrSetName() {
+  const nameInput = document.getElementById('menu-name');
+  const name = nameInput.value.trim();
+  if (!name) { showError('menu-error', t('errorNameRequired')); return null; }
+  return name;
+}
+
+document.getElementById('btn-create').addEventListener('click', () => {
+  const name = getOrSetName();
+  if (!name) return;
+  myName = name;
+  isHost = true;
+  connect(() => send('create', { playerName: name }));
+});
+
+document.getElementById('btn-join').addEventListener('click', () => {
+  const name = getOrSetName();
+  if (!name) return;
+  const code = document.getElementById('menu-code').value.trim().toUpperCase();
+  if (!code || code.length !== 4) { showError('menu-error', t('errorCodeRequired')); return; }
+  myName = name;
+  isHost = false;
+  connect(() => send('join', { roomCode: code, playerName: name }));
+});
+
+document.getElementById('btn-start').addEventListener('click', () => {
+  send('start');
+});
+
+document.getElementById('btn-play-again').addEventListener('click', () => {
+  location.reload();
+});
+
+// ===== Menu code uppercase =====
+document.getElementById('menu-code').addEventListener('input', function() {
+  this.value = this.value.toUpperCase();
+});
+
+// ===== i18n live update =====
+onLangChange(() => {
+  translatePage();
+  if (roomState) renderState(roomState);
+});
+
+// Initial translate
+translatePage();
+</script>
+</body>
+</html>

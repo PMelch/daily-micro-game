@@ -1,0 +1,11 @@
+{
+  "name": "day-031-two-thirds",
+  "type": "module",
+  "scripts": {
+    "test": "bun test",
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  }
+}
