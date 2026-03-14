@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Neon Drift 🏎️</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#05050f;color:#eee;font-family:system-ui,sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;touch-action:manipulation}
+  .back-bar{width:100%;background:#0a0a1a;padding:0.5rem 1rem;border-bottom:1px solid #333;}
+  .back-bar a{color:#ffcc00;text-decoration:none;font-size:0.9rem;font-family:system-ui,sans-serif;}
+  .back-bar a:hover{text-decoration:underline;}
+
+  /* ── Screens ── */
+  .screen{display:none;flex-direction:column;align-items:center;justify-content:center;flex:1;width:100%;max-width:520px;padding:1.5rem 1rem;text-align:center;gap:1rem;}
+  .screen.active{display:flex;}
+
+  h1{font-size:2.4rem;font-weight:900;letter-spacing:2px;text-shadow:0 0 20px #0ff,0 0 40px #0ff;}
+  .tagline{color:#aaa;font-size:0.95rem;}
+
+  .input-group{display:flex;flex-direction:column;gap:0.5rem;width:100%;max-width:340px;}
+  label{font-size:0.85rem;color:#aaa;text-align:left;}
+  input[type=text]{background:#111;border:1px solid #333;border-radius:8px;color:#fff;font-size:1rem;padding:0.6rem 0.9rem;width:100%;outline:none;}
+  input[type=text]:focus{border-color:#0ff;}
+  input.p2{border-color:#333;}
+  input.p2:focus{border-color:#f0f;}
+
+  .btn{background:linear-gradient(135deg,#0ff2,#0ff1);border:1px solid #0ff;border-radius:10px;color:#0ff;cursor:pointer;font-size:1rem;font-weight:700;letter-spacing:1px;padding:0.75rem 2rem;transition:all .15s;width:100%;max-width:340px;}
+  .btn:hover{background:linear-gradient(135deg,#0ff4,#0ff2);box-shadow:0 0 12px #0ff6;}
+  .btn.p2-btn{border-color:#f0f;color:#f0f;background:linear-gradient(135deg,#f0f2,#f0f1);}
+  .btn.p2-btn:hover{background:linear-gradient(135deg,#f0f4,#f0f2);box-shadow:0 0 12px #f0f6;}
+
+  /* ── Input Phase ── */
+  #phase-input{display:none;flex-direction:column;align-items:center;width:100%;max-width:520px;padding:1rem;}
+  #phase-input.active{display:flex;}
+
+  .phase-header{text-align:center;margin-bottom:0.8rem;}
+  .player-label{font-size:1.3rem;font-weight:900;margin-bottom:0.2rem;}
+  .phase-instruction{font-size:0.85rem;color:#aaa;}
+
+  /* ── Canvas wrapper ── */
+  #canvas-wrap{position:relative;width:100%;max-width:500px;}
+  #gameCanvas{display:block;width:100%;border-radius:8px;border:1px solid #222;}
+  #overlay{position:absolute;top:0;left:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;pointer-events:none;}
+
+  /* ── D-pad ── */
+  .dpad{display:grid;grid-template-areas:"  up  " "left ok right" " down ";grid-template-columns:1fr 1fr 1fr;gap:4px;width:min(180px,45vw);margin:0.8rem auto;}
+  .dpad-btn{background:#1a1a2e;border:1px solid #333;border-radius:8px;color:#fff;cursor:pointer;font-size:1.4rem;height:52px;transition:background .1s;}
+  .dpad-btn:active,.dpad-btn.pressed{background:#0ff3;border-color:#0ff;}
+  #btn-up   {grid-area:up;}
+  #btn-left {grid-area:left;}
+  #btn-ok   {grid-area:ok;background:#0ff2;border-color:#0ff;color:#0ff;font-size:0.7rem;font-weight:700;}
+  #btn-right{grid-area:right;}
+  #btn-down {grid-area:down;}
+  .p2-dpad .dpad-btn:active,.p2-dpad .dpad-btn.pressed{background:#f0f3;border-color:#f0f;}
+  .p2-dpad #btn-ok{background:#f0f2;border-color:#f0f;color:#f0f;}
+
+  /* ── Scoreboard ── */
+  .scoreboard{display:flex;gap:2rem;justify-content:center;align-items:center;width:100%;max-width:500px;padding:0.5rem 0;}
+  .score-block{text-align:center;}
+  .score-name{font-size:0.8rem;color:#aaa;}
+  .score-val{font-size:2rem;font-weight:900;}
+  .score-val.p1{color:#0ff;text-shadow:0 0 8px #0ff;}
+  .score-val.p2{color:#f0f;text-shadow:0 0 8px #f0f;}
+  .score-sep{font-size:1.5rem;color:#333;}
+
+  /* ── Round result overlay ── */
+  #round-result{display:none;position:fixed;inset:0;background:#000c;z-index:100;align-items:center;justify-content:center;flex-direction:column;gap:1rem;}
+  #round-result.show{display:flex;}
+  #round-result h2{font-size:2rem;font-weight:900;}
+  #round-result p{color:#aaa;font-size:0.95rem;}
+  #round-result .btn{max-width:260px;}
+
+  /* ── Game Over ── */
+  #screen-gameover{gap:0.8rem;}
+  .winner-crown{font-size:3rem;}
+  .winner-name-big{font-size:2rem;font-weight:900;}
+
+  /* ── Transition overlay ── */
+  #turn-transition{display:none;position:fixed;inset:0;background:#000e;z-index:200;align-items:center;justify-content:center;flex-direction:column;gap:1rem;}
+  #turn-transition.show{display:flex;}
+  #turn-transition h2{font-size:1.8rem;font-weight:900;text-align:center;padding:0 1rem;}
+  #turn-transition p{color:#aaa;font-size:0.95rem;text-align:center;padding:0 1rem;}
+  #turn-transition .btn{max-width:280px;}
+</style>
+</head>
+<body>
+
+<div class="back-bar"><a href="/">← <span data-i18n="backLabel">Back to Games</span></a></div>
+
+<!-- ══ Setup Screen ══════════════════════════════════════════════════════ -->
+<section class="screen active" id="screen-setup">
+  <h1>NEON<br>DRIFT</h1>
+  <p class="tagline" data-i18n="tagline">🏎️ Tron light-cycles · Pass & Play · 2 players</p>
+
+  <div class="input-group">
+    <label data-i18n="p1Name">Player 1 Name (Cyan 🔵)</label>
+    <input type="text" id="inp-p1" maxlength="14" data-i18n-placeholder="p1Default">
+  </div>
+  <div class="input-group">
+    <label data-i18n="p2Name">Player 2 Name (Magenta 🟣)</label>
+    <input type="text" id="inp-p2" maxlength="14" data-i18n-placeholder="p2Default">
+  </div>
+
+  <button class="btn" id="btn-start" data-i18n="startBtn">START GAME</button>
+
+  <p style="font-size:0.8rem;color:#555;max-width:340px;" data-i18n="rulesHint">
+    Steer your light cycle. Don't crash into walls or trails. First to 3 wins!
+  </p>
+</section>
+
+<!-- ══ Game Screen ═══════════════════════════════════════════════════════ -->
+<section class="screen" id="screen-game">
+
+  <div class="scoreboard">
+    <div class="score-block">
+      <div class="score-name" id="score-name-p1">—</div>
+      <div class="score-val p1" id="score-val-p1">0</div>
+    </div>
+    <div class="score-sep">:</div>
+    <div class="score-block">
+      <div class="score-name" id="score-name-p2">—</div>
+      <div class="score-val p2" id="score-val-p2">0</div>
+    </div>
+  </div>
+
+  <div id="canvas-wrap">
+    <canvas id="gameCanvas" width="500" height="500"></canvas>
+    <div id="overlay"></div>
+  </div>
+
+  <!-- Input phase UI (shown during secret input) -->
+  <div id="phase-input">
+    <div class="phase-header">
+      <div class="player-label" id="phase-player-label">Player 1</div>
+      <div class="phase-instruction" data-i18n="chooseDir">Choose your direction (opponent, look away!)</div>
+    </div>
+    <div class="dpad" id="dpad-wrap">
+      <button class="dpad-btn" id="btn-up"    data-dir="UP"    aria-label="Up">▲</button>
+      <button class="dpad-btn" id="btn-left"  data-dir="LEFT"  aria-label="Left">◀</button>
+      <button class="dpad-btn" id="btn-ok"    id="btn-ok"      data-i18n="confirmBtn">OK</button>
+      <button class="dpad-btn" id="btn-right" data-dir="RIGHT" aria-label="Right">▶</button>
+      <button class="dpad-btn" id="btn-down"  data-dir="DOWN"  aria-label="Down">▼</button>
+    </div>
+  </div>
+
+</section>
+
+<!-- ══ Round Result Modal ══════════════════════════════════════════════════ -->
+<div id="round-result">
+  <h2 id="rr-title">💥 CRASH!</h2>
+  <p id="rr-sub"></p>
+  <button class="btn" id="btn-next-round" data-i18n="nextRoundBtn">Next Round</button>
+</div>
+
+<!-- ══ Turn Transition Screen ══════════════════════════════════════════════ -->
+<div id="turn-transition">
+  <h2 id="tt-title"></h2>
+  <p id="tt-sub" data-i18n="ttSub">Pass the device and tap Ready when you're set!</p>
+  <button class="btn" id="btn-tt-ready" data-i18n="readyBtn">Ready!</button>
+</div>
+
+<!-- ══ Game Over Screen ═══════════════════════════════════════════════════ -->
+<section class="screen" id="screen-gameover">
+  <div class="winner-crown">🏆</div>
+  <p data-i18n="winnerLabel">Winner</p>
+  <div class="winner-name-big" id="winner-name">—</div>
+  <p id="final-score" style="color:#aaa"></p>
+  <button class="btn" id="btn-play-again" data-i18n="playAgainBtn">Play Again</button>
+</section>
+
+<script src="/shared/i18n.js"></script>
+<script>
+// ═══════════════════════════════════════════════════════════════════════════
+// Translations
+// ═══════════════════════════════════════════════════════════════════════════
+const TRANSLATIONS = {
+  de: {
+    backLabel: 'Zurück',
+    tagline: '🏎️ Tron-Lichtspuren · Pass & Play · 2 Spieler',
+    p1Name: 'Spieler 1 Name (Cyan 🔵)',
+    p2Name: 'Spieler 2 Name (Magenta 🟣)',
+    p1Default: 'Spieler 1',
+    p2Default: 'Spieler 2',
+    startBtn: 'SPIEL STARTEN',
+    rulesHint: 'Steuere dein Lichtvehikel. Weiche Wänden und Spuren aus. Wer zuerst 3 Runden gewinnt, siegt!',
+    chooseDir: 'Wähle deine Richtung (Gegner wegschauen!)',
+    confirmBtn: 'OK',
+    nextRoundBtn: 'Nächste Runde',
+    playAgainBtn: 'Nochmal',
+    winnerLabel: 'Gewinner',
+    readyBtn: 'Bereit!',
+    ttSub: 'Gib das Gerät weiter und tippe Bereit wenn du startklar bist!',
+    roundWinMsg: 'gewinnt die Runde! 🏎️',
+    drawMsg: 'Gleichstand! Niemand gewinnt.',
+    passDevice: 'Gib das Gerät an',
+    lookAway: 'Gegner, schau weg!',
+    finalScore: 'Endergebnis',
+    goBtn: 'LOS!',
+    inputPhaseP1: 'gibt seine Richtung ein…',
+    inputPhaseP2: 'gibt seine Richtung ein…',
+    bothReady: 'Beide bereit — Bewegen!',
+    crashMsg: '💥 CRASH!',
+    matchPoint: 'Matchball!',
+    winsMatch: 'gewinnt das Match!',
+  },
+  en: {
+    backLabel: 'Back to Games',
+    tagline: '🏎️ Tron light-cycles · Pass & Play · 2 players',
+    p1Name: 'Player 1 Name (Cyan 🔵)',
+    p2Name: 'Player 2 Name (Magenta 🟣)',
+    p1Default: 'Player 1',
+    p2Default: 'Player 2',
+    startBtn: 'START GAME',
+    rulesHint: 'Steer your light cycle. Avoid walls and trails. First to 3 wins!',
+    chooseDir: 'Choose your direction (opponent, look away!)',
+    confirmBtn: 'OK',
+    nextRoundBtn: 'Next Round',
+    playAgainBtn: 'Play Again',
+    winnerLabel: 'Winner',
+    readyBtn: 'Ready!',
+    ttSub: 'Pass the device and tap Ready when set!',
+    roundWinMsg: 'wins the round! 🏎️',
+    drawMsg: "It's a draw! Nobody scores.",
+    passDevice: 'Pass device to',
+    lookAway: 'Opponent, look away!',
+    finalScore: 'Final Score',
+    goBtn: 'GO!',
+    inputPhaseP1: 'enters direction…',
+    inputPhaseP2: 'enters direction…',
+    bothReady: 'Both ready — Moving!',
+    crashMsg: '💥 CRASH!',
+    matchPoint: 'Match point!',
+    winsMatch: 'wins the match!',
+  },
+  fr: {
+    backLabel: 'Retour',
+    tagline: '🏎️ Cycles lumineux Tron · Pass & Play · 2 joueurs',
+    p1Name: 'Nom Joueur 1 (Cyan 🔵)',
+    p2Name: 'Nom Joueur 2 (Magenta 🟣)',
+    p1Default: 'Joueur 1',
+    p2Default: 'Joueur 2',
+    startBtn: 'COMMENCER',
+    rulesHint: 'Pilote ton cycle lumineux. Évite les murs et les sillages. Premier à 3 gagne!',
+    chooseDir: 'Choisis ta direction (adversaire, regarde ailleurs!)',
+    confirmBtn: 'OK',
+    nextRoundBtn: 'Tour suivant',
+    playAgainBtn: 'Rejouer',
+    winnerLabel: 'Vainqueur',
+    readyBtn: 'Prêt!',
+    ttSub: "Passe l'appareil et appuie sur Prêt quand tu es prêt!",
+    roundWinMsg: 'gagne le tour! 🏎️',
+    drawMsg: 'Égalité! Personne ne marque.',
+    passDevice: "Passe l'appareil à",
+    lookAway: "Adversaire, regarde ailleurs!",
+    finalScore: 'Score final',
+    goBtn: 'GO!',
+    inputPhaseP1: 'saisit sa direction…',
+    inputPhaseP2: 'saisit sa direction…',
+    bothReady: 'Les deux sont prêts — En route!',
+    crashMsg: '💥 CRASH!',
+    matchPoint: 'Balle de match!',
+    winsMatch: 'gagne le match!',
+  },
+  it: {
+    backLabel: 'Indietro',
+    tagline: '🏎️ Cicli di luce Tron · Pass & Play · 2 giocatori',
+    p1Name: 'Nome Giocatore 1 (Ciano 🔵)',
+    p2Name: 'Nome Giocatore 2 (Magenta 🟣)',
+    p1Default: 'Giocatore 1',
+    p2Default: 'Giocatore 2',
+    startBtn: 'INIZIA',
+    rulesHint: 'Guida il tuo ciclo luminoso. Evita muri e scie. Chi arriva a 3 vince!',
+    chooseDir: 'Scegli la tua direzione (avversario, guarda altrove!)',
+    confirmBtn: 'OK',
+    nextRoundBtn: 'Round successivo',
+    playAgainBtn: 'Ancora',
+    winnerLabel: 'Vincitore',
+    readyBtn: 'Pronto!',
+    ttSub: "Passa il dispositivo e tocca Pronto quando sei pronto!",
+    roundWinMsg: 'vince il round! 🏎️',
+    drawMsg: 'Pareggio! Nessuno segna.',
+    passDevice: 'Passa il dispositivo a',
+    lookAway: "Avversario, guarda altrove!",
+    finalScore: 'Punteggio finale',
+    goBtn: 'VIA!',
+    inputPhaseP1: 'inserisce direzione…',
+    inputPhaseP2: 'inserisce direzione…',
+    bothReady: 'Entrambi pronti — In moto!',
+    crashMsg: '💥 CRASH!',
+    matchPoint: 'Match point!',
+    winsMatch: 'vince il match!',
+  },
+  es: {
+    backLabel: 'Volver',
+    tagline: '🏎️ Ciclos de luz Tron · Pass & Play · 2 jugadores',
+    p1Name: 'Nombre Jugador 1 (Cian 🔵)',
+    p2Name: 'Nombre Jugador 2 (Magenta 🟣)',
+    p1Default: 'Jugador 1',
+    p2Default: 'Jugador 2',
+    startBtn: 'INICIAR',
+    rulesHint: 'Guía tu ciclo de luz. Evita muros y estelas. ¡El primero en llegar a 3 gana!',
+    chooseDir: '¡Elige tu dirección (oponente, ¡mira hacia otro lado!)',
+    confirmBtn: 'OK',
+    nextRoundBtn: 'Siguiente ronda',
+    playAgainBtn: 'Jugar de nuevo',
+    winnerLabel: 'Ganador',
+    readyBtn: '¡Listo!',
+    ttSub: '¡Pasa el dispositivo y toca Listo cuando estés preparado!',
+    roundWinMsg: '¡gana la ronda! 🏎️',
+    drawMsg: '¡Empate! Nadie puntúa.',
+    passDevice: 'Pasa el dispositivo a',
+    lookAway: '¡Oponente, mira hacia otro lado!',
+    finalScore: 'Puntuación final',
+    goBtn: '¡VAMOS!',
+    inputPhaseP1: 'elige dirección…',
+    inputPhaseP2: 'elige dirección…',
+    bothReady: '¡Listos — En movimiento!',
+    crashMsg: '💥 ¡CHOQUE!',
+    matchPoint: '¡Punto de partido!',
+    winsMatch: '¡gana el partido!',
+  },
+};
+
+const { t, translatePage } = initI18n(TRANSLATIONS);
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Game Logic (inline — mirrors game-logic.js for browser use)
+// ═══════════════════════════════════════════════════════════════════════════
+const GRID_SIZE = 25;
+const DIRS = {
+  UP:    { dx:0, dy:-1 },
+  DOWN:  { dx:0, dy:1  },
+  LEFT:  { dx:-1,dy:0  },
+  RIGHT: { dx:1, dy:0  },
+};
+const OPPOSITES = { UP:'DOWN', DOWN:'UP', LEFT:'RIGHT', RIGHT:'LEFT' };
+
+function isOppositeDir(d, cur) { return OPPOSITES[d] === cur; }
+function isValidDir(d, cur=null) {
+  if (!d || !DIRS[d]) return false;
+  if (cur && isOppositeDir(d, cur)) return false;
+  return true;
+}
+function checkCollision(x, y, trails) {
+  if (x<0||y<0||x>=GRID_SIZE||y>=GRID_SIZE) return true;
+  for (const trail of trails)
+    for (const c of trail)
+      if (c.x===x && c.y===y) return true;
+  return false;
+}
+function createGameState() {
+  const mid = Math.floor(GRID_SIZE/2);
+  const x1 = Math.floor(GRID_SIZE*0.2);
+  const x2 = Math.floor(GRID_SIZE*0.8);
+  return {
+    players:[
+      {id:0,x:x1,y:mid,dir:'RIGHT',trail:[{x:x1,y:mid}],score:0,color:'#00ffff',glow:'#006688'},
+      {id:1,x:x2,y:mid,dir:'LEFT', trail:[{x:x2,y:mid}],score:0,color:'#ff00ff',glow:'#660066'},
+    ],
+    running:true, winner:null, tick:0
+  };
+}
+function applyMoves(state, d0, d1) {
+  const dirs=[d0,d1];
+  const ps=state.players.map(p=>({...p,trail:p.trail.map(c=>({...c}))}));
+  const eff=ps.map((p,i)=>isValidDir(dirs[i],p.dir)?dirs[i]:p.dir);
+  const nxt=ps.map((p,i)=>{const d=DIRS[eff[i]];return{x:p.x+d.dx,y:p.y+d.dy};});
+  ps.forEach((p,i)=>{p.dir=eff[i];});
+  const allT=ps.map(p=>p.trail);
+  const headOn=(nxt[0].x===state.players[1].x&&nxt[0].y===state.players[1].y&&nxt[1].x===state.players[0].x&&nxt[1].y===state.players[0].y);
+  const sameCell=(nxt[0].x===nxt[1].x&&nxt[0].y===nxt[1].y);
+  const crash=[];
+  if(headOn||sameCell){crash.push(0,1);}
+  else{
+    ps.forEach((p,i)=>{
+      if(checkCollision(nxt[i].x,nxt[i].y,allT)){crash.push(i);}
+      else{p.trail.push({x:nxt[i].x,y:nxt[i].y});p.x=nxt[i].x;p.y=nxt[i].y;}
+    });
+  }
+  return{state:{...state,players:ps,tick:state.tick+1,running:crash.length===0},crash};
+}
+function resetRound(state){
+  const f=createGameState();
+  return{...f,players:f.players.map((p,i)=>({...p,score:state.players[i].score}))};
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Game State
+// ═══════════════════════════════════════════════════════════════════════════
+let names=['Spieler 1','Spieler 2'];
+let gameState=null;
+let inputPhase=0;     // 0=p1 choosing, 1=p2 choosing, 2=animating
+let pendingDirs=[null,null];
+const WINS_NEEDED=3;
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Canvas Rendering
+// ═══════════════════════════════════════════════════════════════════════════
+const canvas=document.getElementById('gameCanvas');
+const ctx=canvas.getContext('2d');
+const CELL=canvas.width/GRID_SIZE;
+
+function drawGrid(){
+  ctx.fillStyle='#05050f';
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+  ctx.strokeStyle='#0a0a20';
+  ctx.lineWidth=0.5;
+  for(let i=0;i<=GRID_SIZE;i++){
+    ctx.beginPath();ctx.moveTo(i*CELL,0);ctx.lineTo(i*CELL,canvas.height);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(0,i*CELL);ctx.lineTo(canvas.width,i*CELL);ctx.stroke();
+  }
+}
+
+function drawTrail(trail, color, glowColor, currentX, currentY){
+  if(!trail.length) return;
+  // Draw trail segments
+  ctx.shadowColor=color;
+  ctx.shadowBlur=8;
+  ctx.strokeStyle=color;
+  ctx.lineWidth=CELL*0.55;
+  ctx.lineCap='round';
+  ctx.lineJoin='round';
+  ctx.beginPath();
+  ctx.moveTo(trail[0].x*CELL+CELL/2, trail[0].y*CELL+CELL/2);
+  for(let i=1;i<trail.length;i++){
+    ctx.lineTo(trail[i].x*CELL+CELL/2, trail[i].y*CELL+CELL/2);
+  }
+  ctx.stroke();
+  // Draw head (bright circle)
+  ctx.shadowBlur=18;
+  ctx.fillStyle='#fff';
+  ctx.beginPath();
+  ctx.arc(currentX*CELL+CELL/2, currentY*CELL+CELL/2, CELL*0.45, 0, Math.PI*2);
+  ctx.fill();
+  ctx.shadowBlur=0;
+}
+
+function render(){
+  drawGrid();
+  if(!gameState) return;
+  const [p1,p2]=gameState.players;
+  drawTrail(p1.trail, p1.color, p1.glow, p1.x, p1.y);
+  drawTrail(p2.trail, p2.color, p2.glow, p2.x, p2.y);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Screen management
+// ═══════════════════════════════════════════════════════════════════════════
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Input Phase UI
+// ═══════════════════════════════════════════════════════════════════════════
+const phaseInput=document.getElementById('phase-input');
+const dpadWrap=document.getElementById('dpad-wrap');
+const phaseLbl=document.getElementById('phase-player-label');
+
+let selectedDir=null;
+
+function showInputPhase(playerIdx){
+  inputPhase=playerIdx;
+  selectedDir=null;
+  phaseInput.classList.add('active');
+  phaseInput.style.display='flex';
+
+  const name=names[playerIdx];
+  const color=playerIdx===0?'#00ffff':'#ff00ff';
+  phaseLbl.textContent=name;
+  phaseLbl.style.color=color;
+
+  // Style dpad for player
+  dpadWrap.className=playerIdx===1?'dpad p2-dpad':'dpad';
+
+  // Reset button states
+  document.querySelectorAll('.dpad-btn[data-dir]').forEach(b=>{
+    b.classList.remove('pressed');
+    b.style.opacity='1';
+  });
+  document.getElementById('btn-ok').textContent=t('confirmBtn');
+}
+
+function hideInputPhase(){
+  phaseInput.style.display='none';
+}
+
+document.querySelectorAll('.dpad-btn[data-dir]').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    const dir=btn.dataset.dir;
+    // Validate against U-turn
+    const cur=gameState.players[inputPhase].dir;
+    if(!isValidDir(dir,cur)){
+      btn.style.animation='shake 0.3s';
+      setTimeout(()=>btn.style.animation='',300);
+      return;
+    }
+    selectedDir=dir;
+    document.querySelectorAll('.dpad-btn[data-dir]').forEach(b=>b.classList.remove('pressed'));
+    btn.classList.add('pressed');
+  });
+});
+
+document.getElementById('btn-ok').addEventListener('click',()=>{
+  if(!selectedDir) return;
+  pendingDirs[inputPhase]=selectedDir;
+
+  if(inputPhase===0){
+    // Show transition before player 2's turn
+    showTurnTransition(1, ()=>showInputPhase(1));
+  } else {
+    // Both chose — animate move
+    hideInputPhase();
+    executeMoves();
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Turn Transition
+// ═══════════════════════════════════════════════════════════════════════════
+const turnTransition=document.getElementById('turn-transition');
+const ttTitle=document.getElementById('tt-title');
+let ttCallback=null;
+
+function showTurnTransition(nextPlayer, callback){
+  const name=names[nextPlayer];
+  const color=nextPlayer===0?'#00ffff':'#ff00ff';
+  ttTitle.innerHTML=`<span style="color:${color}">${name}</span> — ${t('lookAway')}`;
+  ttCallback=callback;
+  turnTransition.classList.add('show');
+}
+
+document.getElementById('btn-tt-ready').addEventListener('click',()=>{
+  turnTransition.classList.remove('show');
+  if(ttCallback){ ttCallback(); ttCallback=null; }
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Move Execution + Animation
+// ═══════════════════════════════════════════════════════════════════════════
+function executeMoves(){
+  const result=applyMoves(gameState, pendingDirs[0], pendingDirs[1]);
+  gameState=result.state;
+  render();
+
+  if(result.crash.length>0){
+    setTimeout(()=>handleCrash(result.crash), 300);
+  } else {
+    // Continue to next input phase
+    setTimeout(()=>{
+      showTurnTransition(0, ()=>showInputPhase(0));
+    }, 100);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Crash Handling
+// ═══════════════════════════════════════════════════════════════════════════
+const roundResult=document.getElementById('round-result');
+const rrTitle=document.getElementById('rr-title');
+const rrSub=document.getElementById('rr-sub');
+
+function handleCrash(crashedIds){
+  // Flash crash players
+  crashedIds.forEach(id=>{
+    const p=gameState.players[id];
+    drawCrashEffect(p.x,p.y,p.color);
+  });
+
+  let winnerIdx=null;
+  if(crashedIds.length===2){
+    // Draw — no score
+    rrTitle.textContent=t('crashMsg');
+    rrSub.textContent=t('drawMsg');
+  } else {
+    winnerIdx=crashedIds[0]===0?1:0;
+    gameState.players[winnerIdx].score++;
+    const winName=names[winnerIdx];
+    const winColor=winnerIdx===0?'#00ffff':'#ff00ff';
+    rrTitle.innerHTML=`${t('crashMsg')} <span style="color:${winColor}">${winName}</span> ${t('roundWinMsg')}`;
+    // Check match win
+    if(gameState.players[winnerIdx].score>=WINS_NEEDED){
+      setTimeout(()=>showGameOver(winnerIdx),600);
+      return;
+    }
+    const near=gameState.players[winnerIdx].score===WINS_NEEDED-1;
+    rrSub.textContent=near?t('matchPoint'):'';
+  }
+
+  updateScoreboard();
+  roundResult.classList.add('show');
+}
+
+function drawCrashEffect(x,y,color){
+  ctx.save();
+  ctx.shadowColor=color;
+  ctx.shadowBlur=30;
+  ctx.fillStyle=color;
+  for(let i=0;i<8;i++){
+    const angle=i/8*Math.PI*2;
+    const r=CELL*1.5;
+    ctx.beginPath();
+    ctx.arc(x*CELL+CELL/2+Math.cos(angle)*r, y*CELL+CELL/2+Math.sin(angle)*r, CELL*0.25, 0,Math.PI*2);
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+document.getElementById('btn-next-round').addEventListener('click',()=>{
+  roundResult.classList.remove('show');
+  gameState=resetRound(gameState);
+  render();
+  showTurnTransition(0, ()=>showInputPhase(0));
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Scoreboard
+// ═══════════════════════════════════════════════════════════════════════════
+function updateScoreboard(){
+  document.getElementById('score-name-p1').textContent=names[0];
+  document.getElementById('score-name-p2').textContent=names[1];
+  document.getElementById('score-val-p1').textContent=gameState.players[0].score;
+  document.getElementById('score-val-p2').textContent=gameState.players[1].score;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Game Over
+// ═══════════════════════════════════════════════════════════════════════════
+function showGameOver(winnerIdx){
+  roundResult.classList.remove('show');
+  const winName=names[winnerIdx];
+  const winColor=winnerIdx===0?'#00ffff':'#ff00ff';
+  document.getElementById('winner-name').textContent=winName;
+  document.getElementById('winner-name').style.color=winColor;
+  document.getElementById('winner-name').style.textShadow=`0 0 20px ${winColor}`;
+  const s=gameState.players;
+  document.getElementById('final-score').textContent=`${s[0].score} : ${s[1].score}`;
+  showScreen('screen-gameover');
+}
+
+document.getElementById('btn-play-again').addEventListener('click',()=>{
+  document.getElementById('inp-p1').value=names[0];
+  document.getElementById('inp-p2').value=names[1];
+  showScreen('screen-setup');
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Start
+// ═══════════════════════════════════════════════════════════════════════════
+document.getElementById('btn-start').addEventListener('click',()=>{
+  const n1=(document.getElementById('inp-p1').value.trim()||t('p1Default'));
+  const n2=(document.getElementById('inp-p2').value.trim()||t('p2Default'));
+  names=[n1,n2];
+
+  gameState=createGameState();
+  render();
+  updateScoreboard();
+  showScreen('screen-game');
+  // Start with P1 input phase
+  showTurnTransition(0, ()=>showInputPhase(0));
+});
+
+// Keyboard support
+window.addEventListener('keydown',e=>{
+  if(inputPhase!==0&&inputPhase!==1) return;
+  const map={ArrowUp:'UP',ArrowDown:'DOWN',ArrowLeft:'LEFT',ArrowRight:'RIGHT',w:'UP',s:'DOWN',a:'LEFT',d:'RIGHT'};
+  const dir=map[e.key];
+  if(dir){
+    e.preventDefault();
+    const btn=document.querySelector(`.dpad-btn[data-dir="${dir}"]`);
+    if(btn) btn.click();
+  }
+  if(e.key===' '||e.key==='Enter'){
+    e.preventDefault();
+    document.getElementById('btn-ok').click();
+  }
+});
+
+// Set placeholder text after i18n init
+document.getElementById('inp-p1').placeholder = t('p1Default');
+document.getElementById('inp-p2').placeholder = t('p2Default');
+
+// Initial render (empty grid)
+drawGrid();
+</script>
+</body>
+</html>
