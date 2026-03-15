@@ -1,0 +1,1128 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Bit Circuit</title>
+<style>
+  :root {
+    --bg: #080818;
+    --panel: #0d0d2a;
+    --border: #1a1a4a;
+    --accent: #00ffcc;
+    --accent2: #ff6622;
+    --on-color: #00ffcc;
+    --off-color: #1a1a4a;
+    --wire-on: #00ffcc;
+    --wire-off: #2a2a5a;
+    --text: #e0e0ff;
+    --dim: #555588;
+    --gold: #ffcc00;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Courier New', monospace;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .back-bar {
+    width: 100%;
+    background: #0a0a1a;
+    padding: 0.5rem 1rem;
+    border-bottom: 1px solid #333;
+    flex-shrink: 0;
+  }
+  .back-bar a {
+    color: #ffcc00;
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-family: system-ui, sans-serif;
+  }
+  .back-bar a:hover { text-decoration: underline; }
+
+  #game-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 1rem;
+    gap: 1rem;
+    max-width: 600px;
+    margin: 0 auto;
+    width: 100%;
+  }
+
+  /* Header */
+  .header {
+    text-align: center;
+    width: 100%;
+  }
+  .header h1 {
+    font-size: 1.8rem;
+    color: var(--accent);
+    text-shadow: 0 0 20px var(--accent);
+    letter-spacing: 3px;
+  }
+  .header .subtitle {
+    color: var(--dim);
+    font-size: 0.8rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  /* Level info */
+  .level-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.6rem 1rem;
+  }
+  .level-indicator {
+    display: flex;
+    gap: 6px;
+  }
+  .level-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--off-color);
+    border: 1px solid var(--dim);
+    transition: all 0.3s;
+  }
+  .level-dot.done {
+    background: var(--accent);
+    box-shadow: 0 0 6px var(--accent);
+  }
+  .level-dot.current {
+    background: var(--gold);
+    box-shadow: 0 0 8px var(--gold);
+    animation: pulse-dot 1s ease-in-out infinite;
+  }
+  @keyframes pulse-dot {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+
+  .level-title {
+    font-size: 1rem;
+    color: var(--gold);
+    letter-spacing: 1px;
+  }
+
+  /* Target display */
+  .target-panel {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.8rem 1.2rem;
+    width: 100%;
+  }
+  .target-label {
+    color: var(--dim);
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    flex: 1;
+  }
+  .target-bulb {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 2px solid;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+    transition: all 0.3s;
+  }
+  .target-bulb.on {
+    border-color: var(--accent);
+    background: rgba(0, 255, 204, 0.15);
+    box-shadow: 0 0 15px var(--accent);
+  }
+  .target-bulb.off {
+    border-color: var(--dim);
+    background: transparent;
+  }
+
+  /* Circuit diagram */
+  .circuit-panel {
+    width: 100%;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1rem;
+  }
+  .circuit-panel canvas {
+    display: block;
+    margin: 0 auto;
+    border-radius: 8px;
+  }
+
+  /* Switches */
+  .switches-panel {
+    width: 100%;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.8rem;
+  }
+  .switches-label {
+    color: var(--dim);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 0.6rem;
+    text-align: center;
+  }
+  .switches-row {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+  .switch-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.4rem;
+    cursor: pointer;
+    user-select: none;
+  }
+  .switch-label {
+    font-size: 1rem;
+    font-weight: bold;
+    color: var(--dim);
+    letter-spacing: 1px;
+  }
+  .switch-toggle {
+    width: 60px;
+    height: 32px;
+    border-radius: 16px;
+    border: 2px solid var(--off-color);
+    background: rgba(26, 26, 74, 0.5);
+    position: relative;
+    transition: all 0.25s;
+    cursor: pointer;
+  }
+  .switch-toggle::after {
+    content: '';
+    position: absolute;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--dim);
+    top: 2px;
+    left: 2px;
+    transition: all 0.25s;
+  }
+  .switch-item.on .switch-toggle {
+    border-color: var(--accent);
+    background: rgba(0, 255, 204, 0.1);
+    box-shadow: 0 0 10px rgba(0, 255, 204, 0.3);
+  }
+  .switch-item.on .switch-toggle::after {
+    left: 30px;
+    background: var(--accent);
+    box-shadow: 0 0 8px var(--accent);
+  }
+  .switch-item.on .switch-label {
+    color: var(--accent);
+  }
+  .switch-value {
+    font-size: 0.85rem;
+    color: var(--dim);
+    font-weight: bold;
+  }
+  .switch-item.on .switch-value {
+    color: var(--accent);
+  }
+
+  /* Output display */
+  .output-panel {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    width: 100%;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.8rem 1.2rem;
+  }
+  .output-label {
+    color: var(--dim);
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  .output-bulb {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    border: 2px solid var(--dim);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.6rem;
+    transition: all 0.4s;
+    position: relative;
+  }
+  .output-bulb.lit {
+    border-color: var(--accent);
+    background: rgba(0, 255, 204, 0.15);
+    box-shadow: 0 0 25px var(--accent), 0 0 50px rgba(0, 255, 204, 0.3);
+    animation: bulb-glow 1.5s ease-in-out infinite;
+  }
+  @keyframes bulb-glow {
+    0%, 100% { box-shadow: 0 0 20px var(--accent), 0 0 40px rgba(0, 255, 204, 0.3); }
+    50% { box-shadow: 0 0 30px var(--accent), 0 0 60px rgba(0, 255, 204, 0.5); }
+  }
+  .output-value {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: var(--dim);
+    min-width: 40px;
+    text-align: center;
+  }
+  .output-value.match {
+    color: var(--accent);
+    text-shadow: 0 0 10px var(--accent);
+  }
+
+  /* Level description */
+  .desc-panel {
+    width: 100%;
+    color: var(--dim);
+    font-size: 0.85rem;
+    line-height: 1.5;
+    text-align: center;
+    padding: 0 0.5rem;
+  }
+
+  /* Win overlay */
+  .overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(8, 8, 24, 0.92);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 1.5rem;
+    padding: 2rem;
+  }
+  .overlay.show { display: flex; }
+  .overlay h2 {
+    font-size: 2rem;
+    color: var(--accent);
+    text-shadow: 0 0 30px var(--accent);
+    text-align: center;
+  }
+  .overlay p {
+    color: var(--text);
+    font-size: 1rem;
+    text-align: center;
+    max-width: 400px;
+    line-height: 1.6;
+  }
+  .overlay .stars {
+    font-size: 2.5rem;
+    letter-spacing: 4px;
+  }
+  .btn {
+    background: var(--accent);
+    color: #080818;
+    border: none;
+    padding: 0.8rem 2rem;
+    border-radius: 8px;
+    font-family: 'Courier New', monospace;
+    font-size: 1rem;
+    font-weight: bold;
+    cursor: pointer;
+    letter-spacing: 1px;
+    transition: all 0.2s;
+    text-transform: uppercase;
+  }
+  .btn:hover { opacity: 0.85; transform: scale(1.03); }
+  .btn.secondary {
+    background: transparent;
+    color: var(--accent);
+    border: 1px solid var(--accent);
+  }
+
+  /* Solve flash */
+  .solve-flash {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 255, 204, 0.12);
+    pointer-events: none;
+    opacity: 0;
+    z-index: 50;
+    transition: opacity 0.4s;
+  }
+  .solve-flash.flash { opacity: 1; }
+
+  /* Gate legend */
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    justify-content: center;
+    width: 100%;
+  }
+  .legend-item {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 3px 8px;
+    font-size: 0.7rem;
+    color: var(--dim);
+    letter-spacing: 0.5px;
+  }
+  .legend-item strong { color: var(--text); }
+</style>
+</head>
+<body>
+<div class="back-bar"><a href="/">← Back to Games</a></div>
+
+<div id="game-container">
+  <div class="header">
+    <h1 data-i18n="title">BIT CIRCUIT</h1>
+    <div class="subtitle" data-i18n="subtitle">LOGIC GATE PUZZLE</div>
+  </div>
+
+  <div class="level-bar">
+    <div class="level-indicator" id="level-dots"></div>
+    <div class="level-title" id="level-title-text">Level 1</div>
+  </div>
+
+  <div class="desc-panel" id="level-desc"></div>
+
+  <div class="target-panel">
+    <div class="target-label" data-i18n="target">TARGET OUTPUT</div>
+    <div class="target-bulb" id="target-bulb">💡</div>
+    <div style="color: var(--dim); font-size: 0.8rem;" id="target-value-text"></div>
+  </div>
+
+  <div class="circuit-panel">
+    <canvas id="circuit-canvas" width="560" height="280"></canvas>
+  </div>
+
+  <div class="switches-panel">
+    <div class="switches-label" data-i18n="switches">INPUT SWITCHES</div>
+    <div class="switches-row" id="switches-row"></div>
+  </div>
+
+  <div class="output-panel">
+    <div class="output-label" data-i18n="output">CIRCUIT OUTPUT</div>
+    <div class="output-bulb" id="output-bulb">💡</div>
+    <div class="output-value" id="output-value">0</div>
+  </div>
+
+  <div class="legend" id="gate-legend"></div>
+</div>
+
+<!-- Win overlays -->
+<div class="overlay" id="level-win-overlay">
+  <div class="stars" id="win-stars">⚡⚡⚡</div>
+  <h2 data-i18n="levelSolved">CIRCUIT SOLVED!</h2>
+  <p id="win-message"></p>
+  <button class="btn" id="next-btn" data-i18n="nextLevel">NEXT LEVEL</button>
+</div>
+
+<div class="overlay" id="game-win-overlay">
+  <div class="stars">🏆</div>
+  <h2 data-i18n="allSolved">ALL CIRCUITS COMPLETE!</h2>
+  <p data-i18n="allSolvedMsg">You've mastered all 8 logic gate puzzles! You're a true circuit engineer!</p>
+  <button class="btn" id="restart-btn" data-i18n="playAgain">PLAY AGAIN</button>
+</div>
+
+<div class="solve-flash" id="solve-flash"></div>
+
+<script src="/shared/i18n.js"></script>
+<script>
+const TRANSLATIONS = {
+  de: {
+    title: "BIT CIRCUIT",
+    subtitle: "LOGIKGATTER RÄTSEL",
+    target: "ZIEL-AUSGANG",
+    switches: "EINGABE-SCHALTER",
+    output: "SCHALTKREIS-AUSGANG",
+    levelSolved: "SCHALTKREIS GELÖST!",
+    nextLevel: "NÄCHSTES LEVEL",
+    allSolved: "ALLE SCHALTKREISE KOMPLETT!",
+    allSolvedMsg: "Du hast alle 8 Logikgatter-Rätsel gemeistert! Du bist ein echter Schaltkreis-Ingenieur!",
+    playAgain: "NOCHMAL SPIELEN",
+    on: "EIN",
+    off: "AUS",
+    targetOn: "Ziel: AUSGANG = 1 (AN)",
+    targetOff: "Ziel: AUSGANG = 0 (AUS)",
+    winMsg: "Ausgezeichnet! Alle Gatter korrekt geschaltet.",
+    level1desc: "Schalte BEIDE Eingänge AN, damit das AND-Gatter 1 ausgibt.",
+    level2desc: "Das OR-Gatter gibt 1 aus, wenn mindestens EIN Eingang AN ist. Schalte BEIDE aus, damit es 0 ausgibt.",
+    level3desc: "Der NOT-Gatter dreht den Eingang A um. Finde die richtige Kombination für 1 am Ausgang.",
+    level4desc: "XOR gibt 1 aus wenn GENAU EIN Eingang AN ist. Schalte A oder B — nicht beide!",
+    level5desc: "3 Eingänge: AND(A,B) → OR(Ergebnis, C). Finde eine Kombination für 1 am Ausgang.",
+    level6desc: "NAND ist NOT-AND. NOR ist NOT-OR. Kombiniere sie für 1 am Ausgang.",
+    level7desc: "Eine 3-Stufen-Kette: OR → NOT → AND. Analysiere sorgfältig!",
+    level8desc: "4 Eingänge, 4 Gatter. Das komplexeste Rätsel! Nur eine Kombination liefert 1.",
+  },
+  en: {
+    title: "BIT CIRCUIT",
+    subtitle: "LOGIC GATE PUZZLE",
+    target: "TARGET OUTPUT",
+    switches: "INPUT SWITCHES",
+    output: "CIRCUIT OUTPUT",
+    levelSolved: "CIRCUIT SOLVED!",
+    nextLevel: "NEXT LEVEL",
+    allSolved: "ALL CIRCUITS COMPLETE!",
+    allSolvedMsg: "You've mastered all 8 logic gate puzzles! You're a true circuit engineer!",
+    playAgain: "PLAY AGAIN",
+    on: "ON",
+    off: "OFF",
+    targetOn: "Goal: OUTPUT = 1 (ON)",
+    targetOff: "Goal: OUTPUT = 0 (OFF)",
+    winMsg: "Excellent! All gates correctly switched.",
+    level1desc: "Turn BOTH inputs ON so the AND gate outputs 1.",
+    level2desc: "An OR gate outputs 1 when at least ONE input is ON. Turn BOTH off to get 0.",
+    level3desc: "The NOT gate inverts input A. Find the right combination to get 1 at the output.",
+    level4desc: "XOR outputs 1 when EXACTLY ONE input is ON. Toggle A or B — not both!",
+    level5desc: "3 inputs: AND(A,B) → OR(result, C). Find a combination for 1 at the output.",
+    level6desc: "NAND is NOT-AND. NOR is NOT-OR. Combine them to get 1 at the output.",
+    level7desc: "A 3-stage chain: OR → NOT → AND. Analyze carefully!",
+    level8desc: "4 inputs, 4 gates. The most complex puzzle! Only one combination outputs 1.",
+  },
+  fr: {
+    title: "BIT CIRCUIT",
+    subtitle: "PUZZLE DE PORTES LOGIQUES",
+    target: "SORTIE CIBLE",
+    switches: "INTERRUPTEURS D'ENTRÉE",
+    output: "SORTIE DU CIRCUIT",
+    levelSolved: "CIRCUIT RÉSOLU !",
+    nextLevel: "NIVEAU SUIVANT",
+    allSolved: "TOUS LES CIRCUITS COMPLETS !",
+    allSolvedMsg: "Tu as maîtrisé les 8 puzzles de portes logiques ! Tu es un vrai ingénieur en circuits !",
+    playAgain: "REJOUER",
+    on: "ACTIF",
+    off: "INACTIF",
+    targetOn: "But : SORTIE = 1 (ACTIF)",
+    targetOff: "But : SORTIE = 0 (INACTIF)",
+    winMsg: "Excellent ! Toutes les portes correctement configurées.",
+    level1desc: "Active LES DEUX entrées pour que la porte AND sorte 1.",
+    level2desc: "Une porte OR sort 1 si au moins UNE entrée est active. Désactive les deux pour obtenir 0.",
+    level3desc: "La porte NOT inverse l'entrée A. Trouve la bonne combinaison pour 1 en sortie.",
+    level4desc: "XOR sort 1 quand EXACTEMENT UNE entrée est active. Bascule A ou B — pas les deux !",
+    level5desc: "3 entrées : AND(A,B) → OR(résultat, C). Trouve une combinaison pour 1 en sortie.",
+    level6desc: "NAND est NOT-AND. NOR est NOT-OR. Combine-les pour 1 en sortie.",
+    level7desc: "Une chaîne à 3 étages : OR → NOT → AND. Analyse soigneusement !",
+    level8desc: "4 entrées, 4 portes. Le puzzle le plus complexe ! Une seule combinaison donne 1.",
+  },
+  it: {
+    title: "BIT CIRCUIT",
+    subtitle: "PUZZLE PORTE LOGICHE",
+    target: "USCITA OBIETTIVO",
+    switches: "INTERRUTTORI DI INGRESSO",
+    output: "USCITA DEL CIRCUITO",
+    levelSolved: "CIRCUITO RISOLTO!",
+    nextLevel: "LIVELLO SUCCESSIVO",
+    allSolved: "TUTTI I CIRCUITI COMPLETATI!",
+    allSolvedMsg: "Hai padroneggiato tutti gli 8 puzzle di porte logiche! Sei un vero ingegnere di circuiti!",
+    playAgain: "GIOCA DI NUOVO",
+    on: "ATTIVO",
+    off: "INATTIVO",
+    targetOn: "Obiettivo: USCITA = 1 (ATTIVO)",
+    targetOff: "Obiettivo: USCITA = 0 (INATTIVO)",
+    winMsg: "Eccellente! Tutti i gate correttamente impostati.",
+    level1desc: "Attiva ENTRAMBI gli ingressi affinché la porta AND emetta 1.",
+    level2desc: "Una porta OR emette 1 se almeno UN ingresso è attivo. Disattiva entrambi per ottenere 0.",
+    level3desc: "La porta NOT inverte l'ingresso A. Trova la giusta combinazione per 1 in uscita.",
+    level4desc: "XOR emette 1 quando ESATTAMENTE UN ingresso è attivo. Alterna A o B — non entrambi!",
+    level5desc: "3 ingressi: AND(A,B) → OR(risultato, C). Trova una combinazione per 1 in uscita.",
+    level6desc: "NAND è NOT-AND. NOR è NOT-OR. Combinali per 1 in uscita.",
+    level7desc: "Una catena a 3 stadi: OR → NOT → AND. Analizza con attenzione!",
+    level8desc: "4 ingressi, 4 porte. Il puzzle più complesso! Solo una combinazione dà 1.",
+  },
+  es: {
+    title: "BIT CIRCUIT",
+    subtitle: "PUZZLE DE PUERTAS LÓGICAS",
+    target: "SALIDA OBJETIVO",
+    switches: "INTERRUPTORES DE ENTRADA",
+    output: "SALIDA DEL CIRCUITO",
+    levelSolved: "¡CIRCUITO RESUELTO!",
+    nextLevel: "SIGUIENTE NIVEL",
+    allSolved: "¡TODOS LOS CIRCUITOS COMPLETOS!",
+    allSolvedMsg: "¡Has dominado los 8 puzzles de puertas lógicas! ¡Eres un verdadero ingeniero de circuitos!",
+    playAgain: "JUGAR DE NUEVO",
+    on: "ACTIVO",
+    off: "INACTIVO",
+    targetOn: "Meta: SALIDA = 1 (ACTIVO)",
+    targetOff: "Meta: SALIDA = 0 (INACTIVO)",
+    winMsg: "¡Excelente! Todas las puertas correctamente configuradas.",
+    level1desc: "Activa AMBAS entradas para que la puerta AND produzca 1.",
+    level2desc: "Una puerta OR produce 1 si al menos UNA entrada está activa. Desactiva ambas para obtener 0.",
+    level3desc: "La puerta NOT invierte la entrada A. Encuentra la combinación correcta para 1 en la salida.",
+    level4desc: "XOR produce 1 cuando EXACTAMENTE UNA entrada está activa. Cambia A o B — ¡no ambas!",
+    level5desc: "3 entradas: AND(A,B) → OR(resultado, C). Encuentra una combinación para 1 en la salida.",
+    level6desc: "NAND es NOT-AND. NOR es NOT-OR. Combínalos para 1 en la salida.",
+    level7desc: "Una cadena de 3 etapas: OR → NOT → AND. ¡Analiza con cuidado!",
+    level8desc: "4 entradas, 4 puertas. ¡El puzzle más complejo! Solo una combinación da 1.",
+  },
+};
+
+const { t, translatePage, onLangChange } = initI18n(TRANSLATIONS);
+
+// ============================================================
+// GAME LOGIC (inline, mirrors logic.js for browser use)
+// ============================================================
+const GATES = { AND:'AND', OR:'OR', NOT:'NOT', XOR:'XOR', NAND:'NAND', NOR:'NOR' };
+
+function evaluateGate(type, inputs) {
+  switch (type) {
+    case 'AND': return inputs.every(Boolean);
+    case 'OR': return inputs.some(Boolean);
+    case 'NOT': return !inputs[0];
+    case 'XOR': return inputs.reduce((a,b) => a !== b, false);
+    case 'NAND': return !inputs.every(Boolean);
+    case 'NOR': return !inputs.some(Boolean);
+  }
+}
+
+function evaluateCircuit(circuit) {
+  const { switches, gates, output } = circuit;
+  const gateValues = new Array(gates.length);
+  function resolveInput(ref) {
+    if (typeof ref === 'string') {
+      if (ref.startsWith('sw')) return Boolean(switches[parseInt(ref.slice(2))]);
+      if (ref.startsWith('g')) return computeGate(parseInt(ref.slice(1)));
+    }
+    return Boolean(switches[ref]);
+  }
+  function computeGate(idx) {
+    if (gateValues[idx] !== undefined) return gateValues[idx];
+    const gate = gates[idx];
+    gateValues[idx] = evaluateGate(gate.type, gate.inputs.map(resolveInput));
+    return gateValues[idx];
+  }
+  return computeGate(output);
+}
+
+function getLevelConfig(levelNum) {
+  const levels = [
+    { title:'AND Gate', descKey:'level1desc', circuit: { switches:[false,false], gates:[{type:'AND',inputs:['sw0','sw1']}], output:0 }, target:true, switchLabels:['A','B'] },
+    { title:'OR Gate', descKey:'level2desc', circuit: { switches:[false,false], gates:[{type:'OR',inputs:['sw0','sw1']}], output:0 }, target:false, switchLabels:['A','B'] },
+    { title:'NOT + AND', descKey:'level3desc', circuit: { switches:[true,false], gates:[{type:'NOT',inputs:['sw0']},{type:'AND',inputs:['g0','sw1']}], output:1 }, target:true, switchLabels:['A','B'] },
+    { title:'XOR Gate', descKey:'level4desc', circuit: { switches:[true,true], gates:[{type:'XOR',inputs:['sw0','sw1']}], output:0 }, target:true, switchLabels:['A','B'] },
+    { title:'3-Input Mix', descKey:'level5desc', circuit: { switches:[false,false,false], gates:[{type:'AND',inputs:['sw0','sw1']},{type:'OR',inputs:['g0','sw2']}], output:1 }, target:true, switchLabels:['A','B','C'] },
+    { title:'NAND & NOR', descKey:'level6desc', circuit: { switches:[true,true], gates:[{type:'NAND',inputs:['sw0','sw1']},{type:'NOR',inputs:['g0','sw0']}], output:1 }, target:true, switchLabels:['A','B'] },
+    { title:'Logic Chain', descKey:'level7desc', circuit: { switches:[false,false,false], gates:[{type:'OR',inputs:['sw0','sw1']},{type:'NOT',inputs:['g0']},{type:'AND',inputs:['g1','sw2']}], output:2 }, target:true, switchLabels:['A','B','C'] },
+    { title:'Full Circuit', descKey:'level8desc', circuit: { switches:[false,false,false,false], gates:[{type:'AND',inputs:['sw0','sw1']},{type:'XOR',inputs:['sw2','sw3']},{type:'OR',inputs:['g0','g1']},{type:'NAND',inputs:['g2','sw0']}], output:3 }, target:true, switchLabels:['A','B','C','D'] },
+  ];
+  return levels[levelNum - 1] || null;
+}
+
+// ============================================================
+// RENDERING
+// ============================================================
+const COLORS = {
+  wireOn: '#00ffcc',
+  wireOff: '#2a2a5a',
+  gateOn: '#00ffcc',
+  gateOff: '#1a1a4a',
+  gateBorder: '#334',
+  text: '#e0e0ff',
+  dim: '#555588',
+  bg: '#0d0d2a',
+  accent2: '#ff6622',
+};
+
+function getGateColor(val) {
+  return val ? COLORS.wireOn : COLORS.wireOff;
+}
+
+function drawGate(ctx, x, y, w, h, type, value) {
+  const color = value ? COLORS.gateOn : COLORS.gateBorder;
+  ctx.strokeStyle = color;
+  ctx.lineWidth = value ? 2.5 : 1.5;
+  ctx.fillStyle = value ? 'rgba(0,255,204,0.08)' : 'rgba(13,13,42,0.9)';
+
+  if (type === 'NOT') {
+    // Triangle with circle
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(x + w - 10, y + h/2);
+    ctx.lineTo(x, y + h);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    // Circle for inversion
+    ctx.beginPath();
+    ctx.arc(x + w - 6, y + h/2, 5, 0, Math.PI*2);
+    ctx.fill();
+    ctx.stroke();
+  } else if (type === 'AND' || type === 'NAND') {
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(x + w*0.5, y);
+    ctx.arc(x + w*0.5, y + h/2, h/2, -Math.PI/2, Math.PI/2);
+    ctx.lineTo(x, y + h);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    if (type === 'NAND') {
+      ctx.beginPath();
+      ctx.arc(x + w + 4, y + h/2, 5, 0, Math.PI*2);
+      ctx.fill();
+      ctx.stroke();
+    }
+  } else if (type === 'OR' || type === 'NOR' || type === 'XOR') {
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.quadraticCurveTo(x + w*0.5, y, x + w, y + h/2);
+    ctx.quadraticCurveTo(x + w*0.5, y + h, x, y + h);
+    ctx.quadraticCurveTo(x + w*0.3, y + h/2, x, y);
+    ctx.fill();
+    ctx.stroke();
+    if (type === 'XOR') {
+      ctx.beginPath();
+      ctx.moveTo(x - 8, y);
+      ctx.quadraticCurveTo(x + w*0.3 - 8, y + h/2, x - 8, y + h);
+      ctx.stroke();
+    }
+    if (type === 'NOR') {
+      ctx.beginPath();
+      ctx.arc(x + w + 4, y + h/2, 5, 0, Math.PI*2);
+      ctx.fill();
+      ctx.stroke();
+    }
+  }
+
+  // Label
+  ctx.fillStyle = value ? COLORS.gateOn : COLORS.dim;
+  ctx.font = `bold ${Math.min(11, h*0.35)}px 'Courier New', monospace`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  const labelX = type === 'NOT' ? x + (w - 10)*0.4 : x + w*0.4;
+  ctx.fillText(type, labelX, y + h/2);
+}
+
+function drawWire(ctx, x1, y1, x2, y2, value, cornerX) {
+  ctx.strokeStyle = value ? COLORS.wireOn : COLORS.wireOff;
+  ctx.lineWidth = value ? 2.5 : 1.5;
+  if (value) {
+    ctx.shadowColor = COLORS.wireOn;
+    ctx.shadowBlur = 6;
+  }
+  ctx.beginPath();
+  ctx.moveTo(x1, y1);
+  if (cornerX !== undefined) {
+    ctx.lineTo(cornerX, y1);
+    ctx.lineTo(cornerX, y2);
+  }
+  ctx.lineTo(x2, y2);
+  ctx.stroke();
+  ctx.shadowBlur = 0;
+}
+
+function drawCircuit(canvas, levelConfig, switchValues) {
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width;
+  const H = canvas.height;
+  
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = COLORS.bg;
+  ctx.fillRect(0, 0, W, H);
+
+  const circuit = {
+    switches: switchValues,
+    gates: levelConfig.circuit.gates,
+    output: levelConfig.circuit.output,
+  };
+  
+  const numSwitches = switchValues.length;
+  const numGates = levelConfig.circuit.gates.length;
+
+  // Compute gate values for all gates
+  const gateVals = new Array(numGates);
+  function resolveRef(ref) {
+    if (typeof ref === 'string') {
+      if (ref.startsWith('sw')) return Boolean(switchValues[parseInt(ref.slice(2))]);
+      if (ref.startsWith('g')) return gateVals[parseInt(ref.slice(1))] || false;
+    }
+    return Boolean(switchValues[ref]);
+  }
+  for (let i = 0; i < numGates; i++) {
+    const gate = levelConfig.circuit.gates[i];
+    gateVals[i] = evaluateGate(gate.type, gate.inputs.map(resolveRef));
+  }
+
+  // Layout: switches on left, gates in middle columns, output on right
+  const margin = 20;
+  const switchX = margin + 30;
+  const outputX = W - margin - 20;
+  
+  // Determine columns of gates
+  // Build dependency graph to assign columns
+  const gateColumns = new Array(numGates).fill(0);
+  for (let i = 0; i < numGates; i++) {
+    const gate = levelConfig.circuit.gates[i];
+    let maxDepCol = 0;
+    for (const inp of gate.inputs) {
+      if (typeof inp === 'string' && inp.startsWith('g')) {
+        maxDepCol = Math.max(maxDepCol, gateColumns[parseInt(inp.slice(1))] + 1);
+      }
+    }
+    gateColumns[i] = maxDepCol;
+  }
+  const maxCol = Math.max(...gateColumns);
+  const numCols = maxCol + 1;
+  
+  // Gate positions
+  const gateW = Math.min(70, (W - switchX - 80 - margin) / numCols - 20);
+  const gateH = 36;
+  const colSpacing = (W - switchX - 80 - margin - gateW) / numCols;
+  
+  // Group gates by column
+  const byCol = {};
+  for (let i = 0; i < numGates; i++) {
+    const col = gateColumns[i];
+    if (!byCol[col]) byCol[col] = [];
+    byCol[col].push(i);
+  }
+
+  const gatePositions = new Array(numGates);
+  for (let col = 0; col <= maxCol; col++) {
+    const gatesInCol = byCol[col] || [];
+    const colX = switchX + 60 + col * colSpacing;
+    for (let j = 0; j < gatesInCol.length; j++) {
+      const gateIdx = gatesInCol[j];
+      const totalH = gatesInCol.length * (gateH + 20) - 20;
+      const startY = (H - totalH) / 2;
+      gatePositions[gateIdx] = {
+        x: colX,
+        y: startY + j * (gateH + 20),
+        w: gateW,
+        h: gateH,
+      };
+    }
+  }
+
+  // Switch positions
+  const switchPositions = [];
+  const totalSwitchH = numSwitches * 40 - 10;
+  const startSwitchY = (H - totalSwitchH) / 2;
+  for (let i = 0; i < numSwitches; i++) {
+    switchPositions.push({
+      x: switchX,
+      y: startSwitchY + i * 40 + 10,
+      label: levelConfig.switchLabels[i],
+    });
+  }
+
+  // Draw switches
+  for (let i = 0; i < numSwitches; i++) {
+    const sw = switchPositions[i];
+    const val = switchValues[i];
+    const color = val ? COLORS.wireOn : COLORS.wireOff;
+    
+    ctx.fillStyle = val ? 'rgba(0,255,204,0.15)' : 'rgba(26,26,74,0.5)';
+    ctx.strokeStyle = color;
+    ctx.lineWidth = val ? 2 : 1;
+    ctx.beginPath();
+    ctx.roundRect(sw.x - 25, sw.y - 10, 50, 20, 4);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = val ? COLORS.wireOn : COLORS.dim;
+    ctx.font = 'bold 11px Courier New';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(`${sw.label}=${val?'1':'0'}`, sw.x, sw.y);
+
+    if (val) {
+      ctx.shadowColor = COLORS.wireOn;
+      ctx.shadowBlur = 8;
+      ctx.fillText(`${sw.label}=${val?'1':'0'}`, sw.x, sw.y);
+      ctx.shadowBlur = 0;
+    }
+  }
+
+  // Draw wires from switches to gates
+  for (let gi = 0; gi < numGates; gi++) {
+    const gate = levelConfig.circuit.gates[gi];
+    const gp = gatePositions[gi];
+    const type = gate.type;
+    const numInputs = type === 'NOT' ? 1 : 2;
+    
+    for (let ii = 0; ii < gate.inputs.length; ii++) {
+      const inp = gate.inputs[ii];
+      let srcX, srcY, wireval;
+      
+      if (typeof inp === 'string' && inp.startsWith('sw')) {
+        const idx = parseInt(inp.slice(2));
+        srcX = switchPositions[idx].x + 25;
+        srcY = switchPositions[idx].y;
+        wireval = switchValues[idx];
+      } else if (typeof inp === 'string' && inp.startsWith('g')) {
+        const idx = parseInt(inp.slice(1));
+        const sp = gatePositions[idx];
+        srcX = sp.x + sp.w + (type === 'NAND' || type === 'NOR' ? 12 : 2);
+        srcY = sp.y + sp.h / 2;
+        wireval = gateVals[idx];
+      }
+      
+      const inputFrac = numInputs === 1 ? 0.5 : (ii === 0 ? 0.3 : 0.7);
+      const destY = gp.y + gp.h * inputFrac;
+      const destX = gp.x;
+      
+      const cornerX = (srcX + destX) / 2;
+      drawWire(ctx, srcX, srcY, destX, destY, wireval, cornerX);
+    }
+  }
+
+  // Draw gates
+  for (let i = 0; i < numGates; i++) {
+    const gp = gatePositions[i];
+    drawGate(ctx, gp.x, gp.y, gp.w, gp.h, levelConfig.circuit.gates[i].type, gateVals[i]);
+  }
+
+  // Draw output wire
+  const outputGate = gatePositions[levelConfig.circuit.output];
+  const outType = levelConfig.circuit.gates[levelConfig.circuit.output].type;
+  const outX = outputGate.x + outputGate.w + (outType === 'NAND' || outType === 'NOR' ? 12 : 2);
+  const outY = outputGate.y + outputGate.h / 2;
+  const finalVal = gateVals[levelConfig.circuit.output];
+  
+  drawWire(ctx, outX, outY, outputX - 10, outY, finalVal);
+  
+  // Output bulb on canvas
+  ctx.beginPath();
+  ctx.arc(outputX + 8, outY, 10, 0, Math.PI * 2);
+  ctx.fillStyle = finalVal ? 'rgba(0,255,204,0.2)' : 'rgba(26,26,74,0.5)';
+  ctx.strokeStyle = finalVal ? COLORS.wireOn : COLORS.wireOff;
+  ctx.lineWidth = finalVal ? 2 : 1;
+  ctx.fill();
+  ctx.stroke();
+  if (finalVal) {
+    ctx.shadowColor = COLORS.wireOn;
+    ctx.shadowBlur = 15;
+    ctx.fill();
+    ctx.shadowBlur = 0;
+  }
+  
+  ctx.fillStyle = finalVal ? COLORS.wireOn : COLORS.dim;
+  ctx.font = 'bold 10px Courier New';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(finalVal ? '1' : '0', outputX + 8, outY);
+}
+
+// ============================================================
+// GAME STATE
+// ============================================================
+let currentLevel = 1;
+let levelConfig = null;
+let switchValues = [];
+
+function initLevel(levelNum) {
+  levelConfig = getLevelConfig(levelNum);
+  if (!levelConfig) return;
+  
+  // Deep copy switches
+  switchValues = [...levelConfig.circuit.switches];
+  
+  renderLevelDots();
+  renderSwitches();
+  renderTargetPanel();
+  renderGateLegend();
+  updateDisplay();
+  
+  document.getElementById('level-title-text').textContent = `${currentLevel}/8 – ${levelConfig.title}`;
+  document.getElementById('level-desc').textContent = t(levelConfig.descKey);
+}
+
+function renderLevelDots() {
+  const container = document.getElementById('level-dots');
+  container.innerHTML = '';
+  for (let i = 1; i <= 8; i++) {
+    const dot = document.createElement('div');
+    dot.className = 'level-dot' + 
+      (i < currentLevel ? ' done' : '') + 
+      (i === currentLevel ? ' current' : '');
+    container.appendChild(dot);
+  }
+}
+
+function renderSwitches() {
+  const row = document.getElementById('switches-row');
+  row.innerHTML = '';
+  
+  for (let i = 0; i < switchValues.length; i++) {
+    const item = document.createElement('div');
+    item.className = 'switch-item' + (switchValues[i] ? ' on' : '');
+    item.dataset.idx = i;
+    item.innerHTML = `
+      <div class="switch-label">${levelConfig.switchLabels[i]}</div>
+      <div class="switch-toggle"></div>
+      <div class="switch-value">${switchValues[i] ? t('on') : t('off')}</div>
+    `;
+    item.addEventListener('click', () => toggleSwitch(i));
+    row.appendChild(item);
+  }
+}
+
+function renderTargetPanel() {
+  const bulb = document.getElementById('target-bulb');
+  const valueText = document.getElementById('target-value-text');
+  
+  bulb.className = 'target-bulb ' + (levelConfig.target ? 'on' : 'off');
+  bulb.textContent = levelConfig.target ? '💡' : '🔌';
+  valueText.textContent = levelConfig.target ? t('targetOn') : t('targetOff');
+}
+
+function renderGateLegend() {
+  const legend = document.getElementById('gate-legend');
+  legend.innerHTML = '';
+  
+  const gateTypes = [...new Set(levelConfig.circuit.gates.map(g => g.type))];
+  const defs = {
+    AND: '1 if ALL inputs are 1',
+    OR: '1 if ANY input is 1',
+    NOT: 'Inverts single input',
+    XOR: '1 if inputs DIFFER',
+    NAND: '0 only if ALL inputs are 1',
+    NOR: '1 only if ALL inputs are 0',
+  };
+  const defsDe = {
+    AND: '1 wenn ALLE Eingänge 1',
+    OR: '1 wenn EIN Eingang 1',
+    NOT: 'Dreht einen Eingang um',
+    XOR: '1 wenn Eingänge verschieden',
+    NAND: '0 nur wenn ALLE Eingänge 1',
+    NOR: '1 nur wenn ALLE Eingänge 0',
+  };
+  
+  for (const type of gateTypes) {
+    const item = document.createElement('div');
+    item.className = 'legend-item';
+    const def = defs[type] || type;
+    item.innerHTML = `<strong>${type}</strong>: ${def}`;
+    legend.appendChild(item);
+  }
+}
+
+function toggleSwitch(idx) {
+  switchValues[idx] = !switchValues[idx];
+  
+  // Update switch UI
+  const items = document.querySelectorAll('.switch-item');
+  const item = items[idx];
+  if (item) {
+    item.className = 'switch-item' + (switchValues[idx] ? ' on' : '');
+    item.querySelector('.switch-value').textContent = switchValues[idx] ? t('on') : t('off');
+  }
+  
+  updateDisplay();
+}
+
+function updateDisplay() {
+  const circuit = { switches: switchValues, gates: levelConfig.circuit.gates, output: levelConfig.circuit.output };
+  const output = evaluateCircuit(circuit);
+  const solved = output === levelConfig.target;
+  
+  // Update output panel
+  const bulb = document.getElementById('output-bulb');
+  const val = document.getElementById('output-value');
+  
+  bulb.className = 'output-bulb' + (output ? ' lit' : '');
+  bulb.textContent = output ? '💡' : '🔌';
+  val.className = 'output-value' + (solved ? ' match' : '');
+  val.textContent = output ? '1' : '0';
+  
+  // Redraw circuit
+  const canvas = document.getElementById('circuit-canvas');
+  drawCircuit(canvas, levelConfig, switchValues);
+  
+  if (solved) {
+    setTimeout(() => triggerSolve(), 200);
+  }
+}
+
+let solving = false;
+
+function triggerSolve() {
+  if (solving) return;
+  solving = true;
+  
+  // Flash effect
+  const flash = document.getElementById('solve-flash');
+  flash.classList.add('flash');
+  setTimeout(() => flash.classList.remove('flash'), 500);
+  
+  setTimeout(() => {
+    if (currentLevel >= 8) {
+      document.getElementById('game-win-overlay').classList.add('show');
+    } else {
+      document.getElementById('win-message').textContent = t('winMsg');
+      document.getElementById('level-win-overlay').classList.add('show');
+    }
+  }, 600);
+}
+
+document.getElementById('next-btn').addEventListener('click', () => {
+  document.getElementById('level-win-overlay').classList.remove('show');
+  solving = false;
+  currentLevel++;
+  initLevel(currentLevel);
+});
+
+document.getElementById('restart-btn').addEventListener('click', () => {
+  document.getElementById('game-win-overlay').classList.remove('show');
+  solving = false;
+  currentLevel = 1;
+  initLevel(currentLevel);
+});
+
+// Re-render on language change
+onLangChange(() => {
+  translatePage();
+  renderTargetPanel();
+  renderGateLegend();
+  renderSwitches();
+  document.getElementById('level-desc').textContent = t(levelConfig.descKey);
+  document.getElementById('level-title-text').textContent = `${currentLevel}/8 – ${levelConfig.title}`;
+});
+
+// Resize canvas for mobile
+function resizeCanvas() {
+  const canvas = document.getElementById('circuit-canvas');
+  const panel = canvas.parentElement;
+  const panelW = panel.clientWidth - 32;
+  const scale = Math.min(1, panelW / 560);
+  canvas.style.width = (560 * scale) + 'px';
+  canvas.style.height = (280 * scale) + 'px';
+  if (levelConfig) drawCircuit(canvas, levelConfig, switchValues);
+}
+
+window.addEventListener('resize', resizeCanvas);
+
+// Start game
+initLevel(1);
+resizeCanvas();
+</script>
+</body>
+</html>
