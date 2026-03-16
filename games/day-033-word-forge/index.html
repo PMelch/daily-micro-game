@@ -1,0 +1,1481 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Word Forge 🔤</title>
+<script src="/shared/i18n.js"></script>
+<style>
+  :root {
+    --bg: #0a0a1a;
+    --panel: #12122a;
+    --accent: #ffcc00;
+    --accent2: #ff6b35;
+    --green: #4caf50;
+    --red: #f44336;
+    --blue: #42a5f5;
+    --text: #e8e8f0;
+    --muted: #888;
+    --tile: #1e1e3a;
+    --tile-hover: #2a2a4a;
+    --tile-used: #0d3020;
+    --border: #333;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: system-ui, sans-serif;
+    min-height: 100vh;
+  }
+  .back-bar {
+    width: 100%;
+    background: #0a0a1a;
+    padding: 0.5rem 1rem;
+    border-bottom: 1px solid #333;
+  }
+  .back-bar a {
+    color: #ffcc00;
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .back-bar a:hover { text-decoration: underline; }
+
+  #app {
+    max-width: 500px;
+    margin: 0 auto;
+    padding: 1rem;
+  }
+
+  /* ---- Screens ---- */
+  .screen { display: none; }
+  .screen.active { display: block; }
+
+  /* ---- Setup ---- */
+  .game-title {
+    text-align: center;
+    font-size: 2.2rem;
+    font-weight: 900;
+    color: var(--accent);
+    text-shadow: 0 0 20px rgba(255,204,0,0.4);
+    margin: 1rem 0 0.3rem;
+    letter-spacing: 2px;
+  }
+  .game-subtitle {
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.9rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .setup-card {
+    background: var(--panel);
+    border-radius: 16px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    border: 1px solid var(--border);
+  }
+  .setup-card h3 {
+    color: var(--accent);
+    margin-bottom: 1rem;
+    font-size: 1rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  .player-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+  }
+  .player-icon {
+    font-size: 1.4rem;
+    width: 36px;
+    text-align: center;
+  }
+  .player-input {
+    flex: 1;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.5rem 0.75rem;
+    color: var(--text);
+    font-size: 1rem;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .player-input:focus { border-color: var(--accent); }
+
+  .rounds-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .rounds-label { color: var(--text); font-size: 0.95rem; }
+  .rounds-control { display: flex; align-items: center; gap: 0.75rem; }
+  .rounds-btn {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    background: var(--tile);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-size: 1.2rem;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.15s;
+  }
+  .rounds-btn:hover { background: var(--tile-hover); }
+  .rounds-val { font-size: 1.2rem; font-weight: bold; color: var(--accent); min-width: 24px; text-align: center; }
+
+  .btn-primary {
+    width: 100%;
+    padding: 1rem;
+    background: var(--accent);
+    color: #000;
+    border: none;
+    border-radius: 12px;
+    font-size: 1.1rem;
+    font-weight: 800;
+    cursor: pointer;
+    letter-spacing: 1px;
+    transition: transform 0.1s, opacity 0.15s;
+    text-transform: uppercase;
+  }
+  .btn-primary:hover { opacity: 0.9; }
+  .btn-primary:active { transform: scale(0.97); }
+
+  /* ---- Letter Picking ---- */
+  .pick-header {
+    text-align: center;
+    margin-bottom: 1rem;
+  }
+  .pick-player-name {
+    font-size: 1.3rem;
+    font-weight: 800;
+    color: var(--accent2);
+  }
+  .pick-subtitle {
+    color: var(--muted);
+    font-size: 0.85rem;
+    margin-top: 0.25rem;
+  }
+
+  .letters-display {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+    margin: 1rem 0;
+    min-height: 56px;
+  }
+  .letter-tile {
+    width: 52px;
+    height: 52px;
+    border-radius: 10px;
+    background: var(--tile);
+    border: 2px solid var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    font-weight: 900;
+    color: var(--accent);
+    text-shadow: 0 0 8px rgba(255,204,0,0.4);
+    animation: popIn 0.25s ease;
+  }
+  @keyframes popIn {
+    from { transform: scale(0.5); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+  }
+
+  .pick-count {
+    text-align: center;
+    font-size: 0.85rem;
+    color: var(--muted);
+    margin-bottom: 1rem;
+  }
+  .pick-count span { color: var(--accent); font-weight: bold; }
+
+  .pick-buttons {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+  }
+  .btn-vowel {
+    padding: 0.9rem;
+    background: #1a2a3a;
+    border: 2px solid var(--blue);
+    border-radius: 12px;
+    color: var(--blue);
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-transform: uppercase;
+  }
+  .btn-vowel:hover { background: #223344; transform: scale(1.02); }
+  .btn-consonant {
+    padding: 0.9rem;
+    background: #2a1a2a;
+    border: 2px solid #ce93d8;
+    border-radius: 12px;
+    color: #ce93d8;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-transform: uppercase;
+  }
+  .btn-consonant:hover { background: #331a33; transform: scale(1.02); }
+  .btn-vowel:disabled, .btn-consonant:disabled {
+    opacity: 0.4; cursor: not-allowed; transform: none;
+  }
+  .btn-random {
+    grid-column: 1 / -1;
+    padding: 0.75rem;
+    background: var(--tile);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    color: var(--muted);
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: background 0.15s;
+    text-transform: uppercase;
+  }
+  .btn-random:hover { background: var(--tile-hover); color: var(--text); }
+
+  /* ---- Thinking Screen ---- */
+  .thinking-screen {
+    text-align: center;
+  }
+  .player-badge {
+    display: inline-block;
+    background: var(--accent2);
+    color: #000;
+    font-weight: 900;
+    font-size: 1rem;
+    padding: 0.3rem 1rem;
+    border-radius: 20px;
+    margin-bottom: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  .thinking-title {
+    font-size: 1.4rem;
+    font-weight: 800;
+    margin-bottom: 0.5rem;
+  }
+
+  .timer-ring {
+    position: relative;
+    width: 100px;
+    height: 100px;
+    margin: 1rem auto;
+  }
+  .timer-ring svg { transform: rotate(-90deg); }
+  .timer-ring circle {
+    fill: none;
+    stroke-width: 6;
+  }
+  .timer-bg { stroke: var(--tile); }
+  .timer-fg { stroke: var(--accent); stroke-linecap: round; transition: stroke-dashoffset 1s linear, stroke 0.5s; }
+  .timer-text {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 1.8rem;
+    font-weight: 900;
+    color: var(--accent);
+  }
+
+  .letter-tiles-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+    margin: 1rem 0;
+  }
+  .lt {
+    width: 46px;
+    height: 46px;
+    border-radius: 8px;
+    background: var(--tile);
+    border: 2px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
+    font-weight: 900;
+    color: var(--text);
+    cursor: pointer;
+    transition: all 0.15s;
+    user-select: none;
+  }
+  .lt:hover:not(.used) { background: var(--tile-hover); border-color: var(--accent); color: var(--accent); }
+  .lt.used {
+    background: var(--tile-used);
+    border-color: #1a4030;
+    color: #2a6050;
+    cursor: default;
+  }
+  .lt.selected {
+    background: #1a3020;
+    border-color: var(--green);
+    color: var(--green);
+  }
+
+  .word-builder {
+    background: var(--panel);
+    border: 2px solid var(--border);
+    border-radius: 12px;
+    padding: 1rem;
+    min-height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-bottom: 0.75rem;
+    position: relative;
+  }
+  .word-builder-empty {
+    color: var(--muted);
+    font-size: 0.9rem;
+  }
+  .built-letter {
+    width: 40px;
+    height: 40px;
+    border-radius: 6px;
+    background: var(--green);
+    color: #000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    font-weight: 900;
+    cursor: pointer;
+    animation: popIn 0.15s ease;
+    transition: background 0.1s;
+  }
+  .built-letter:hover { background: #66bb6a; }
+
+  .word-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+  }
+  .btn-clear {
+    padding: 0.75rem;
+    background: var(--tile);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--muted);
+    font-size: 0.9rem;
+    font-weight: 700;
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: background 0.15s;
+  }
+  .btn-clear:hover { background: var(--tile-hover); color: var(--text); }
+  .btn-submit {
+    padding: 0.75rem;
+    background: var(--green);
+    border: none;
+    border-radius: 10px;
+    color: #000;
+    font-size: 0.9rem;
+    font-weight: 800;
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: opacity 0.15s;
+  }
+  .btn-submit:hover { opacity: 0.85; }
+  .btn-submit:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* ---- Round Result ---- */
+  .round-result { text-align: center; }
+  .round-result h2 {
+    font-size: 1.4rem;
+    color: var(--accent);
+    margin-bottom: 1rem;
+  }
+
+  .result-cards {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+  }
+  .result-card {
+    background: var(--panel);
+    border-radius: 12px;
+    padding: 1rem;
+    border: 2px solid var(--border);
+    text-align: center;
+  }
+  .result-card.winner { border-color: var(--accent); background: #1a1a00; }
+  .result-card .rc-name {
+    font-size: 0.8rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 0.5rem;
+  }
+  .result-card .rc-word {
+    font-size: 1.5rem;
+    font-weight: 900;
+    color: var(--text);
+    margin-bottom: 0.25rem;
+    word-break: break-all;
+  }
+  .result-card .rc-word.invalid { color: var(--red); text-decoration: line-through; }
+  .result-card .rc-score {
+    font-size: 1.2rem;
+    font-weight: 900;
+    color: var(--accent);
+  }
+  .result-card .rc-badge {
+    font-size: 0.75rem;
+    color: var(--muted);
+    margin-top: 0.25rem;
+  }
+  .round-winner-msg {
+    font-size: 1.1rem;
+    margin-bottom: 1rem;
+    padding: 0.75rem;
+    background: var(--panel);
+    border-radius: 10px;
+    border-left: 4px solid var(--accent);
+  }
+
+  /* ---- Scoreboard strip ---- */
+  .score-strip {
+    display: flex;
+    justify-content: space-around;
+    background: var(--panel);
+    border-radius: 12px;
+    padding: 0.75rem;
+    margin-bottom: 1rem;
+    border: 1px solid var(--border);
+  }
+  .score-item { text-align: center; }
+  .score-name { font-size: 0.75rem; color: var(--muted); text-transform: uppercase; }
+  .score-val { font-size: 1.5rem; font-weight: 900; color: var(--accent); }
+
+  /* ---- Hand-off ---- */
+  .handoff-screen { text-align: center; padding: 2rem 1rem; }
+  .handoff-emoji { font-size: 3rem; margin-bottom: 1rem; }
+  .handoff-title { font-size: 1.4rem; font-weight: 800; margin-bottom: 0.5rem; }
+  .handoff-sub { color: var(--muted); margin-bottom: 1.5rem; font-size: 0.9rem; }
+
+  /* ---- Final ---- */
+  .final-screen { text-align: center; }
+  .trophy { font-size: 4rem; margin: 1rem 0; }
+  .final-winner { font-size: 1.6rem; font-weight: 900; color: var(--accent); margin-bottom: 0.5rem; }
+  .final-subtitle { color: var(--muted); margin-bottom: 1.5rem; }
+  .final-scores {
+    background: var(--panel);
+    border-radius: 12px;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+    border: 1px solid var(--border);
+  }
+  .final-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 1rem;
+  }
+  .final-row:last-child { border-bottom: none; }
+  .final-row .place { color: var(--muted); font-size: 0.85rem; min-width: 40px; }
+  .final-row .fname { font-weight: 700; }
+  .final-row .fscore { font-size: 1.2rem; font-weight: 900; color: var(--accent); }
+
+  /* ---- Utility ---- */
+  .round-info {
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.85rem;
+    margin-bottom: 0.75rem;
+  }
+  .round-info span { color: var(--accent); font-weight: bold; }
+
+  .btn-secondary {
+    width: 100%;
+    padding: 0.9rem;
+    background: transparent;
+    border: 2px solid var(--accent);
+    border-radius: 12px;
+    color: var(--accent);
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    transition: background 0.15s;
+  }
+  .btn-secondary:hover { background: rgba(255,204,0,0.08); }
+
+  .howto { background: var(--panel); border-radius: 12px; padding: 1rem; margin-bottom: 1rem; border: 1px solid var(--border); font-size: 0.85rem; color: var(--muted); line-height: 1.6; }
+  .howto strong { color: var(--text); }
+</style>
+</head>
+<body>
+<div class="back-bar"><a href="/">← Back to Games</a></div>
+<div id="app">
+
+  <!-- SETUP SCREEN -->
+  <div id="screen-setup" class="screen active">
+    <div class="game-title">⚒️ WORD FORGE</div>
+    <div class="game-subtitle" data-i18n="subtitle"></div>
+
+    <div class="howto" data-i18n-html="howto"></div>
+
+    <div class="setup-card">
+      <h3 data-i18n="players_label"></h3>
+      <div class="player-row">
+        <div class="player-icon">🟡</div>
+        <input class="player-input" id="name1" maxlength="16">
+      </div>
+      <div class="player-row">
+        <div class="player-icon">🔵</div>
+        <input class="player-input" id="name2" maxlength="16">
+      </div>
+    </div>
+
+    <div class="setup-card">
+      <div class="rounds-row">
+        <span class="rounds-label" data-i18n="rounds_label"></span>
+        <div class="rounds-control">
+          <button class="rounds-btn" id="rounds-dec">−</button>
+          <div class="rounds-val" id="rounds-display">5</div>
+          <button class="rounds-btn" id="rounds-inc">+</button>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn-primary" id="btn-start" data-i18n="btn_start"></button>
+  </div>
+
+  <!-- PICK LETTERS SCREEN -->
+  <div id="screen-pick" class="screen">
+    <div class="pick-header">
+      <div id="pick-player-badge" class="player-badge"></div>
+      <div class="pick-title" style="font-size:1.2rem; font-weight:800; margin-bottom:0.25rem;" data-i18n="pick_title"></div>
+      <div class="pick-subtitle" data-i18n="pick_subtitle"></div>
+    </div>
+
+    <div class="round-info" data-i18n-html="round_of_html" id="pick-round-info"></div>
+
+    <div class="letters-display" id="letters-built"></div>
+    <div class="pick-count">
+      <span id="pick-vowels">0</span> <span data-i18n="vowels_label"></span>
+      &nbsp;·&nbsp;
+      <span id="pick-cons">0</span> <span data-i18n="consonants_label"></span>
+      &nbsp;·&nbsp;
+      <span id="pick-total">0</span>/9
+    </div>
+
+    <div class="pick-buttons">
+      <button class="btn-vowel" id="btn-pick-vowel" data-i18n="btn_vowel"></button>
+      <button class="btn-consonant" id="btn-pick-cons" data-i18n="btn_consonant"></button>
+      <button class="btn-random" id="btn-pick-random" data-i18n="btn_random"></button>
+    </div>
+  </div>
+
+  <!-- HANDOFF TO PLAYER 1 -->
+  <div id="screen-handoff-think" class="screen">
+    <div class="handoff-screen">
+      <div class="handoff-emoji">🤫</div>
+      <div class="handoff-title" id="handoff-think-title"></div>
+      <div class="handoff-sub" data-i18n="handoff_think_sub"></div>
+      <button class="btn-primary" id="btn-handoff-think-ready" data-i18n="btn_im_ready"></button>
+    </div>
+  </div>
+
+  <!-- THINKING / WORD BUILDING SCREEN -->
+  <div id="screen-think" class="screen">
+    <div class="thinking-screen">
+      <div id="think-player-badge" class="player-badge"></div>
+      <div class="thinking-title" data-i18n="think_title"></div>
+
+      <div class="timer-ring">
+        <svg width="100" height="100" viewBox="0 0 100 100">
+          <circle class="timer-bg" cx="50" cy="50" r="44"/>
+          <circle class="timer-fg" id="timer-circle" cx="50" cy="50" r="44"
+            stroke-dasharray="276.5" stroke-dashoffset="0"/>
+        </svg>
+        <div class="timer-text" id="timer-text">45</div>
+      </div>
+
+      <div class="letter-tiles-row" id="think-tiles"></div>
+
+      <div class="word-builder" id="word-builder">
+        <span class="word-builder-empty" id="word-builder-empty" data-i18n="builder_empty"></span>
+      </div>
+
+      <div class="word-actions">
+        <button class="btn-clear" id="btn-clear-word" data-i18n="btn_clear"></button>
+        <button class="btn-submit" id="btn-submit-word" data-i18n="btn_lock"></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- HANDOFF TO PLAYER 2 -->
+  <div id="screen-handoff-p2" class="screen">
+    <div class="handoff-screen">
+      <div class="handoff-emoji">📲</div>
+      <div class="handoff-title" id="handoff-p2-title"></div>
+      <div class="handoff-sub" data-i18n="handoff_p2_sub"></div>
+      <button class="btn-primary" id="btn-handoff-p2-ready" data-i18n="btn_im_ready"></button>
+    </div>
+  </div>
+
+  <!-- THINKING PLAYER 2 -->
+  <div id="screen-think2" class="screen">
+    <div class="thinking-screen">
+      <div id="think2-player-badge" class="player-badge" style="background:#42a5f5; color:#000;"></div>
+      <div class="thinking-title" data-i18n="think_title"></div>
+
+      <div class="timer-ring">
+        <svg width="100" height="100" viewBox="0 0 100 100">
+          <circle class="timer-bg" cx="50" cy="50" r="44"/>
+          <circle class="timer-fg" id="timer2-circle" cx="50" cy="50" r="44"
+            stroke-dasharray="276.5" stroke-dashoffset="0"/>
+        </svg>
+        <div class="timer-text" id="timer2-text">45</div>
+      </div>
+
+      <div class="letter-tiles-row" id="think2-tiles"></div>
+
+      <div class="word-builder" id="word-builder2">
+        <span class="word-builder-empty" id="word-builder-empty2" data-i18n="builder_empty"></span>
+      </div>
+
+      <div class="word-actions">
+        <button class="btn-clear" id="btn-clear-word2" data-i18n="btn_clear"></button>
+        <button class="btn-submit" id="btn-submit-word2" data-i18n="btn_lock"></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ROUND RESULT -->
+  <div id="screen-result" class="screen">
+    <div class="round-result">
+      <div class="score-strip" id="result-score-strip"></div>
+      <h2 id="result-round-title"></h2>
+      <div class="result-cards" id="result-cards"></div>
+      <div class="round-winner-msg" id="round-winner-msg"></div>
+      <button class="btn-primary" id="btn-next-round" data-i18n="btn_next_round"></button>
+    </div>
+  </div>
+
+  <!-- FINAL SCREEN -->
+  <div id="screen-final" class="screen">
+    <div class="final-screen">
+      <div class="trophy">🏆</div>
+      <div class="final-winner" id="final-winner-name"></div>
+      <div class="final-subtitle" data-i18n="final_subtitle"></div>
+      <div class="final-scores" id="final-scores"></div>
+      <button class="btn-primary" id="btn-play-again" data-i18n="btn_play_again"></button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ---- i18n ----
+const TRANSLATIONS = {
+  de: {
+    subtitle: 'Wer schmiedet das längste Wort? 🔤',
+    howto: '<strong>Spieler 1</strong> wählt 9 Buchstaben (Vokale & Konsonanten). Dann baut jeder Spieler alleine das längste Wort aus diesen 9 Buchstaben. Längeres Wort = mehr Punkte. <strong>7+ Buchstaben = Bonus!</strong>',
+    players_label: 'Spieler',
+    rounds_label: 'Runden',
+    btn_start: '⚒️ Spiel Schmieden',
+    pick_title: 'Buchstaben wählen',
+    pick_subtitle: 'Wähle Vokale und Konsonanten für diese Runde',
+    vowels_label: 'Vokale',
+    consonants_label: 'Konsonanten',
+    btn_vowel: '+ Vokal',
+    btn_consonant: '+ Konsonant',
+    btn_random: '🎲 Restliche zufällig füllen',
+    handoff_think_sub: 'Leg das Gerät hin, bis du bereit bist.',
+    btn_im_ready: '👀 Ich bin bereit!',
+    think_title: 'Bau dein Wort!',
+    builder_empty: 'Tippe auf Buchstaben zum Auswählen...',
+    btn_clear: '↺ Löschen',
+    btn_lock: '✓ Einreichen',
+    handoff_p2_sub: 'Gib das Gerät weiter – jetzt bist du dran!',
+    btn_next_round: '→ Nächste Runde',
+    btn_play_again: '⚒️ Nochmal spielen',
+    final_subtitle: 'Endstand — gg!',
+    score_pts: 'Pkt',
+    invalid_word: '(ungültig)',
+    tie: 'Unentschieden! 🤝',
+    wins_round: 'gewinnt die Runde! 🎉',
+    nine_bonus: '+5 Bonus! MEISTERWERK! 🔥',
+    seven_bonus: '+3 Bonus! Hervorragend! ⭐',
+    no_word: '(kein Wort)',
+    round_label: 'Runde',
+    of_label: 'von',
+  },
+  en: {
+    subtitle: 'Who forges the longest word? 🔤',
+    howto: '<strong>Player 1</strong> picks 9 letters (vowels & consonants). Then each player secretly builds the longest word from those 9 letters. Longer word = more points. <strong>7+ letters = Bonus!</strong>',
+    players_label: 'Players',
+    rounds_label: 'Rounds',
+    btn_start: '⚒️ Forge the Game',
+    pick_title: 'Pick Letters',
+    pick_subtitle: 'Choose vowels and consonants for this round',
+    vowels_label: 'Vowels',
+    consonants_label: 'Consonants',
+    btn_vowel: '+ Vowel',
+    btn_consonant: '+ Consonant',
+    btn_random: '🎲 Fill rest randomly',
+    handoff_think_sub: 'Put the device down until you\'re ready.',
+    btn_im_ready: '👀 I\'m ready!',
+    think_title: 'Build your word!',
+    builder_empty: 'Tap letters to build a word...',
+    btn_clear: '↺ Clear',
+    btn_lock: '✓ Submit',
+    handoff_p2_sub: 'Pass the device — it\'s your turn!',
+    btn_next_round: '→ Next Round',
+    btn_play_again: '⚒️ Play Again',
+    final_subtitle: 'Final scores — gg!',
+    score_pts: 'pts',
+    invalid_word: '(invalid)',
+    tie: 'Tie! 🤝',
+    wins_round: 'wins the round! 🎉',
+    nine_bonus: '+5 Bonus! MASTERWORK! 🔥',
+    seven_bonus: '+3 Bonus! Excellent! ⭐',
+    no_word: '(no word)',
+    round_label: 'Round',
+    of_label: 'of',
+  },
+  fr: {
+    subtitle: 'Qui forge le mot le plus long ? 🔤',
+    howto: '<strong>Joueur 1</strong> choisit 9 lettres (voyelles & consonnes). Puis chaque joueur construit secrètement le mot le plus long avec ces 9 lettres. Mot plus long = plus de points. <strong>7+ lettres = Bonus !</strong>',
+    players_label: 'Joueurs',
+    rounds_label: 'Manches',
+    btn_start: '⚒️ Forger la partie',
+    pick_title: 'Choisir les lettres',
+    pick_subtitle: 'Choisis voyelles et consonnes pour cette manche',
+    vowels_label: 'Voyelles',
+    consonants_label: 'Consonnes',
+    btn_vowel: '+ Voyelle',
+    btn_consonant: '+ Consonne',
+    btn_random: '🎲 Compléter aléatoirement',
+    handoff_think_sub: 'Pose l\'appareil jusqu\'à être prêt.',
+    btn_im_ready: '👀 Je suis prêt !',
+    think_title: 'Construis ton mot !',
+    builder_empty: 'Touche les lettres pour construire un mot...',
+    btn_clear: '↺ Effacer',
+    btn_lock: '✓ Soumettre',
+    handoff_p2_sub: 'Passe l\'appareil — c\'est ton tour !',
+    btn_next_round: '→ Manche suivante',
+    btn_play_again: '⚒️ Rejouer',
+    final_subtitle: 'Score final — gg !',
+    score_pts: 'pts',
+    invalid_word: '(invalide)',
+    tie: 'Égalité ! 🤝',
+    wins_round: 'gagne la manche ! 🎉',
+    nine_bonus: '+5 Bonus ! CHEF-D\'ŒUVRE ! 🔥',
+    seven_bonus: '+3 Bonus ! Excellent ! ⭐',
+    no_word: '(aucun mot)',
+    round_label: 'Manche',
+    of_label: 'sur',
+  },
+  it: {
+    subtitle: 'Chi forgia la parola più lunga? 🔤',
+    howto: '<strong>Giocatore 1</strong> sceglie 9 lettere (vocali e consonanti). Poi ogni giocatore costruisce segretamente la parola più lunga con quelle 9 lettere. Parola più lunga = più punti. <strong>7+ lettere = Bonus!</strong>',
+    players_label: 'Giocatori',
+    rounds_label: 'Round',
+    btn_start: '⚒️ Forgia la partita',
+    pick_title: 'Scegli le lettere',
+    pick_subtitle: 'Scegli vocali e consonanti per questo round',
+    vowels_label: 'Vocali',
+    consonants_label: 'Consonanti',
+    btn_vowel: '+ Vocale',
+    btn_consonant: '+ Consonante',
+    btn_random: '🎲 Completa casualmente',
+    handoff_think_sub: 'Posiziona il dispositivo finché non sei pronto.',
+    btn_im_ready: '👀 Sono pronto!',
+    think_title: 'Costruisci la tua parola!',
+    builder_empty: 'Tocca le lettere per costruire una parola...',
+    btn_clear: '↺ Cancella',
+    btn_lock: '✓ Invia',
+    handoff_p2_sub: 'Passa il dispositivo — tocca a te!',
+    btn_next_round: '→ Round successivo',
+    btn_play_again: '⚒️ Gioca ancora',
+    final_subtitle: 'Punteggio finale — gg!',
+    score_pts: 'pti',
+    invalid_word: '(non valida)',
+    tie: 'Pareggio! 🤝',
+    wins_round: 'vince il round! 🎉',
+    nine_bonus: '+5 Bonus! CAPOLAVORO! 🔥',
+    seven_bonus: '+3 Bonus! Eccellente! ⭐',
+    no_word: '(nessuna parola)',
+    round_label: 'Round',
+    of_label: 'di',
+  },
+  es: {
+    subtitle: '¿Quién forja la palabra más larga? 🔤',
+    howto: '<strong>Jugador 1</strong> elige 9 letras (vocales y consonantes). Luego cada jugador construye en secreto la palabra más larga con esas 9 letras. Palabra más larga = más puntos. <strong>¡7+ letras = Bonus!</strong>',
+    players_label: 'Jugadores',
+    rounds_label: 'Rondas',
+    btn_start: '⚒️ Forjar la partida',
+    pick_title: 'Elegir letras',
+    pick_subtitle: 'Elige vocales y consonantes para esta ronda',
+    vowels_label: 'Vocales',
+    consonants_label: 'Consonantes',
+    btn_vowel: '+ Vocal',
+    btn_consonant: '+ Consonante',
+    btn_random: '🎲 Completar aleatoriamente',
+    handoff_think_sub: 'Deja el dispositivo hasta que estés listo.',
+    btn_im_ready: '👀 ¡Estoy listo!',
+    think_title: '¡Construye tu palabra!',
+    builder_empty: 'Toca las letras para construir una palabra...',
+    btn_clear: '↺ Borrar',
+    btn_lock: '✓ Enviar',
+    handoff_p2_sub: '¡Pasa el dispositivo — es tu turno!',
+    btn_next_round: '→ Siguiente ronda',
+    btn_play_again: '⚒️ Jugar de nuevo',
+    final_subtitle: '¡Puntuación final — gg!',
+    score_pts: 'pts',
+    invalid_word: '(inválida)',
+    tie: '¡Empate! 🤝',
+    wins_round: '¡gana la ronda! 🎉',
+    nine_bonus: '+5 Bonus. ¡OBRA MAESTRA! 🔥',
+    seven_bonus: '+3 Bonus. ¡Excelente! ⭐',
+    no_word: '(sin palabra)',
+    round_label: 'Ronda',
+    of_label: 'de',
+  }
+};
+
+const { t, lang, onLangChange, translatePage } = initI18n(TRANSLATIONS);
+
+// ---- Game Logic (inline, mirrors word-forge-logic.js) ----
+const VOWELS = ['A', 'E', 'I', 'O', 'U'];
+const CONSONANTS = ['B','C','D','F','G','H','J','K','L','M','N','P','Q','R','S','T','V','W','X','Y','Z'];
+
+const CONSONANT_POOL = ['B','C','D','D','F','G','G','H','H','J','K','L','L','L','M','M','N','N','N','N','P','P','R','R','R','R','S','S','S','S','S','T','T','T','T','V','W','X','Y','Z'];
+const VOWEL_POOL = ['A','A','A','A','A','E','E','E','E','E','E','E','I','I','I','I','O','O','O','O','U','U'];
+
+function pickLetter(type) {
+  if (type === 'vowel') return VOWEL_POOL[Math.floor(Math.random() * VOWEL_POOL.length)];
+  return CONSONANT_POOL[Math.floor(Math.random() * CONSONANT_POOL.length)];
+}
+
+function canFormWord(word, pool) {
+  if (!word || word.length === 0) return false;
+  const upper = word.toUpperCase();
+  const avail = {};
+  for (const l of pool) avail[l] = (avail[l] || 0) + 1;
+  for (const l of upper) {
+    if (!avail[l]) return false;
+    avail[l]--;
+  }
+  return true;
+}
+
+function scoreWord(word, isValid) {
+  if (!isValid) return 0;
+  const len = word.length;
+  if (len === 9) return len + 5;
+  if (len >= 7) return len + 3;
+  return len;
+}
+
+// Simple word validation: check against a basic English/German dictionary list
+// We'll use a generous approach: words must be at least 2 letters and formable
+// For a proper game we validate against a word list (built-in subset)
+const WORD_LIST = new Set([
+  // Common English
+  'AT','BE','DO','GO','HE','IN','IS','IT','ME','MY','NO','OF','ON','OR','SO','TO','UP','US','WE',
+  'ACE','ADD','AGE','AGO','AID','AIM','AIR','ALL','AND','ANT','APE','APP','ARC','ARE','ARM','ART',
+  'ASH','ASK','ATE','AVE','AWE','AXE','BAD','BAG','BAN','BAR','BAT','BED','BIG','BIT','BOX','BOY',
+  'BUD','BUG','BUN','BUS','BUT','BUY','CAB','CAN','CAP','CAR','CAT','COB','COD','COP','COT','COW',
+  'CRY','CUB','CUP','CUT','DAD','DAM','DAY','DEN','DEW','DID','DIG','DIM','DIP','DOE','DOG','DOT',
+  'DRY','DUB','DUG','DUO','DYE','EAR','EAT','EEL','EGG','ELM','EMU','END','ERA','EVE','EWE','EYE',
+  'FAD','FAN','FAR','FAT','FAX','FED','FEW','FIG','FIN','FIT','FIX','FLY','FOE','FOG','FOR','FOX',
+  'FRY','FUN','FUR','GAP','GAS','GEL','GEM','GET','GNU','GOD','GOT','GUM','GUN','GUT','GUY','GYM',
+  'HAD','HAM','HAS','HAT','HAY','HER','HID','HIM','HIP','HIS','HIT','HOG','HOP','HOT','HOW','HUB',
+  'HUE','HUG','HUM','HUT','ICE','ILL','IMP','INK','INN','ION','IRE','IVY','JAB','JAM','JAR','JAW',
+  'JET','JOB','JOG','JOT','JOY','JUG','JUT','KEG','KID','KIT','LAB','LAD','LAP','LAW','LAX','LAY',
+  'LEG','LET','LID','LIE','LIT','LOG','LOT','LOW','MAP','MAT','MAW','MAY','MEN','MID','MIX','MOB',
+  'MOD','MOM','MOP','MUD','MUG','NAB','NAG','NAP','NET','NIB','NOD','NOR','NOT','NOW','NUN','NUT',
+  'OAK','OAR','OAT','ODD','ODE','OFF','OFT','OHM','OIL','OLD','ORB','ORE','OUR','OUT','OWE','OWL',
+  'OWN','PAD','PAN','PAP','PAR','PAT','PAW','PAY','PEA','PEG','PEN','PEP','PET','PIE','PIG','PIN',
+  'PIT','PLY','POD','POP','POT','POW','PRY','PUB','PUN','PUP','PUS','PUT','RAG','RAM','RAN','RAP',
+  'RAT','RAW','RAY','RED','RIB','RID','RIG','RIM','ROB','ROD','ROT','ROW','RUB','RUG','RUM','RUN',
+  'RUT','SAC','SAG','SAP','SAT','SAW','SAY','SEA','SET','SEW','SIN','SIP','SIR','SIT','SIX','SKI',
+  'SKY','SLY','SOB','SOD','SON','SOP','SOT','SOW','SOY','SPA','SPY','STY','SUB','SUM','SUN','SUP',
+  'TAB','TAN','TAP','TAR','TAX','TEA','TEN','THE','TIE','TIN','TIP','TOE','TON','TOO','TOP','TOW',
+  'TOY','TUB','TUG','TUN','TWO','URN','USE','VAN','VAT','VET','VIA','VIE','VOW','WAD','WAR','WAS',
+  'WAX','WAY','WEB','WED','WET','WHO','WHY','WIG','WIN','WIT','WOE','WOK','WON','WOO','WOW','YAK',
+  'YAM','YAP','YAW','YEA','YES','YET','YEW','ZAP','ZEN','ZIT','ZOO',
+  // 4-letter
+  'ABLE','ACHE','ACID','ACNE','ACRE','ACTS','AGES','AIDE','AIDS','AIMS','AIRS','ALSO','ALTO','AMEN',
+  'AMID','AMOK','AMPS','APEX','ARCH','AREA','ARIA','ARMS','ARMY','ARTY','ASKS','ATOM','ATOP','AUNT',
+  'AURA','AUTO','AVID','AWAY','AWED','AWES','AXES','AXLE','BABY','BACK','BALE','BALL','BALM','BAND',
+  'BANE','BANG','BANK','BARE','BARK','BARN','BASE','BATH','BATS','BEAD','BEAM','BEAN','BEAR','BEAT',
+  'BEDS','BEEF','BEEN','BEER','BEES','BELL','BELT','BEND','BENT','BEST','BILE','BILL','BIND','BIRD',
+  'BITE','BITS','BLOT','BLOW','BLUE','BLUR','BOLD','BOLT','BONE','BOOK','BOOM','BOOT','BORE','BORN',
+  'BOTH','BOUT','BOWL','BUOY','BURN','BURP','BUSH','CAGE','CAKE','CALF','CALL','CAME','CAMP','CANE',
+  'CARD','CARE','CARP','CART','CASE','CASH','CAST','CAVE','CELL','CENT','CHAT','CHEF','CHIN','CHIP',
+  'CLAM','CLAP','CLAW','CLAY','CLOP','CLUB','CLUE','COAL','COAT','CODE','COIL','COIN','COLA','COLD',
+  'COME','CONE','COOK','COOL','COPE','CORD','CORE','CORK','CORN','COST','COZY','CRAB','CREW','CRIB',
+  'CROP','CUBE','CURE','CURL','CUTE','DAME','DARE','DARK','DART','DASH','DATO','DAWN','DAYS','DEAD',
+  'DEAF','DEAL','DEAR','DECK','DEED','DEEP','DEMO','DENY','DENT','DESK','DIAL','DICE','DIET','DIKE',
+  'DINE','DIRT','DISC','DISH','DISK','DOCK','DOES','DOME','DONE','DOTE','DOVE','DOWN','DRAG','DRAW',
+  'DREW','DRIP','DROP','DRUM','DUAL','DUEL','DULL','DUMP','DUNK','DUSK','DUST','EACH','EARL','EARN',
+  'EAST','EASY','EDGY','EDGE','EMIT','EPIC','EVEN','EVER','EVIL','EXAM','EXIT','EYES','FACE','FACT',
+  'FADE','FAIL','FAIR','FALL','FAME','FARE','FARM','FAST','FATE','FAWN','FAZE','FEAT','FEED','FEEL',
+  'FELL','FELT','FERN','FILE','FILL','FILM','FIND','FINE','FIRE','FIRM','FISH','FIST','FIVE','FLAG',
+  'FLAP','FLAW','FLEA','FLEW','FLEX','FLIP','FLIT','FLOG','FLOW','FOAM','FOAL','FOLD','FOND','FONT',
+  'FOOD','FOOL','FOOT','FORD','FORE','FORK','FORM','FORT','FOUL','FOUR','FREE','FROM','FUEL','FULL',
+  'FUME','FUND','FUSE','GAIT','GAME','GANG','GAZE','GEAR','GENE','GIST','GIVE','GLAD','GLEE','GLEN',
+  'GLIB','GLOB','GLOW','GLUE','GLUT','GOAL','GONE','GOOD','GORE','GOWN','GRAB','GRAY','GRID','GRIM',
+  'GRIN','GRIP','GRIT','GROW','GRUB','GULF','GURU','GUST','HACK','HAIL','HAIR','HALF','HALL','HAND',
+  'HANG','HARD','HARE','HARM','HARP','HASH','HATE','HAVE','HAWK','HAZE','HEAD','HEAL','HEAP','HEAR',
+  'HEAT','HEEL','HELD','HELM','HELP','HEMP','HERD','HERE','HIGH','HIKE','HILL','HIRE','HOLD','HOLE',
+  'HOLY','HOME','HOOD','HOOP','HOPE','HORN','HOST','HOUR','HULK','HULL','HUNG','HUNT','HURT','HYMN',
+  'ICON','IDEA','IDLE','IFFY','IMAM','INTO','IRON','ISLE','ITEM','JACK','JADE','JAIL','JAZZ','JERK',
+  'JIBE','JOIN','JOKE','JOUST','JUMP','JUNK','JURY','JUST','KEEN','KEEP','KELP','KNEW','KNIT','KNOB',
+  'KNOT','KNOW','LACK','LAID','LAKE','LAMB','LAMP','LAND','LANE','LAST','LATE','LAUD','LAWN','LEAD',
+  'LEAF','LEAN','LEAP','LEND','LENS','LESS','LEST','LEVY','LICK','LIFE','LIFT','LIKE','LILY','LIME',
+  'LINE','LINK','LION','LIST','LIVE','LOAD','LOAM','LOAN','LOFT','LONE','LONG','LOOK','LOOM','LOON',
+  'LOOP','LORD','LORE','LOSE','LOSS','LOST','LOUD','LOVE','LUCK','LURE','LUST','MADE','MAID','MAIL',
+  'MAIN','MAKE','MALE','MALL','MANE','MANY','MARK','MARS','MASK','MASS','MAST','MATE','MAZE','MEAD',
+  'MEAL','MEAN','MEAT','MEET','MELT','MENU','MEOW','MERE','MESH','MILD','MILE','MILK','MILL','MIME',
+  'MIND','MINE','MINT','MISS','MIST','MOAT','MOCK','MODE','MOLD','MOLE','MOLT','MONK','MOOD','MOON',
+  'MORE','MOST','MOTH','MOTE','MOVE','MUCH','MULE','MULL','MYTH','NAIL','NAME','NAVY','NEAR','NECK',
+  'NEED','NEST','NEWS','NEXT','NICE','NINE','NOON','NORM','NOSE','NOTE','NOUN','NURSE','OAKS','OATH',
+  'OBEY','ODDS','OMEN','ONCE','ONLY','OPEN','ORAL','OVER','OWED','PACE','PACK','PAGE','PAIN','PAIR',
+  'PALE','PALM','PANE','PART','PASS','PAST','PATH','PAVE','PAWN','PEAK','PEAR','PEEL','PEER','PEST',
+  'PICK','PIER','PILE','PILL','PINE','PING','PINK','PINT','PIPE','PLAN','PLAY','PLEA','PLOD','PLOT',
+  'PLOW','PLUM','PLUS','POEM','POET','POLE','POLL','POND','POOR','PORE','PORT','POSE','POST','POUR',
+  'PRAY','PREP','PREY','PROD','PROP','PULL','PUMP','PURE','PUSH','RACE','RACK','RAGE','RAID','RAIL',
+  'RAIN','RAKE','RAMP','RANK','RANT','RARE','RATE','REAL','REAP','REEL','RELY','RENT','REST','RICE',
+  'RICH','RIDE','RING','RIOT','RIPE','RISE','RISK','ROAD','ROAM','ROAR','ROBE','ROCK','ROLE','ROLL',
+  'ROOF','ROOM','ROOT','ROPE','ROSE','ROUT','RUDE','RULE','RUSH','RUST','SAFE','SAGE','SAKE','SALE',
+  'SALT','SAME','SAND','SANG','SANE','SANG','SAVE','SCAN','SCAR','SEAM','SEAT','SEED','SEEK','SEEM',
+  'SEEN','SELF','SELL','SEND','SENT','SHED','SHIN','SHIP','SHOE','SHOP','SHOT','SHOW','SHUT','SICK',
+  'SIDE','SIGH','SIGN','SILK','SILL','SING','SINK','SIZE','SKIN','SKIP','SLAB','SLAP','SLIM','SLIP',
+  'SLOB','SLOP','SLOW','SLUG','SLUM','SLUR','SNAP','SNIP','SNOB','SNOW','SOAK','SOAR','SOCK','SOIL',
+  'SOLE','SOME','SONG','SOON','SORE','SORT','SOUL','SOUP','SOUR','SPAN','SPAR','SPIN','SPIT','SPOT',
+  'STAB','STAR','STAY','STEP','STEM','STEW','STIR','STOP','STUB','STUN','SUCH','SUIT','SUNG','SUNK',
+  'SURE','SURF','SWAM','SWAN','SWAP','SWAT','SWIM','TALE','TALK','TALL','TAME','TANK','TAPE','TASK',
+  'TAUT','TEAM','TEAR','TECH','TERM','TEST','TEXT','THAN','THAT','THEM','THEN','THEY','THIN','THIS',
+  'TIDE','TILL','TIME','TINY','TIRE','TOAD','TOLD','TOLL','TOME','TONE','TOOK','TOOL','TORN','TOSS',
+  'TOUR','TOWN','TRAP','TRAY','TREE','TREK','TRIM','TRIO','TRIP','TRUE','TUBE','TUCK','TUNE','TURF',
+  'TWIN','TYPE','UGLY','UNDO','UNIT','UPON','URGE','USED','VAIN','VALE','VANE','VARY','VASE','VAST',
+  'VEIL','VEIN','VERY','VEST','VIBE','VIEW','VINE','VOID','VOLT','VOTE','WAIL','WAKE','WALK','WALL',
+  'WAND','WARD','WARM','WARP','WART','WASH','WAVE','WEAK','WEAN','WEAR','WEED','WEEK','WELL','WELT',
+  'WENT','WERE','WEST','WHAT','WHEN','WHIM','WHIP','WIDE','WILT','WIND','WINE','WING','WINK','WIRE',
+  'WISE','WISH','WITH','WOKE','WOLF','WOMB','WOOD','WORD','WORE','WORM','WRIT','YARD','YARN','YEAR',
+  'YELL','YOGA','YORE','YOUR','ZERO','ZINC','ZONE',
+  // 5-letter
+  'ABOUT','ABOVE','ACHED','ACRES','ACTED','ACUTE','ADORE','AFTER','AGAIN','AGATE','AGENT','AGILE',
+  'AGREE','AISLE','ALBUM','ALERT','ALGAE','ALIEN','ALIGN','ALIKE','ALLOT','ALONE','ALONG','ALOOF',
+  'ALOUD','ALPHA','AMEND','AMONG','ANGEL','ANGER','ANGLE','ANGRY','ANIME','ANNEX','ANNOY','ANTIC',
+  'ANVIL','APART','APPLE','APPLY','APRON','ARISE','ARRAY','ARROW','ARSON','ASSET','ATTIC','AUDIO',
+  'AUDIT','AUGUR','AVAIL','AVERT','AVOID','AWAIT','AWASH','BAKER','BANJO','BARON','BASIC','BASIL',
+  'BASIS','BEAST','BEGAN','BEGIN','BEING','BELOW','BENCH','BERTH','BIRTH','BLAND','BLAST','BLAZE',
+  'BLEED','BLEND','BLESS','BLIND','BLISS','BLOCK','BLOOD','BLOOM','BLOWN','BLUNT','BOARD','BONUS',
+  'BOOST','BOOTH','BORED','BOUND','BRAIN','BRAND','BRAVE','BREAD','BREAK','BREED','BRIBE','BRIDE',
+  'BRIEF','BRING','BRISK','BROIL','BROKE','BROOK','BROTH','BRUSH','BUDGE','BUILD','BUILT','BULGE',
+  'BUNCH','CAMEL','CANDY','CANON','CARGO','CARRY','CAUSE','CEASE','CHAIN','CHAIR','CHALK','CHARM',
+  'CHART','CHASE','CHEAP','CHEAT','CHECK','CHEEK','CHEER','CHESS','CHEST','CHILD','CHILE','CHILL',
+  'CHORD','CHOSE','CIVIC','CIVIL','CLACK','CLAIM','CLANK','CLASP','CLASS','CLEAN','CLEAR','CLERK',
+  'CLICK','CLIFF','CLIMB','CLING','CLOAK','CLOCK','CLONE','CLOSE','CLOTH','CLOUD','CLOUT','COACH',
+  'CORAL','COUNT','COURT','COVER','CRACK','CRAFT','CRANE','CRASH','CRAZE','CRAZY','CREAK','CREAM',
+  'CREEK','CREST','CRIMP','CROSS','CROWD','CROWN','CRUSH','CRUST','CURVE','CYCLE','DAISY','DANCE',
+  'DEALT','DEATH','DEBUT','DECOY','DENSE','DEPOT','DEPTH','DERBY','DEVIL','DIGIT','DISCO','DIVERT',
+  'DIZZY','DODGE','DOING','DONOR','DOUBT','DOUGH','DRAIN','DRANK','DRAWL','DREAM','DRESS','DRIED',
+  'DRIFT','DRILL','DRINK','DRIVE','DRONE','DROVE','DROWN','DRYER','DYING','EAGER','EAGLE','EARLY',
+  'EARTH','EIGHT','ELITE','EMBER','EMPTY','ENDED','ENEMY','ENJOY','ENTER','ENTRY','EQUAL','ERROR',
+  'ESSAY','EVERY','EXACT','EXERT','EXILE','EXIST','EXTRA','FABLE','FACET','FAITH','FANCY','FEAST',
+  'FENCE','FEVER','FIBER','FIELD','FIFTH','FIFTY','FIGHT','FINAL','FIXED','FLAME','FLARE','FLASH',
+  'FLEET','FLESH','FLOAT','FLOOD','FLOOR','FLOUR','FLUID','FLUTE','FOCUS','FORCE','FORGE','FOUND',
+  'FRAME','FREED','FRESH','FRINGE','FRONT','FROST','FROZE','FRUIT','FULLY','FUNNY','FUTURE','GHOUL',
+  'GIVEN','GLAND','GLASS','GLIDE','GLOOM','GLORY','GLOSS','GLOVE','GOING','GRACE','GRADE','GRAIN',
+  'GRAND','GRASP','GRASS','GRAVE','GRAZE','GREED','GREET','GRIEF','GRIND','GROAN','GROIN','GROOM',
+  'GROVE','GUARD','GUESS','GUEST','GUIDE','GUILD','GUISE','GUSTO','HABIT','HAVEN','HEART','HEAVY',
+  'HENCE','HERBS','HINGE','HIPPO','HOARD','HOBBY','HONEY','HONOR','HORSE','HOTEL','HOUSE','HUMAN',
+  'HURRY','HYENA','IMAGE','IMPLY','INDEX','INNER','INPUT','JUDGE','JUICE','JUICY','JUMPY','KAYAK',
+  'KNOCK','KNOWN','LABEL','LARGE','LASER','LATER','LAUGH','LAYER','LEARN','LEASE','LEAVE','LEGAL',
+  'LEVEL','LIGHT','LIMIT','LINEN','LINER','LIVER','LLAMA','LOCAL','LODGE','LOGIC','LOOSE','LOVER',
+  'LOWER','LOYAL','LUCKY','LUNAR','LUSTY','LYRIC','MAGIC','MAJOR','MAKER','MANOR','MAPLE','MARCH',
+  'MATCH','MAYOR','MEDIA','METAL','METER','MIGHT','MINOR','MINUS','MIXED','MODEL','MONEY','MONTH',
+  'MORAL','MORON','MOTOR','MOTTO','MOUND','MOUNT','MOUSE','MOUTH','MOVED','MOVIE','MUSIC','NAIVE',
+  'NIGHT','NINETY','NOBLE','NOISE','NORTH','NOTER','NOVEL','NURSE','OCCUR','OCEAN','OFFER','OFTEN',
+  'OLIVE','ONSET','OPERA','ORBIT','ORDER','OTHER','OUGHT','OUTER','OUNCE','OWNED','OWNER','OZONE',
+  'PEACE','PEACH','PEARL','PEDAL','PERCH','PERIL','PHASE','PHONE','PIANO','PINCH','PLACE','PLAIN',
+  'PLANE','PLANT','PLATE','PLAZA','PLEAD','PLUCK','PLUME','PLUNK','POINT','POKER','POPPY','POUND',
+  'POWER','PRESS','PRICE','PRIDE','PRIME','PRINT','PRIOR','PRISM','PRIZE','PROBE','PRONE','PROOF',
+  'PROSE','PROUD','PROVE','PROWL','PRUNE','PULSE','PUNCH','PUPIL','PUREE','QUEEN','QUERY','QUEST',
+  'QUEUE','QUICK','QUIET','QUOTA','QUOTE','RABBI','RACER','RADAR','RADIX','RAISE','RALLY','RANGE',
+  'RAPID','RAINY','REACH','READY','REALM','REFER','REIGN','RELAX','REPLY','RIDER','RIDGE','RIFLE',
+  'RIGHT','RISKY','RIVER','ROBIN','ROBOT','ROCKY','ROUGE','ROUGH','ROUND','ROUTE','ROYAL','RULER',
+  'SAVOR','SCALE','SCENE','SCOPE','SCORE','SCOUT','SCREW','SEIZE','SENSE','SERVE','SEVEN','SHADE',
+  'SHAKE','SHALL','SHAME','SHAPE','SHARE','SHARK','SHARP','SHAWL','SHEER','SHELF','SHELL','SHIFT',
+  'SHINY','SHORE','SHORT','SHOUT','SINCE','SIXTH','SKILL','SKULL','SLATE','SLAVE','SLEEP','SLICE',
+  'SLIDE','SMOKE','SNAKE','SOLVE','SORRY','SOUND','SOUTH','SPACE','SPARK','SPEND','SPICE','SPIKE',
+  'SPILL','SPINE','SPOKE','SPOON','SPORT','SPRAY','SQUAD','STACK','STAFF','STAGE','STAND','STARE',
+  'START','STATE','STEAK','STEEL','STEEP','STEER','STONE','STORE','STORM','STORY','STOUT','STRAP',
+  'STRAW','STUDY','STUFF','STYLE','SUGAR','SUNNY','SUPER','SWIFT','SWORD','SYRUP','TABLE','TASTE',
+  'TEACH','TEETH','TEMPO','TENSE','THORN','THREE','THREW','THROW','TIGHT','TIMER','TIRED','TITLE',
+  'TODAY','TOKEN','TOTAL','TOUCH','TOUGH','TOWER','TRACE','TRACK','TRADE','TRAIL','TRAIN','TRAIT',
+  'TRAMP','TRASH','TRIAL','TRIBE','TRICK','TRIED','TROOP','TROUT','TRUCK','TRUNK','TRUST','TRUTH',
+  'TUTOR','TWIRL','UNDER','UNFIT','UNITE','UNTIL','UPPER','UPSET','USHER','USUAL','UTTER','VALID',
+  'VALUE','VALVE','VAPOR','VENUS','VERSE','VIDEO','VIGOR','VIRAL','VISIT','VISTA','VITAL','VIVID',
+  'VOCAL','VODKA','VOTER','WADE','WAFER','WASTE','WATCH','WATER','WEAVE','WEDGE','WEIGH','WHALE',
+  'WHEAT','WHEEL','WHERE','WHICH','WHILE','WHITE','WHOLE','WHOSE','YIELD','YOUNG','YOUTH','ZEBRA',
+  // 6-letter
+  'ISLAND','ASSERT','ASSIST','ATTACH','ATTACK','ATTAIN','BRIDGE','BROKEN','BUDGET','BUTTER','BUTTON',
+  'CANDLE','CARBON','CASTLE','CENSUS','CHANGE','CHARGE','CHOSEN','CHROME','CHURCH','CIRCLE','CITIES',
+  'CLENCH','CLEVER','CLOSED','CLOSER','CLOVER','COFFEE','COMBAT','COMMIT','COMMON','CORNER','COSTLY',
+  'CREATE','CRISIS','CUSTOM','DEADLY','DECIDE','DELETE','DEMAND','DENTAL','DESIGN','DETAIL','DEVOTE',
+  'DIFFER','DIRECT','DOUBLE','DRIVEN','EASILY','EFFECT','EFFORT','EITHER','EMPIRE','ENABLE','ENGINE',
+  'ENSURE','ENTIRE','ESCAPE','EVOLVE','EXCEPT','EXPERT','FAIRLY','FALLEN','FAMILY','FAMOUS','FIGURE',
+  'FILTER','FINGER','FINISH','FLIGHT','FLOWER','FLYING','FOLLOW','FORMAL','FORMED','FORMER','FOSSIL',
+  'FROZEN','GARDEN','GATHER','GENDER','GENTLE','GLOBAL','HAPPEN','HARDLY','HEALTH','HERALD','HONEST',
+  'HUNGRY','IMPORT','INCOME','INDOOR','INSECT','INSIDE','INTENT','INVEST','INVITE','ISLAND','ITSELF',
+  'JUNGLE','KEEPER','KNIVES','KNIGHT','LAUNCH','LAWYER','LEADER','LETTER','LIQUID','LOSING','LOWEST',
+  'MANAGE','MANNER','MARKET','MARBLE','MASTER','MATTER','MEDIUM','MEMBER','MEMORY','MENTAL','MERELY',
+  'METHOD','MIDDLE','MIRROR','MOBILE','MODERN','MOMENT','MOTHER','MOTION','MUSEUM','NATURE','NEARLY',
+  'NEEDLE','NOTICE','OBJECT','OBTAIN','OFFICE','ONLINE','OPTION','ORANGE','ORIGIN','OTHERS','OUTPUT',
+  'PARENT','PERSON','PLEASE','POCKET','POLICY','PORTAL','POSTAL','PREFER','PRETTY','PRISON','PROFIT',
+  'PROPER','PUBLIC','PULLED','PURPLE','RARELY','RATHER','REASON','RECORD','REFUSE','RELATE','REMOTE',
+  'REPORT','RESCUE','RESULT','RETIRE','RETURN','REVEAL','REWARD','ROCKET','SAFELY','SAFETY','SAMPLE',
+  'SAVIOR','SCREEN','SEARCH','SECOND','SECTOR','SERIES','SETTLE','SIGNAL','SILVER','SIMPLE','SINGLE',
+  'SISTER','SLOWLY','SMOOTH','SOCIAL','SOFTLY','SPRING','STABLE','STEADY','STRAIN','STREAM','STREET',
+  'STRICT','STRONG','STUDIO','SUBMIT','SUDDEN','SUMMER','SUPPLY','SURELY','SURVEY','TALENT','TENDER',
+  'TIMBER','TONGUE','TRAVEL','TRIPLE','TROPHY','TUNNEL','UNLESS','USEFUL','VICTIM','VIRTUE','VISION',
+  'VISUAL','WANTED','WEALTH','WEIGHT','WINTER','WISDOM','WITHIN','WONDER','WOODED','WORKER','THOUGH',
+  // 7-letter
+  'ACCOUNT','ACHIEVE','ACQUIRE','ADDRESS','ADOPTED','ADVANCE','AGAINST','ALREADY','ANOTHER','ANXIOUS',
+  'ARRANGE','BECAUSE','BETWEEN','BROTHER','BROUGHT','CERTAIN','CHAPTER','CLIMATE','COMPANY','CONTAIN',
+  'CONTROL','CONVERT','COUNCIL','COUNTRY','CRUCIAL','CULTURE','CURRENT','DECIDED','DEFAULT','DEVELOP',
+  'DIGITAL','DISPLAY','DISTANT','DIVIDED','DYNAMIC','ELEMENT','ENHANCE','EXPLAIN','EXPLORE','FAILURE',
+  'FEATURE','FEELING','FLOWING','FOREIGN','FORWARD','FREEDOM','GALLERY','GENERAL','GETTING','GROWING',
+  'HEALTHY','HISTORY','HOLDING','IMPROVE','INCLUDE','INITIAL','INSPIRE','JUSTICE','KITCHEN','LASTING',
+  'LEARNED','LEAVING','LIMITED','MACHINE','MAXIMUM','MEETING','MESSAGE','MILLION','MISSING','MIXTURE',
+  'MORNING','MONSTER','NATURAL','NETWORK','OBVIOUS','OPENING','OUTDOOR','OUTSIDE','PATTERN','PERFECT',
+  'PERFORM','PERHAPS','PLAYING','POPULAR','POSSESS','PROBLEM','PROCESS','PRODUCT','PROJECT','PROTECT',
+  'PROVIDE','PURPOSE','QUALITY','QUARTER','READING','RECEIVE','RELEASE','RELYING','REPLACE','REQUIRE',
+  'RESPECT','RESTORE','REVENUE','SCIENCE','SECTION','SERVICE','SEVERAL','SERVING','SIMILAR','SOCIETY',
+  'SOMEHOW','SOMEONE','SPECIAL','STUDENT','SUBJECT','SUCCESS','SUPPORT','SURFACE','TEACHER','TELLING',
+  'TESTING','THOUGHT','THROUGH','TONIGHT','TOTALLY','TOURISM','TOURIST','TOWARDS','TRIGGER','TROUBLE',
+  'TYPICAL','USUALLY','VERSION','VILLAGE','VISITOR','WHETHER','WITHOUT','WORKING',
+  // German words
+  'TAG','UHR','BUS','ZUG','BAU','HOF','ORT','ART','ALS','AUS','BEI','BIS','DAS','DEN','DER','DES',
+  'DEM','DIE','EIN','IM','IST','MIT','UND','VOM','VON','WIE','ZUR','ZUM',
+  'HAUS','FRAU','MANN','KIND','WELT','ZEIT','GELD','BURG','BAND','BERG','BUCH','BURG','DING',
+  'DORF','DREI','ECHT','ERST','FALL','FEHL','FELD','FEST','FILM','FUSS','GANZ','GERN','GRAD',
+  'GRAB','HANG','HEIM','HELD','HERB','HERR','HILF','HOCH','HOLZ','HORH','JUNG','KALT','KLAR',
+  'KURS','LAND','LAST','LAUT','LEER','LEID','LERN','LICHT','MEHR','MEIN','MILD','NETZ','OBEN',
+  'PLAN','PLATZ','PROF','RECHT','REIN','RING','RUND','SALZ','SAND','SEHN','SEHR','SEIN','SIEG',
+  'SINN','SITZ','SOLL','SPIEL','STAMM','STARK','STATT','STILL','STROM','STURM','SUCHE','SINN',
+  'TAKT','TEND','TIER','VIER','VOLL','WAND','WARM','WALD','WAHL','WERK','WERT','WEST','WORT',
+  'ZAUN','ZELT','ZIEL','ZORN','ZWECK',
+  'ABEND','ANGST','ARBEIT','BAUCH','BRAUN','BRUST','DATUM','DAUER','EIGEN','ERFOLG','FEDER','FEHLER',
+  'FEUER','FOLGE','GRENZE','GRUND','GRUPPE','HALTEN','HERZ','HEUTE','KRAFT','KREIS','LAGER',
+  'LEBEN','LESER','LINIE','LUFT','MACHT','MAUER','MENGE','MONAT','MORGEN','NACHT','NATUR','NEBEL',
+  'NORDEN','OSTEN','PARTIE','PUNKT','RECHT','REISE','REGEN','RUNDE','SCHICHT','SEITE','SPIEL',
+  'SPORT','SPRUNG','STERN','STUNDE','SUCHEN','WOCHE','STAHL','STROM','SUMME','SONNE','SZENE',
+].map(w => w.toUpperCase()));
+
+function validateWord(word) {
+  if (!word || word.length < 2) return false;
+  return WORD_LIST.has(word.toUpperCase());
+}
+
+// ---- Game State ----
+let state = {
+  players: ['Spieler 1', 'Spieler 2'],
+  scores: [0, 0],
+  totalRounds: 5,
+  currentRound: 0,
+  pool: [],
+  words: ['', ''],
+  timerInterval: null,
+  timeLeft: 45,
+};
+
+// ---- Helpers ----
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function el(id) { return document.getElementById(id); }
+
+function updateScoreStrip(container) {
+  container.innerHTML = state.players.map((n, i) => `
+    <div class="score-item">
+      <div class="score-name">${n}</div>
+      <div class="score-val">${state.scores[i]} <small style="font-size:0.6rem;color:var(--muted)">${t('score_pts')}</small></div>
+    </div>
+  `).join('');
+}
+
+// ---- Setup ----
+let totalRounds = 5;
+el('rounds-display').textContent = totalRounds;
+
+el('rounds-dec').addEventListener('click', () => {
+  if (totalRounds > 3) totalRounds--;
+  el('rounds-display').textContent = totalRounds;
+});
+el('rounds-inc').addEventListener('click', () => {
+  if (totalRounds < 9) totalRounds++;
+  el('rounds-display').textContent = totalRounds;
+});
+
+el('btn-start').addEventListener('click', () => {
+  state.players[0] = el('name1').value.trim() || t('de') === lang() ? 'Spieler 1' : 'Player 1';
+  state.players[1] = el('name2').value.trim() || t('de') === lang() ? 'Spieler 2' : 'Player 2';
+  // Better: just use defaults
+  state.players[0] = el('name1').value.trim() || 'Spieler 1';
+  state.players[1] = el('name2').value.trim() || 'Spieler 2';
+  state.scores = [0, 0];
+  state.totalRounds = totalRounds;
+  state.currentRound = 0;
+  startPickPhase();
+});
+
+// ---- Pick Phase ----
+let pickPool = [];
+let pickVowels = 0;
+let pickCons = 0;
+
+function startPickPhase() {
+  state.currentRound++;
+  pickPool = [];
+  pickVowels = 0;
+  pickCons = 0;
+  updatePickDisplay();
+  el('pick-player-badge').textContent = state.players[0];
+  el('pick-round-info').innerHTML = `${t('round_label')} <span>${state.currentRound}</span> ${t('of_label')} <span>${state.totalRounds}</span>`;
+  showScreen('screen-pick');
+}
+
+function updatePickDisplay() {
+  el('pick-vowels').textContent = pickVowels;
+  el('pick-cons').textContent = pickCons;
+  el('pick-total').textContent = pickPool.length;
+
+  const container = el('letters-built');
+  container.innerHTML = pickPool.map(l => `<div class="letter-tile">${l}</div>`).join('');
+
+  const remaining = 9 - pickPool.length;
+  el('btn-pick-vowel').disabled = remaining === 0;
+  el('btn-pick-cons').disabled = remaining === 0;
+  el('btn-pick-random').disabled = remaining === 0;
+  el('btn-pick-random').textContent = remaining === 0 ? '✓ Ready!' : `🎲 ${t('btn_random')} (${remaining})`;
+}
+
+el('btn-pick-vowel').addEventListener('click', () => {
+  if (pickPool.length >= 9) return;
+  const l = pickLetter('vowel');
+  pickPool.push(l);
+  pickVowels++;
+  updatePickDisplay();
+  if (pickPool.length === 9) setTimeout(finishPicking, 300);
+});
+
+el('btn-pick-cons').addEventListener('click', () => {
+  if (pickPool.length >= 9) return;
+  const l = pickLetter('consonant');
+  pickPool.push(l);
+  pickCons++;
+  updatePickDisplay();
+  if (pickPool.length === 9) setTimeout(finishPicking, 300);
+});
+
+el('btn-pick-random').addEventListener('click', () => {
+  const remaining = 9 - pickPool.length;
+  if (remaining <= 0) return;
+  // Auto-fill: ensure at least 3 vowels total
+  let needVowels = Math.max(0, 3 - pickVowels);
+  for (let i = 0; i < remaining; i++) {
+    const addVowel = needVowels > 0 || (Math.random() < 0.35 && pickVowels < 5);
+    if (addVowel) { pickPool.push(pickLetter('vowel')); pickVowels++; needVowels--; }
+    else { pickPool.push(pickLetter('consonant')); pickCons++; }
+  }
+  updatePickDisplay();
+  setTimeout(finishPicking, 300);
+});
+
+function finishPicking() {
+  state.pool = [...pickPool];
+  state.words = ['', ''];
+  showHandoffThink();
+}
+
+// ---- Handoff to Player 1 ----
+function showHandoffThink() {
+  el('handoff-think-title').textContent = `${state.players[0]} — ${t('think_title')}`;
+  showScreen('screen-handoff-think');
+}
+
+el('btn-handoff-think-ready').addEventListener('click', () => {
+  startThinkPhase(0);
+});
+
+// ---- Think Phase (Player 1) ----
+let builtWord = [];
+let usedIndices = [];
+
+function startThinkPhase(playerIdx) {
+  builtWord = [];
+  usedIndices = [];
+  el('think-player-badge').textContent = state.players[0];
+  renderThinkTiles('think-tiles', 0);
+  renderWordBuilder('word-builder', 'word-builder-empty', builtWord, 0);
+  startTimer('timer-circle', 'timer-text', 0);
+  showScreen('screen-think');
+}
+
+function renderThinkTiles(containerId, playerIdx) {
+  const c = el(containerId);
+  c.innerHTML = state.pool.map((l, i) => {
+    const used = usedIndices.includes(i);
+    return `<div class="lt${used ? ' used' : ''}" data-idx="${i}" onclick="tileClick(${i}, ${playerIdx})">${l}</div>`;
+  }).join('');
+}
+
+function tileClick(idx, playerIdx) {
+  if (usedIndices.includes(idx)) return;
+  builtWord.push({ letter: state.pool[idx], idx });
+  usedIndices.push(idx);
+  if (playerIdx === 0) {
+    renderThinkTiles('think-tiles', 0);
+    renderWordBuilder('word-builder', 'word-builder-empty', builtWord, 0);
+  } else {
+    renderThinkTiles('think2-tiles', 1);
+    renderWordBuilder('word-builder2', 'word-builder-empty2', builtWord, 1);
+  }
+}
+
+function removeBuiltLetter(pos, playerIdx) {
+  const removed = builtWord.splice(pos, 1)[0];
+  usedIndices = usedIndices.filter(i => i !== removed.idx);
+  if (playerIdx === 0) {
+    renderThinkTiles('think-tiles', 0);
+    renderWordBuilder('word-builder', 'word-builder-empty', builtWord, 0);
+  } else {
+    renderThinkTiles('think2-tiles', 1);
+    renderWordBuilder('word-builder2', 'word-builder-empty2', builtWord, 1);
+  }
+}
+
+function renderWordBuilder(builderId, emptyId, word, playerIdx) {
+  const c = el(builderId);
+  const emptyEl = el(emptyId);
+  if (word.length === 0) {
+    c.innerHTML = `<span class="word-builder-empty" id="${emptyId}" data-i18n="builder_empty">${t('builder_empty')}</span>`;
+  } else {
+    c.innerHTML = word.map((item, i) =>
+      `<div class="built-letter" onclick="removeBuiltLetter(${i}, ${playerIdx})">${item.letter}</div>`
+    ).join('');
+  }
+}
+
+function startTimer(circleId, textId, playerIdx) {
+  state.timeLeft = 45;
+  const circ = el(circleId);
+  const txt = el(textId);
+  const circumference = 276.5;
+
+  function updateTimer() {
+    txt.textContent = state.timeLeft;
+    const progress = state.timeLeft / 45;
+    circ.style.strokeDashoffset = circumference * (1 - progress);
+    if (state.timeLeft <= 10) circ.style.stroke = 'var(--red)';
+    else if (state.timeLeft <= 20) circ.style.stroke = 'var(--accent2)';
+    else circ.style.stroke = 'var(--accent)';
+  }
+
+  clearInterval(state.timerInterval);
+  updateTimer();
+  state.timerInterval = setInterval(() => {
+    state.timeLeft--;
+    updateTimer();
+    if (state.timeLeft <= 0) {
+      clearInterval(state.timerInterval);
+      submitWord(playerIdx);
+    }
+  }, 1000);
+}
+
+el('btn-clear-word').addEventListener('click', () => {
+  builtWord = [];
+  usedIndices = [];
+  renderThinkTiles('think-tiles', 0);
+  renderWordBuilder('word-builder', 'word-builder-empty', builtWord, 0);
+});
+
+el('btn-submit-word').addEventListener('click', () => {
+  clearInterval(state.timerInterval);
+  submitWord(0);
+});
+
+function submitWord(playerIdx) {
+  const word = builtWord.map(b => b.letter).join('');
+  state.words[playerIdx] = word;
+  if (playerIdx === 0) {
+    showHandoffP2();
+  } else {
+    showRoundResult();
+  }
+}
+
+// ---- Handoff to Player 2 ----
+function showHandoffP2() {
+  el('handoff-p2-title').textContent = `${state.players[1]} — ${t('think_title')}`;
+  showScreen('screen-handoff-p2');
+}
+
+el('btn-handoff-p2-ready').addEventListener('click', () => {
+  startThinkPhase2();
+});
+
+// ---- Think Phase (Player 2) ----
+function startThinkPhase2() {
+  builtWord = [];
+  usedIndices = [];
+  el('think2-player-badge').textContent = state.players[1];
+  renderThinkTiles('think2-tiles', 1);
+  renderWordBuilder('word-builder2', 'word-builder-empty2', builtWord, 1);
+  startTimer('timer2-circle', 'timer2-text', 1);
+  showScreen('screen-think2');
+}
+
+el('btn-clear-word2').addEventListener('click', () => {
+  builtWord = [];
+  usedIndices = [];
+  renderThinkTiles('think2-tiles', 1);
+  renderWordBuilder('word-builder2', 'word-builder-empty2', builtWord, 1);
+});
+
+el('btn-submit-word2').addEventListener('click', () => {
+  clearInterval(state.timerInterval);
+  submitWord(1);
+});
+
+// ---- Round Result ----
+function showRoundResult() {
+  const pool = state.pool;
+
+  function evalWord(word, playerIdx) {
+    if (!word) return { valid: false, score: 0 };
+    const formable = canFormWord(word, pool);
+    const known = validateWord(word);
+    const valid = formable && known && word.length >= 2;
+    const score = valid ? scoreWord(word, true) : 0;
+    if (valid) state.scores[playerIdx] += score;
+    return { valid, score };
+  }
+
+  const r0 = evalWord(state.words[0], 0);
+  const r1 = evalWord(state.words[1], 1);
+
+  // Score strip
+  updateScoreStrip(el('result-score-strip'));
+  el('result-round-title').textContent = `${t('round_label')} ${state.currentRound} ${t('of_label')} ${state.totalRounds}`;
+
+  function bonusMsg(word, valid) {
+    if (!valid) return '';
+    if (word.length === 9) return `<div style="color:var(--accent2); font-size:0.75rem; margin-top:4px">${t('nine_bonus')}</div>`;
+    if (word.length >= 7) return `<div style="color:var(--accent); font-size:0.75rem; margin-top:4px">${t('seven_bonus')}</div>`;
+    return '';
+  }
+
+  function buildCard(i, res) {
+    const word = state.words[i] || t('no_word');
+    const isWinner = res.score > (i === 0 ? r1.score : r0.score);
+    return `
+      <div class="result-card${isWinner ? ' winner' : ''}">
+        <div class="rc-name">${state.players[i]}</div>
+        <div class="rc-word${res.valid ? '' : ' invalid'}">${word.toUpperCase() || t('no_word')}</div>
+        <div class="rc-score">${res.score} ${t('score_pts')}</div>
+        ${res.valid ? '' : `<div class="rc-badge">${t('invalid_word')}</div>`}
+        ${bonusMsg(word, res.valid)}
+      </div>
+    `;
+  }
+
+  el('result-cards').innerHTML = buildCard(0, r0) + buildCard(1, r1);
+
+  let winMsg = '';
+  if (r0.score > r1.score) winMsg = `🟡 ${state.players[0]} ${t('wins_round')}`;
+  else if (r1.score > r0.score) winMsg = `🔵 ${state.players[1]} ${t('wins_round')}`;
+  else winMsg = t('tie');
+  el('round-winner-msg').textContent = winMsg;
+
+  // Show pool
+  const poolHtml = `<div style="margin-top:0.75rem; font-size:0.8rem; color:var(--muted); text-align:center;">
+    ${state.pool.map(l => `<span style="display:inline-block;background:var(--tile);border:1px solid var(--border);border-radius:4px;padding:2px 6px;margin:2px;font-weight:bold;">${l}</span>`).join('')}
+  </div>`;
+  el('round-winner-msg').insertAdjacentHTML('afterend', poolHtml);
+
+  el('btn-next-round').textContent = state.currentRound >= state.totalRounds ? t('btn_play_again').replace('⚒️ ', '🏆 ') : `→ ${t('btn_next_round').replace('→ ', '')}`;
+  el('btn-next-round').dataset.final = state.currentRound >= state.totalRounds ? '1' : '0';
+
+  showScreen('screen-result');
+}
+
+el('btn-next-round').addEventListener('click', () => {
+  if (el('btn-next-round').dataset.final === '1') {
+    showFinalScreen();
+  } else {
+    startPickPhase();
+  }
+});
+
+// ---- Final ----
+function showFinalScreen() {
+  const sorted = state.players
+    .map((n, i) => ({ name: n, score: state.scores[i] }))
+    .sort((a, b) => b.score - a.score);
+
+  const winner = sorted[0];
+  const places = ['🥇', '🥈', '🥉'];
+
+  el('final-winner-name').textContent = `${winner.name}`;
+  el('final-scores').innerHTML = sorted.map((p, i) => `
+    <div class="final-row">
+      <span class="place">${places[i] || `${i+1}.`}</span>
+      <span class="fname">${p.name}</span>
+      <span class="fscore">${p.score} ${t('score_pts')}</span>
+    </div>
+  `).join('');
+
+  showScreen('screen-final');
+}
+
+el('btn-play-again').addEventListener('click', () => {
+  state.scores = [0, 0];
+  state.currentRound = 0;
+  showScreen('screen-setup');
+});
+
+// ---- Update UI on lang change ----
+onLangChange(() => {
+  translatePage();
+});
+
+// ---- Default player names ----
+el('name1').placeholder = 'Spieler 1';
+el('name2').placeholder = 'Spieler 2';
+</script>
+</body>
+</html>
