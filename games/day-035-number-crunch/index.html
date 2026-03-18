@@ -1,0 +1,1142 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Number Crunch – Daily Games</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: system-ui, sans-serif;
+      background: #0a0a1a;
+      color: #f0f0f0;
+      min-height: 100vh;
+    }
+
+    .back-bar {
+      width: 100%;
+      background: #0a0a1a;
+      padding: 0.5rem 1rem;
+      border-bottom: 1px solid #333;
+    }
+    .back-bar a {
+      color: #ffcc00;
+      text-decoration: none;
+      font-size: 0.9rem;
+      font-family: system-ui, sans-serif;
+    }
+    .back-bar a:hover { text-decoration: underline; }
+
+    .container {
+      max-width: 480px;
+      margin: 0 auto;
+      padding: 1rem;
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 2rem;
+      color: #ffcc00;
+      margin: 0.5rem 0 0.25rem;
+      letter-spacing: 2px;
+    }
+    .subtitle {
+      text-align: center;
+      color: #888;
+      font-size: 0.85rem;
+      margin-bottom: 1rem;
+    }
+
+    /* ── SCREEN MANAGEMENT ── */
+    .screen { display: none; }
+    .screen.active { display: block; }
+
+    /* ── SETUP SCREEN ── */
+    .setup-card {
+      background: #12122a;
+      border: 1px solid #333;
+      border-radius: 12px;
+      padding: 1.5rem;
+      text-align: center;
+    }
+    .setup-card h2 {
+      color: #ffcc00;
+      margin-bottom: 1rem;
+      font-size: 1.3rem;
+    }
+    .player-count-row {
+      display: flex;
+      gap: 0.5rem;
+      justify-content: center;
+      margin-bottom: 1.2rem;
+    }
+    .cnt-btn {
+      width: 50px; height: 50px;
+      border-radius: 10px;
+      border: 2px solid #333;
+      background: #1a1a3a;
+      color: #ccc;
+      font-size: 1.2rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .cnt-btn.selected {
+      border-color: #ffcc00;
+      background: #2a2a1a;
+      color: #ffcc00;
+    }
+    .player-inputs { display: flex; flex-direction: column; gap: 0.6rem; margin-bottom: 1.2rem; }
+    .player-input {
+      background: #1a1a3a;
+      border: 1px solid #333;
+      border-radius: 8px;
+      padding: 0.6rem 1rem;
+      color: #f0f0f0;
+      font-size: 1rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .player-input:focus { border-color: #ffcc00; }
+
+    /* ── TRANSITION SCREEN ── */
+    .transition-card {
+      background: #12122a;
+      border: 2px solid #ffcc00;
+      border-radius: 16px;
+      padding: 2rem 1.5rem;
+      text-align: center;
+    }
+    .transition-card .big-emoji { font-size: 3rem; margin-bottom: 0.5rem; }
+    .transition-card h2 { color: #ffcc00; font-size: 1.5rem; margin-bottom: 0.5rem; }
+    .transition-card p { color: #aaa; font-size: 1rem; margin-bottom: 1.5rem; }
+    .transition-card .round-info { color: #888; font-size: 0.85rem; margin-bottom: 1.5rem; }
+
+    /* ── GAME SCREEN ── */
+    .player-header {
+      background: #1a1a3a;
+      border: 2px solid #ffcc00;
+      border-radius: 10px;
+      padding: 0.6rem 1rem;
+      text-align: center;
+      margin-bottom: 0.8rem;
+    }
+    .player-header .player-name-label { color: #ffcc00; font-size: 1.1rem; font-weight: bold; }
+    .player-header .round-label { color: #888; font-size: 0.8rem; }
+
+    .target-display {
+      text-align: center;
+      margin-bottom: 1rem;
+    }
+    .target-label { color: #888; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; }
+    .target-number {
+      font-size: 3.5rem;
+      font-weight: bold;
+      color: #ffcc00;
+      line-height: 1;
+      text-shadow: 0 0 30px rgba(255,204,0,0.5);
+    }
+
+    .timer-bar-wrap {
+      background: #1a1a3a;
+      border-radius: 6px;
+      height: 8px;
+      margin-bottom: 1rem;
+      overflow: hidden;
+    }
+    .timer-bar {
+      height: 100%;
+      background: linear-gradient(90deg, #00ff88, #ffcc00);
+      transition: width 0.1s linear;
+      border-radius: 6px;
+    }
+    .timer-bar.urgent { background: linear-gradient(90deg, #ff4444, #ff8800); }
+    .timer-text { text-align: center; color: #aaa; font-size: 0.85rem; margin-bottom: 0.5rem; }
+
+    /* Numbers tiles */
+    .numbers-row {
+      display: flex;
+      gap: 0.5rem;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-bottom: 1rem;
+    }
+    .num-tile {
+      width: 60px; height: 60px;
+      border-radius: 10px;
+      border: 2px solid #333;
+      background: #1a1a3a;
+      color: #f0f0f0;
+      font-size: 1.2rem;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.15s;
+      user-select: none;
+    }
+    .num-tile:hover { border-color: #ffcc00; background: #2a2a1a; }
+    .num-tile.used { opacity: 0.25; cursor: default; border-color: #222; }
+    .num-tile.selected { border-color: #00ff88; background: #1a3a2a; color: #00ff88; }
+
+    /* Operator buttons */
+    .ops-row {
+      display: flex;
+      gap: 0.5rem;
+      justify-content: center;
+      margin-bottom: 0.8rem;
+    }
+    .op-btn {
+      width: 55px; height: 50px;
+      border-radius: 8px;
+      border: 2px solid #555;
+      background: #1a1a3a;
+      color: #aaa;
+      font-size: 1.4rem;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .op-btn:hover, .op-btn.active-op { border-color: #aa88ff; color: #aa88ff; background: #1a1a2a; }
+
+    /* Expression display */
+    .expr-display {
+      background: #0a0a2a;
+      border: 1px solid #333;
+      border-radius: 8px;
+      padding: 0.6rem 1rem;
+      min-height: 44px;
+      font-size: 1.2rem;
+      color: #f0f0f0;
+      text-align: center;
+      margin-bottom: 0.6rem;
+      letter-spacing: 1px;
+      word-break: break-all;
+    }
+    .expr-display .result-preview {
+      color: #ffcc00;
+      font-size: 0.9rem;
+      margin-top: 2px;
+    }
+    .expr-display .result-preview.invalid { color: #ff4444; }
+
+    .expr-controls {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 0.8rem;
+    }
+    .expr-controls button {
+      flex: 1;
+      padding: 0.6rem;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      font-size: 0.9rem;
+      font-weight: bold;
+      transition: all 0.15s;
+    }
+    .btn-clear { background: #3a1a1a; color: #ff6666; border: 1px solid #662222; }
+    .btn-clear:hover { background: #4a2a2a; }
+    .btn-paren { background: #1a2a3a; color: #88aaff; border: 1px solid #224466; }
+    .btn-paren:hover { background: #2a3a4a; }
+
+    .btn-primary {
+      width: 100%;
+      padding: 0.9rem;
+      border-radius: 10px;
+      border: none;
+      background: linear-gradient(135deg, #ffcc00, #ff8800);
+      color: #000;
+      font-size: 1.1rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(255,200,0,0.4); }
+    .btn-primary:disabled { opacity: 0.4; cursor: default; transform: none; box-shadow: none; }
+
+    .btn-secondary {
+      width: 100%;
+      padding: 0.8rem;
+      border-radius: 10px;
+      border: 2px solid #555;
+      background: transparent;
+      color: #aaa;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-top: 0.5rem;
+    }
+    .btn-secondary:hover { border-color: #888; color: #ddd; }
+
+    /* ── REVEAL SCREEN ── */
+    .reveal-card {
+      background: #12122a;
+      border: 1px solid #333;
+      border-radius: 12px;
+      padding: 1.2rem;
+      margin-bottom: 0.8rem;
+    }
+    .reveal-player { font-weight: bold; color: #ffcc00; font-size: 1rem; margin-bottom: 0.4rem; }
+    .reveal-expr { color: #aaa; font-size: 0.85rem; margin-bottom: 0.3rem; font-family: monospace; }
+    .reveal-result { font-size: 1.4rem; font-weight: bold; }
+    .reveal-result.exact { color: #00ff88; }
+    .reveal-result.close { color: #ffcc00; }
+    .reveal-result.far { color: #ff8844; }
+    .reveal-result.miss { color: #ff4444; }
+    .reveal-pts { font-size: 1rem; color: #888; margin-left: 0.5rem; }
+
+    /* ── SCOREBOARD ── */
+    .scoreboard {
+      background: #12122a;
+      border: 1px solid #333;
+      border-radius: 12px;
+      overflow: hidden;
+      margin-bottom: 1rem;
+    }
+    .score-row {
+      display: flex;
+      align-items: center;
+      padding: 0.7rem 1rem;
+      border-bottom: 1px solid #1a1a2a;
+    }
+    .score-row:last-child { border-bottom: none; }
+    .score-rank { font-size: 1.3rem; width: 2rem; }
+    .score-name { flex: 1; font-weight: bold; }
+    .score-pts { font-size: 1.2rem; color: #ffcc00; font-weight: bold; }
+
+    /* ── FINAL SCREEN ── */
+    .winner-banner {
+      text-align: center;
+      background: linear-gradient(135deg, #1a1a00, #2a2200);
+      border: 2px solid #ffcc00;
+      border-radius: 16px;
+      padding: 1.5rem;
+      margin-bottom: 1rem;
+    }
+    .winner-banner .trophy { font-size: 3rem; }
+    .winner-banner h2 { color: #ffcc00; font-size: 1.5rem; margin: 0.5rem 0; }
+    .winner-banner .winner-name { color: #fff; font-size: 1.2rem; }
+
+    /* Validation message */
+    .validation-msg {
+      text-align: center;
+      font-size: 0.85rem;
+      min-height: 1.2rem;
+      margin-bottom: 0.4rem;
+      color: #ff6666;
+    }
+    .validation-msg.ok { color: #00ff88; }
+  </style>
+</head>
+<body>
+
+<div class="back-bar"><a href="/">← <span data-i18n="back">Zurück</span></a></div>
+
+<div class="container">
+  <h1>🔢 Number Crunch</h1>
+  <p class="subtitle" data-i18n="subtitle">Countdown-Rätsel für 2–4 Spieler!</p>
+
+  <!-- ── SETUP SCREEN ── -->
+  <div id="screen-setup" class="screen active">
+    <div class="setup-card">
+      <h2 data-i18n="setupTitle">Spieler einrichten</h2>
+      <div class="player-count-row">
+        <button class="cnt-btn selected" data-count="2">2</button>
+        <button class="cnt-btn" data-count="3">3</button>
+        <button class="cnt-btn" data-count="4">4</button>
+      </div>
+      <div class="player-inputs" id="playerInputs"></div>
+      <button class="btn-primary" id="btnStartGame" data-i18n="startGame">Spiel starten!</button>
+    </div>
+  </div>
+
+  <!-- ── TRANSITION SCREEN ── -->
+  <div id="screen-transition" class="screen">
+    <div class="transition-card">
+      <div class="big-emoji" id="transEmoji">🎯</div>
+      <h2 id="transTitle"></h2>
+      <p id="transMsg"></p>
+      <div class="round-info" id="transRound"></div>
+      <button class="btn-primary" id="btnTransGo" data-i18n="ready">Bereit!</button>
+    </div>
+  </div>
+
+  <!-- ── GAME SCREEN ── -->
+  <div id="screen-game" class="screen">
+    <div class="player-header">
+      <div class="player-name-label" id="currentPlayerLabel"></div>
+      <div class="round-label" id="roundLabel"></div>
+    </div>
+
+    <div class="target-display">
+      <div class="target-label" data-i18n="targetLabel">ZIEL</div>
+      <div class="target-number" id="targetDisplay">---</div>
+    </div>
+
+    <div class="timer-text" id="timerText">45s</div>
+    <div class="timer-bar-wrap">
+      <div class="timer-bar" id="timerBar"></div>
+    </div>
+
+    <div class="numbers-row" id="numbersRow"></div>
+
+    <div class="ops-row">
+      <button class="op-btn" data-op="+">+</button>
+      <button class="op-btn" data-op="-">−</button>
+      <button class="op-btn" data-op="*">×</button>
+      <button class="op-btn" data-op="/">÷</button>
+    </div>
+
+    <div class="expr-display" id="exprDisplay">
+      <span id="exprText"></span>
+      <div class="result-preview" id="resultPreview"></div>
+    </div>
+
+    <div class="expr-controls">
+      <button class="btn-clear" id="btnClear" data-i18n="clear">Löschen</button>
+      <button class="btn-paren" id="btnParen">( )</button>
+    </div>
+
+    <div class="validation-msg" id="validationMsg"></div>
+    <button class="btn-primary" id="btnSubmit" data-i18n="submit">Antwort einreichen</button>
+    <button class="btn-secondary" id="btnSkip" data-i18n="skip">Kein Ergebnis (0 Punkte)</button>
+  </div>
+
+  <!-- ── REVEAL SCREEN ── -->
+  <div id="screen-reveal" class="screen">
+    <h2 style="text-align:center;color:#ffcc00;margin-bottom:1rem;" data-i18n="roundResult">Rundenauswertung</h2>
+    <div id="revealCards"></div>
+    <div style="text-align:center;color:#888;font-size:0.85rem;margin-bottom:1rem;">
+      <span data-i18n="target">Ziel</span>: <strong id="revealTarget" style="color:#ffcc00;"></strong>
+    </div>
+    <h3 style="color:#aaa;font-size:0.9rem;margin-bottom:0.5rem;text-align:center;" data-i18n="scoreboard">Punktestand</h3>
+    <div class="scoreboard" id="scoreboardDisplay"></div>
+    <button class="btn-primary" id="btnNextRound" data-i18n="nextRound">Nächste Runde</button>
+  </div>
+
+  <!-- ── FINAL SCREEN ── -->
+  <div id="screen-final" class="screen">
+    <div class="winner-banner">
+      <div class="trophy">🏆</div>
+      <h2 data-i18n="winner">Gewinner!</h2>
+      <div class="winner-name" id="winnerName"></div>
+    </div>
+    <div class="scoreboard" id="finalScoreboard"></div>
+    <button class="btn-primary" id="btnPlayAgain" data-i18n="playAgain" style="margin-top:1rem;">Nochmal spielen!</button>
+  </div>
+
+</div>
+
+<script src="/shared/i18n.js"></script>
+<script>
+const TRANSLATIONS = {
+  de: {
+    back: "Zurück",
+    subtitle: "Countdown-Rätsel für 2–4 Spieler!",
+    setupTitle: "Spieler einrichten",
+    startGame: "Spiel starten!",
+    ready: "Bereit!",
+    targetLabel: "ZIEL",
+    clear: "Löschen",
+    submit: "Antwort einreichen",
+    skip: "Kein Ergebnis (0 Punkte)",
+    roundResult: "Rundenauswertung",
+    target: "Ziel",
+    scoreboard: "Punktestand",
+    nextRound: "Nächste Runde",
+    winner: "Gewinner!",
+    playAgain: "Nochmal spielen!",
+    playerDefault: "Spieler",
+    transRound: "Runde",
+    transOf: "von",
+    passDevice: "Gib das Gerät an",
+    passDeviceSuffix: "weiter!",
+    yourTurn: "Du bist dran!",
+    buildExpr: "Baue einen Ausdruck mit den Zahlen oben",
+    timerSec: "s",
+    exact: "EXAKT",
+    offBy: "daneben um",
+    pts: "Pkt",
+    noAnswer: "Kein Ergebnis",
+    invalidExpr: "Ungültiger Ausdruck",
+    wrongNumbers: "Falsche Zahlen verwendet!",
+    noExpr: "Kein Ausdruck eingegeben",
+    validExpr: "Gültiger Ausdruck",
+    firstRoundTitle: "Runde 1 beginnt!",
+    firstRoundMsg: "Alle Spieler erhalten dieselben 6 Zahlen. Baut den Ausdruck so nah wie möglich ans Ziel!",
+    tie: "Unentschieden!",
+    tiePlayers: "Beide Spieler",
+    finalRound: "Letzte Runde",
+    gameOver: "Spiel vorbei!",
+  },
+  en: {
+    back: "Back",
+    subtitle: "Countdown puzzle for 2–4 players!",
+    setupTitle: "Set up players",
+    startGame: "Start game!",
+    ready: "Ready!",
+    targetLabel: "TARGET",
+    clear: "Clear",
+    submit: "Submit answer",
+    skip: "No answer (0 points)",
+    roundResult: "Round results",
+    target: "Target",
+    scoreboard: "Scoreboard",
+    nextRound: "Next round",
+    winner: "Winner!",
+    playAgain: "Play again!",
+    playerDefault: "Player",
+    transRound: "Round",
+    transOf: "of",
+    passDevice: "Pass the device to",
+    passDeviceSuffix: "!",
+    yourTurn: "It's your turn!",
+    buildExpr: "Build an expression using the numbers above",
+    timerSec: "s",
+    exact: "EXACT",
+    offBy: "off by",
+    pts: "pts",
+    noAnswer: "No answer",
+    invalidExpr: "Invalid expression",
+    wrongNumbers: "Wrong numbers used!",
+    noExpr: "No expression entered",
+    validExpr: "Valid expression",
+    firstRoundTitle: "Round 1 begins!",
+    firstRoundMsg: "All players get the same 6 numbers. Build an expression as close to the target as possible!",
+    tie: "It's a tie!",
+    tiePlayers: "Both players",
+    finalRound: "Final round",
+    gameOver: "Game over!",
+  },
+  fr: {
+    back: "Retour",
+    subtitle: "Puzzle Countdown pour 2–4 joueurs !",
+    setupTitle: "Configurer les joueurs",
+    startGame: "Démarrer !",
+    ready: "Prêt !",
+    targetLabel: "CIBLE",
+    clear: "Effacer",
+    submit: "Soumettre",
+    skip: "Aucune réponse (0 point)",
+    roundResult: "Résultats de la manche",
+    target: "Cible",
+    scoreboard: "Classement",
+    nextRound: "Manche suivante",
+    winner: "Gagnant !",
+    playAgain: "Rejouer !",
+    playerDefault: "Joueur",
+    transRound: "Manche",
+    transOf: "sur",
+    passDevice: "Passe l'appareil à",
+    passDeviceSuffix: " !",
+    yourTurn: "C'est ton tour !",
+    buildExpr: "Construis une expression avec les nombres",
+    timerSec: "s",
+    exact: "EXACT",
+    offBy: "écart de",
+    pts: "pts",
+    noAnswer: "Aucune réponse",
+    invalidExpr: "Expression invalide",
+    wrongNumbers: "Mauvais nombres utilisés !",
+    noExpr: "Aucune expression",
+    validExpr: "Expression valide",
+    firstRoundTitle: "Début de la manche 1 !",
+    firstRoundMsg: "Tous les joueurs ont les mêmes 6 nombres. Construisez une expression aussi proche que possible de la cible !",
+    tie: "Égalité !",
+    tiePlayers: "Les deux joueurs",
+    finalRound: "Dernière manche",
+    gameOver: "Fin de partie !",
+  },
+  it: {
+    back: "Indietro",
+    subtitle: "Puzzle Countdown per 2–4 giocatori!",
+    setupTitle: "Configura i giocatori",
+    startGame: "Inizia!",
+    ready: "Pronto!",
+    targetLabel: "OBIETTIVO",
+    clear: "Cancella",
+    submit: "Invia risposta",
+    skip: "Nessuna risposta (0 punti)",
+    roundResult: "Risultati del round",
+    target: "Obiettivo",
+    scoreboard: "Classifica",
+    nextRound: "Prossimo round",
+    winner: "Vincitore!",
+    playAgain: "Ancora!",
+    playerDefault: "Giocatore",
+    transRound: "Round",
+    transOf: "di",
+    passDevice: "Passa il dispositivo a",
+    passDeviceSuffix: "!",
+    yourTurn: "È il tuo turno!",
+    buildExpr: "Costruisci un'espressione con i numeri",
+    timerSec: "s",
+    exact: "ESATTO",
+    offBy: "scarto di",
+    pts: "pts",
+    noAnswer: "Nessuna risposta",
+    invalidExpr: "Espressione non valida",
+    wrongNumbers: "Numeri sbagliati!",
+    noExpr: "Nessuna espressione",
+    validExpr: "Espressione valida",
+    firstRoundTitle: "Inizia il round 1!",
+    firstRoundMsg: "Tutti i giocatori ricevono gli stessi 6 numeri. Costruite un'espressione vicina all'obiettivo!",
+    tie: "Pareggio!",
+    tiePlayers: "Entrambi i giocatori",
+    finalRound: "Ultimo round",
+    gameOver: "Fine partita!",
+  },
+  es: {
+    back: "Volver",
+    subtitle: "¡Puzzle Countdown para 2–4 jugadores!",
+    setupTitle: "Configurar jugadores",
+    startGame: "¡Empezar!",
+    ready: "¡Listo!",
+    targetLabel: "OBJETIVO",
+    clear: "Borrar",
+    submit: "Enviar respuesta",
+    skip: "Sin respuesta (0 puntos)",
+    roundResult: "Resultados de la ronda",
+    target: "Objetivo",
+    scoreboard: "Clasificación",
+    nextRound: "Siguiente ronda",
+    winner: "¡Ganador!",
+    playAgain: "¡Jugar de nuevo!",
+    playerDefault: "Jugador",
+    transRound: "Ronda",
+    transOf: "de",
+    passDevice: "Pasa el dispositivo a",
+    passDeviceSuffix: "!",
+    yourTurn: "¡Es tu turno!",
+    buildExpr: "Construye una expresión con los números",
+    timerSec: "s",
+    exact: "EXACTO",
+    offBy: "diferencia de",
+    pts: "pts",
+    noAnswer: "Sin respuesta",
+    invalidExpr: "Expresión inválida",
+    wrongNumbers: "¡Números incorrectos!",
+    noExpr: "Sin expresión",
+    validExpr: "Expresión válida",
+    firstRoundTitle: "¡Comienza la ronda 1!",
+    firstRoundMsg: "Todos los jugadores tienen los mismos 6 números. ¡Construye una expresión lo más cercana al objetivo!",
+    tie: "¡Empate!",
+    tiePlayers: "Ambos jugadores",
+    finalRound: "Última ronda",
+    gameOver: "¡Fin del juego!",
+  },
+};
+
+const { t, translatePage } = initI18n(TRANSLATIONS);
+
+// ─── GAME STATE ────────────────────────────────────────────────────────────
+const TOTAL_ROUNDS = 5;
+const TIMER_SECONDS = 45;
+
+let state = {
+  players: [],
+  scores: [],
+  round: 0,
+  currentPlayerIdx: 0,
+  numbers: [],
+  target: 0,
+  roundAnswers: [],     // { player, expr, value, score }
+  expression: "",
+  usedTileIndices: [],
+  selectedOp: null,
+  timerInterval: null,
+  timeLeft: TIMER_SECONDS,
+  parenDepth: 0,
+};
+
+// ─── UTILS (mirror of game-logic.js, embedded for browser) ─────────────────
+
+function generateNumbers() {
+  const largePool = [25, 50, 75, 100];
+  const smallPool = [1,2,3,4,5,6,7,8,9,10,1,2,3,4,5,6,7,8,9,10];
+  const largeCount = Math.random() < 0.15 ? 0 : Math.random() < 0.5 ? 1 : 2;
+  const result = [];
+  const largeShuffle = [...largePool].sort(() => Math.random() - 0.5);
+  for (let i = 0; i < largeCount; i++) result.push(largeShuffle[i]);
+  const smallShuffle = [...smallPool].sort(() => Math.random() - 0.5);
+  for (let i = 0; i < 6 - largeCount; i++) result.push(smallShuffle[i]);
+  return result;
+}
+
+function generateTarget() {
+  return Math.floor(Math.random() * 899) + 101;
+}
+
+function safeEval(expr) {
+  expr = expr.trim();
+  if (/^-?\d+(\.\d+)?$/.test(expr)) return parseFloat(expr);
+
+  let depth = 0, lastAddSub = -1, lastMulDiv = -1;
+  for (let i = 0; i < expr.length; i++) {
+    const ch = expr[i];
+    if (ch === "(") depth++;
+    else if (ch === ")") depth--;
+    else if (depth === 0) {
+      if ((ch === "+" || ch === "-") && i > 0) lastAddSub = i;
+      else if ((ch === "*" || ch === "/") && i > 0) lastMulDiv = i;
+    }
+  }
+  const splitAt = lastAddSub !== -1 ? lastAddSub : lastMulDiv;
+  if (splitAt !== -1) {
+    const op = expr[splitAt];
+    const left = safeEval(expr.slice(0, splitAt));
+    const right = safeEval(expr.slice(splitAt + 1));
+    if (left === null || right === null) return null;
+    if (op === "+") return left + right;
+    if (op === "-") return left - right;
+    if (op === "*") return left * right;
+    if (op === "/") {
+      if (right === 0) return null;
+      const r = left / right;
+      if (!Number.isInteger(r)) return null;
+      return r;
+    }
+  }
+  if (expr.startsWith("(") && expr.endsWith(")")) {
+    let d = 0, valid = true;
+    for (let i = 0; i < expr.length - 1; i++) {
+      if (expr[i] === "(") d++;
+      else if (expr[i] === ")") d--;
+      if (d === 0) { valid = false; break; }
+    }
+    if (valid) return safeEval(expr.slice(1, -1));
+  }
+  const n = parseFloat(expr);
+  return isNaN(n) ? null : n;
+}
+
+function evaluateExpression(expr) {
+  if (!expr || !expr.trim()) return null;
+  if (!/^[\d\s+\-*/().]+$/.test(expr.trim())) return null;
+  try {
+    const result = safeEval(expr.trim());
+    if (result === null || !Number.isFinite(result)) return null;
+    if (!Number.isInteger(result)) return null;
+    return result;
+  } catch { return null; }
+}
+
+function extractNumbers(expr) {
+  const matches = expr.match(/\d+/g);
+  return matches ? matches.map(Number) : [];
+}
+
+function validateNumbersUsed(used, available) {
+  const freq = {};
+  for (const n of available) freq[n] = (freq[n] || 0) + 1;
+  for (const n of used) {
+    if (!freq[n]) return false;
+    freq[n]--;
+  }
+  return true;
+}
+
+function scoreResult(value, target) {
+  if (value === null || value === undefined) return 0;
+  const diff = Math.abs(value - target);
+  if (diff === 0) return 10;
+  if (diff <= 5) return 7;
+  if (diff <= 10) return 5;
+  if (diff <= 25) return 3;
+  if (diff <= 50) return 1;
+  return 0;
+}
+
+// ─── SCREEN MANAGEMENT ─────────────────────────────────────────────────────
+function showScreen(id) {
+  document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+}
+
+// ─── SETUP ─────────────────────────────────────────────────────────────────
+let playerCount = 2;
+
+document.querySelectorAll(".cnt-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    playerCount = parseInt(btn.dataset.count);
+    document.querySelectorAll(".cnt-btn").forEach(b => b.classList.remove("selected"));
+    btn.classList.add("selected");
+    renderPlayerInputs();
+  });
+});
+
+function renderPlayerInputs() {
+  const container = document.getElementById("playerInputs");
+  container.innerHTML = "";
+  for (let i = 0; i < playerCount; i++) {
+    const inp = document.createElement("input");
+    inp.type = "text";
+    inp.className = "player-input";
+    inp.placeholder = `${t("playerDefault")} ${i + 1}`;
+    inp.value = state.players[i] || "";
+    inp.maxLength = 16;
+    container.appendChild(inp);
+  }
+}
+renderPlayerInputs();
+
+document.getElementById("btnStartGame").addEventListener("click", () => {
+  const inputs = document.querySelectorAll(".player-input");
+  state.players = Array.from(inputs).map((inp, i) =>
+    inp.value.trim() || `${t("playerDefault")} ${i + 1}`
+  );
+  state.scores = state.players.map(() => 0);
+  state.round = 0;
+  startRound();
+});
+
+// ─── ROUND FLOW ──────────────────────────────────────────────────────────
+
+function startRound() {
+  state.round++;
+  state.currentPlayerIdx = 0;
+  state.roundAnswers = [];
+  state.numbers = generateNumbers();
+  state.target = generateTarget();
+
+  // Show intro transition for round
+  showTransition(
+    "🎯",
+    state.round === 1 ? t("firstRoundTitle") : `${t("transRound")} ${state.round} ${t("transOf")} ${TOTAL_ROUNDS}`,
+    state.round === 1 ? t("firstRoundMsg") : `${t("passDevice")} ${state.players[0]}${t("passDeviceSuffix")}`,
+    `${t("transRound")} ${state.round} ${t("transOf")} ${TOTAL_ROUNDS}`,
+    () => startPlayerTurn()
+  );
+}
+
+function startPlayerTurn() {
+  const player = state.players[state.currentPlayerIdx];
+  state.expression = "";
+  state.usedTileIndices = [];
+  state.selectedOp = null;
+  state.timeLeft = TIMER_SECONDS;
+  state.parenDepth = 0;
+
+  // Update UI
+  document.getElementById("currentPlayerLabel").textContent = player;
+  document.getElementById("roundLabel").textContent =
+    `${t("transRound")} ${state.round} ${t("transOf")} ${TOTAL_ROUNDS}`;
+  document.getElementById("targetDisplay").textContent = state.target;
+  document.getElementById("timerText").textContent = `${TIMER_SECONDS}${t("timerSec")}`;
+
+  renderNumbers();
+  updateExprDisplay();
+  showScreen("screen-game");
+  startTimer();
+}
+
+function renderNumbers() {
+  const row = document.getElementById("numbersRow");
+  row.innerHTML = "";
+  state.numbers.forEach((n, i) => {
+    const tile = document.createElement("div");
+    tile.className = "num-tile";
+    tile.textContent = n;
+    tile.dataset.idx = i;
+    if (state.usedTileIndices.includes(i)) tile.classList.add("used");
+    tile.addEventListener("click", () => onNumberTap(i));
+    row.appendChild(tile);
+  });
+}
+
+function onNumberTap(idx) {
+  if (state.usedTileIndices.includes(idx)) return;
+  const num = state.numbers[idx];
+
+  // If there's a selected op, append "op num"
+  if (state.selectedOp) {
+    state.expression += ` ${state.selectedOp} ${num}`;
+    state.usedTileIndices.push(idx);
+    state.selectedOp = null;
+    document.querySelectorAll(".op-btn").forEach(b => b.classList.remove("active-op"));
+  } else {
+    // If expression is empty or ends with operator/open paren, just append number
+    const trimmed = state.expression.trim();
+    if (!trimmed || trimmed.endsWith("(")) {
+      state.expression = trimmed ? trimmed + num : String(num);
+      state.usedTileIndices.push(idx);
+    } else {
+      // Need an operator first — flash a hint
+      document.getElementById("validationMsg").textContent = "← " + (state.selectedOp ? "" : "Operator wählen");
+      setTimeout(() => document.getElementById("validationMsg").textContent = "", 1200);
+      return;
+    }
+  }
+  updateExprDisplay();
+  renderNumbers();
+}
+
+document.querySelectorAll(".op-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    const op = btn.dataset.op;
+    // Only allow op if expression has content and doesn't already end with op
+    const trimmed = state.expression.trim();
+    if (!trimmed || /[+\-*/]$/.test(trimmed)) return;
+    state.selectedOp = state.selectedOp === op ? null : op;
+    document.querySelectorAll(".op-btn").forEach(b => b.classList.remove("active-op"));
+    if (state.selectedOp) btn.classList.add("active-op");
+    updateExprDisplay();
+  });
+});
+
+document.getElementById("btnParen").addEventListener("click", () => {
+  const trimmed = state.expression.trim();
+  if (!trimmed || /[+\-*/]$/.test(trimmed)) {
+    // Open paren
+    state.expression = trimmed ? trimmed + "(" : "(";
+    state.parenDepth++;
+  } else if (state.parenDepth > 0) {
+    // Close paren
+    state.expression = trimmed + ")";
+    state.parenDepth--;
+  }
+  updateExprDisplay();
+});
+
+document.getElementById("btnClear").addEventListener("click", () => {
+  state.expression = "";
+  state.usedTileIndices = [];
+  state.selectedOp = null;
+  state.parenDepth = 0;
+  document.querySelectorAll(".op-btn").forEach(b => b.classList.remove("active-op"));
+  renderNumbers();
+  updateExprDisplay();
+});
+
+function updateExprDisplay() {
+  const exprText = document.getElementById("exprText");
+  const resultPreview = document.getElementById("resultPreview");
+  const validMsg = document.getElementById("validationMsg");
+
+  const displayExpr = state.expression || "...";
+  exprText.textContent = displayExpr;
+
+  if (!state.expression) {
+    resultPreview.textContent = "";
+    validMsg.textContent = "";
+    validMsg.className = "validation-msg";
+    return;
+  }
+
+  const result = evaluateExpression(state.expression);
+  const usedNums = extractNumbers(state.expression);
+  const valid = validateNumbersUsed(usedNums, state.numbers);
+
+  if (!valid) {
+    resultPreview.textContent = "⚠️ " + t("wrongNumbers");
+    resultPreview.className = "result-preview invalid";
+    validMsg.textContent = t("wrongNumbers");
+    validMsg.className = "validation-msg";
+    return;
+  }
+
+  if (result !== null) {
+    const diff = Math.abs(result - state.target);
+    const label = diff === 0 ? `✅ ${t("exact")}!` : `= ${result} (${t("offBy")} ${diff})`;
+    resultPreview.textContent = label;
+    resultPreview.className = diff === 0 ? "result-preview" : "result-preview";
+    resultPreview.style.color = diff === 0 ? "#00ff88" : diff <= 10 ? "#ffcc00" : "#aaa";
+    validMsg.textContent = t("validExpr");
+    validMsg.className = "validation-msg ok";
+  } else if (state.expression.length > 0) {
+    resultPreview.textContent = "...";
+    resultPreview.className = "result-preview";
+    resultPreview.style.color = "#666";
+    validMsg.textContent = "";
+    validMsg.className = "validation-msg";
+  }
+}
+
+// ─── TIMER ──────────────────────────────────────────────────────────────────
+
+function startTimer() {
+  clearInterval(state.timerInterval);
+  state.timerInterval = setInterval(() => {
+    state.timeLeft--;
+    const pct = (state.timeLeft / TIMER_SECONDS) * 100;
+    const bar = document.getElementById("timerBar");
+    bar.style.width = `${pct}%`;
+    if (state.timeLeft <= 10) bar.classList.add("urgent");
+    else bar.classList.remove("urgent");
+    document.getElementById("timerText").textContent = `${state.timeLeft}${t("timerSec")}`;
+    if (state.timeLeft <= 0) {
+      clearInterval(state.timerInterval);
+      autoSubmit();
+    }
+  }, 1000);
+}
+
+function autoSubmit() {
+  submitAnswer();
+}
+
+// ─── SUBMIT / SKIP ──────────────────────────────────────────────────────────
+
+document.getElementById("btnSubmit").addEventListener("click", submitAnswer);
+document.getElementById("btnSkip").addEventListener("click", () => {
+  clearInterval(state.timerInterval);
+  recordAnswer(null, null);
+});
+
+function submitAnswer() {
+  clearInterval(state.timerInterval);
+  const expr = state.expression.trim();
+  if (!expr) {
+    recordAnswer(null, null);
+    return;
+  }
+
+  const result = evaluateExpression(expr);
+  const usedNums = extractNumbers(expr);
+  const valid = validateNumbersUsed(usedNums, state.numbers);
+
+  if (!valid || result === null) {
+    recordAnswer(null, null);
+    return;
+  }
+
+  recordAnswer(expr, result);
+}
+
+function recordAnswer(expr, value) {
+  const player = state.players[state.currentPlayerIdx];
+  const pts = scoreResult(value, state.target);
+  state.roundAnswers.push({ player, expr, value, score: pts });
+
+  const nextIdx = state.currentPlayerIdx + 1;
+  if (nextIdx < state.players.length) {
+    state.currentPlayerIdx = nextIdx;
+    const nextPlayer = state.players[nextIdx];
+    showTransition(
+      "🔄",
+      `${t("passDevice")} ${nextPlayer}${t("passDeviceSuffix")}`,
+      t("yourTurn"),
+      `${t("transRound")} ${state.round} ${t("transOf")} ${TOTAL_ROUNDS} — ${nextPlayer}`,
+      () => startPlayerTurn()
+    );
+  } else {
+    showReveal();
+  }
+}
+
+// ─── TRANSITION ──────────────────────────────────────────────────────────────
+
+let transCallback = null;
+
+function showTransition(emoji, title, msg, round, callback) {
+  document.getElementById("transEmoji").textContent = emoji;
+  document.getElementById("transTitle").textContent = title;
+  document.getElementById("transMsg").textContent = msg;
+  document.getElementById("transRound").textContent = round;
+  transCallback = callback;
+  showScreen("screen-transition");
+}
+
+document.getElementById("btnTransGo").addEventListener("click", () => {
+  if (transCallback) { transCallback(); transCallback = null; }
+});
+
+// ─── REVEAL ──────────────────────────────────────────────────────────────────
+
+function showReveal() {
+  // Add round scores to totals
+  state.roundAnswers.forEach(ans => {
+    const idx = state.players.indexOf(ans.player);
+    state.scores[idx] = (state.scores[idx] || 0) + ans.score;
+  });
+
+  // Render reveal cards
+  const cards = document.getElementById("revealCards");
+  cards.innerHTML = "";
+  state.roundAnswers.forEach(ans => {
+    const card = document.createElement("div");
+    card.className = "reveal-card";
+
+    const diff = ans.value !== null ? Math.abs(ans.value - state.target) : null;
+    const cls = ans.value === null ? "miss" : diff === 0 ? "exact" : diff <= 10 ? "close" : diff <= 50 ? "far" : "miss";
+    const resultText = ans.value === null
+      ? t("noAnswer")
+      : diff === 0 ? `${ans.value} 🎯 ${t("exact")}!`
+      : `${ans.value} (${t("offBy")} ${diff})`;
+
+    card.innerHTML = `
+      <div class="reveal-player">${ans.player}</div>
+      ${ans.expr ? `<div class="reveal-expr">${ans.expr}</div>` : ""}
+      <div>
+        <span class="reveal-result ${cls}">${resultText}</span>
+        <span class="reveal-pts">+${ans.score} ${t("pts")}</span>
+      </div>
+    `;
+    cards.appendChild(card);
+  });
+
+  document.getElementById("revealTarget").textContent = state.target;
+  renderScoreboard("scoreboardDisplay");
+  showScreen("screen-reveal");
+}
+
+document.getElementById("btnNextRound").addEventListener("click", () => {
+  if (state.round >= TOTAL_ROUNDS) {
+    showFinal();
+  } else {
+    startRound();
+  }
+});
+
+function renderScoreboard(containerId) {
+  const container = document.getElementById(containerId);
+  container.innerHTML = "";
+  const sorted = state.players
+    .map((p, i) => ({ name: p, score: state.scores[i] }))
+    .sort((a, b) => b.score - a.score);
+
+  sorted.forEach((entry, rank) => {
+    const row = document.createElement("div");
+    row.className = "score-row";
+    const medals = ["🥇", "🥈", "🥉", "4️⃣"];
+    row.innerHTML = `
+      <div class="score-rank">${medals[rank] || "•"}</div>
+      <div class="score-name">${entry.name}</div>
+      <div class="score-pts">${entry.score} ${t("pts")}</div>
+    `;
+    container.appendChild(row);
+  });
+}
+
+// ─── FINAL ────────────────────────────────────────────────────────────────
+
+function showFinal() {
+  renderScoreboard("finalScoreboard");
+  const maxScore = Math.max(...state.scores);
+  const winners = state.players.filter((_, i) => state.scores[i] === maxScore);
+
+  document.getElementById("winnerName").textContent =
+    winners.length > 1
+      ? `${t("tie")} ${winners.join(", ")} (${maxScore} ${t("pts")})`
+      : `${winners[0]} 🎉 (${maxScore} ${t("pts")})`;
+
+  showScreen("screen-final");
+}
+
+document.getElementById("btnPlayAgain").addEventListener("click", () => {
+  state.round = 0;
+  state.scores = state.players.map(() => 0);
+  renderPlayerInputs();
+  showScreen("screen-setup");
+});
+
+// Update button labels on lang change
+document.getElementById("btnNextRound").addEventListener("click", () => {});
+
+// Initial translate
+translatePage();
+</script>
+</body>
+</html>
