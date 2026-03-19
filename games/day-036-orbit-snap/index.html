@@ -1,0 +1,912 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Orbit Snap 🪐</title>
+  <script src="/shared/i18n.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    .back-bar {
+      width: 100%;
+      background: #0a0a1a;
+      padding: 0.5rem 1rem;
+      border-bottom: 1px solid #333;
+    }
+    .back-bar a {
+      color: #ffcc00;
+      text-decoration: none;
+      font-size: 0.9rem;
+      font-family: system-ui, sans-serif;
+    }
+    .back-bar a:hover { text-decoration: underline; }
+
+    body {
+      background: #050510;
+      color: #fff;
+      font-family: 'Courier New', monospace;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      overflow: hidden;
+    }
+
+    #game-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+      max-width: 480px;
+      padding: 0.5rem;
+    }
+
+    /* HUD */
+    #hud {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      padding: 0.4rem 0.5rem;
+      font-size: 0.85rem;
+    }
+
+    #score-display {
+      font-size: 1.4rem;
+      font-weight: bold;
+      color: #00ffcc;
+      letter-spacing: 0.05em;
+      text-shadow: 0 0 10px #00ffcc88;
+    }
+
+    #lives-display {
+      font-size: 1.3rem;
+      letter-spacing: 0.1em;
+    }
+
+    #combo-display {
+      font-size: 0.85rem;
+      color: #ffcc00;
+      min-width: 60px;
+      text-align: center;
+      text-shadow: 0 0 8px #ffcc0088;
+    }
+
+    #level-display {
+      font-size: 0.85rem;
+      color: #aaa;
+    }
+
+    /* Canvas */
+    #canvas {
+      border-radius: 50%;
+      cursor: pointer;
+      touch-action: none;
+    }
+
+    /* Ring buttons (mobile) */
+    #ring-buttons {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 0.5rem;
+    }
+
+    .ring-btn {
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      border: 2px solid;
+      background: transparent;
+      font-size: 1.1rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.1s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .ring-btn:active { transform: scale(0.9); }
+
+    /* Screens */
+    .screen {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: rgba(5, 5, 16, 0.96);
+      z-index: 100;
+      gap: 1.2rem;
+      padding: 2rem;
+      text-align: center;
+    }
+
+    .screen h1 {
+      font-size: 2.5rem;
+      background: linear-gradient(135deg, #00ffcc, #7c3aed, #ff6b9d);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      text-shadow: none;
+    }
+
+    .screen h2 {
+      font-size: 1.8rem;
+      color: #00ffcc;
+      text-shadow: 0 0 20px #00ffcc88;
+    }
+
+    .screen p {
+      max-width: 340px;
+      line-height: 1.6;
+      color: #ccc;
+      font-size: 0.9rem;
+    }
+
+    .screen .instructions {
+      background: #0d0d2a;
+      border: 1px solid #333;
+      border-radius: 12px;
+      padding: 1rem 1.2rem;
+      max-width: 360px;
+      text-align: left;
+    }
+
+    .screen .instructions li {
+      margin: 0.4rem 0;
+      color: #aaa;
+      font-size: 0.85rem;
+      list-style: none;
+      padding-left: 1.2em;
+      position: relative;
+    }
+    .screen .instructions li::before {
+      content: '→';
+      position: absolute;
+      left: 0;
+      color: #00ffcc;
+    }
+
+    .btn {
+      padding: 0.8rem 2.5rem;
+      font-size: 1.1rem;
+      font-weight: bold;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      letter-spacing: 0.05em;
+      transition: all 0.15s;
+      font-family: inherit;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #00ffcc, #0099aa);
+      color: #050510;
+    }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 4px 20px #00ffcc44; }
+    .btn-primary:active { transform: scale(0.97); }
+
+    .btn-secondary {
+      background: transparent;
+      color: #aaa;
+      border: 1px solid #444;
+    }
+    .btn-secondary:hover { border-color: #888; color: #fff; }
+
+    .final-score {
+      font-size: 3.5rem;
+      font-weight: bold;
+      color: #00ffcc;
+      text-shadow: 0 0 30px #00ffcc;
+    }
+
+    .final-label {
+      font-size: 0.8rem;
+      color: #666;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    /* Floating score popups */
+    .score-popup {
+      position: absolute;
+      font-weight: bold;
+      font-size: 1.2rem;
+      pointer-events: none;
+      animation: floatUp 0.8s ease-out forwards;
+      z-index: 50;
+      font-family: 'Courier New', monospace;
+    }
+    @keyframes floatUp {
+      0% { opacity: 1; transform: translateY(0) scale(1); }
+      100% { opacity: 0; transform: translateY(-50px) scale(1.3); }
+    }
+
+    /* Tutorial highlight */
+    #tutorial-hint {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(0, 255, 204, 0.15);
+      border: 1px solid #00ffcc44;
+      border-radius: 8px;
+      padding: 0.4rem 0.8rem;
+      font-size: 0.8rem;
+      color: #00ffcc99;
+      pointer-events: none;
+      white-space: nowrap;
+      z-index: 10;
+    }
+
+    #canvas-wrapper {
+      position: relative;
+      display: inline-block;
+    }
+
+    /* Combo flash */
+    #combo-display.flash {
+      animation: comboFlash 0.3s ease-out;
+    }
+    @keyframes comboFlash {
+      0% { transform: scale(1.5); }
+      100% { transform: scale(1); }
+    }
+  </style>
+</head>
+<body>
+  <div class="back-bar"><a href="/">← Back to Games</a></div>
+
+  <!-- START SCREEN -->
+  <div id="start-screen" class="screen">
+    <h1>🪐 Orbit Snap</h1>
+    <p data-i18n="intro"></p>
+    <ul class="instructions">
+      <li data-i18n="how1"></li>
+      <li data-i18n="how2"></li>
+      <li data-i18n="how3"></li>
+      <li data-i18n="how4"></li>
+    </ul>
+    <button class="btn btn-primary" id="start-btn" data-i18n="startBtn"></button>
+  </div>
+
+  <!-- GAME OVER SCREEN -->
+  <div id="gameover-screen" class="screen" style="display:none;">
+    <h2 data-i18n="gameOverTitle"></h2>
+    <div class="final-label" data-i18n="finalScoreLabel"></div>
+    <div class="final-score" id="final-score">000000</div>
+    <div style="color:#aaa;font-size:0.9rem;">
+      <span data-i18n="levelReached"></span> <span id="final-level">1</span>
+    </div>
+    <button class="btn btn-primary" id="restart-btn" data-i18n="playAgain"></button>
+    <a href="/" class="btn btn-secondary" data-i18n="backHome"></a>
+  </div>
+
+  <!-- GAME UI -->
+  <div id="game-container" style="display:none;">
+    <div id="hud">
+      <div>
+        <div class="final-label" style="font-size:0.65rem;" data-i18n="scoreLabel"></div>
+        <div id="score-display">000000</div>
+      </div>
+      <div id="combo-display"></div>
+      <div style="text-align:right;">
+        <div class="final-label" style="font-size:0.65rem;" data-i18n="levelLabel"></div>
+        <div id="level-display">1</div>
+      </div>
+    </div>
+
+    <div id="lives-area" style="text-align:center; margin-bottom:0.3rem;">
+      <span id="lives-display">❤️❤️❤️</span>
+    </div>
+
+    <div id="canvas-wrapper">
+      <canvas id="canvas" width="380" height="380"></canvas>
+    </div>
+
+    <div id="ring-buttons"></div>
+
+    <div style="font-size:0.7rem; color:#555; margin-top:0.4rem; text-align:center;" data-i18n="tapHint"></div>
+  </div>
+
+  <script type="module">
+    import {
+      getSatelliteAngle, isInCatchZone, canCatch,
+      scoreForCatch, generateLevel, loseLife, isGameOver,
+      formatScore, crossedCatchZone, RING_COUNT, TOP_ANGLE
+    } from './game-logic.js';
+
+    // ── i18n ────────────────────────────────────────────────────────────────
+
+    const TRANSLATIONS = {
+      de: {
+        intro: 'Satelliten rasen auf Umlaufbahnen! Wechsle den Ring und fange sie ab, wenn sie durch die 12-Uhr-Zone passieren.',
+        how1: 'Satelliten kreisen auf 4 Ringen',
+        how2: 'Drücke 1–4 oder tippe den Button des Rings',
+        how3: 'Fang Satelliten in der ⚡ Catch-Zone (oben)',
+        how4: 'Verpass 3 Satelliten = Game Over',
+        startBtn: '🚀 START',
+        gameOverTitle: '💫 Game Over',
+        finalScoreLabel: 'PUNKTZAHL',
+        levelReached: 'Level erreicht:',
+        playAgain: '🔄 Nochmal',
+        backHome: '← Zurück',
+        scoreLabel: 'PUNKTE',
+        levelLabel: 'LEVEL',
+        tapHint: '1–4 drücken oder Buttons tippen',
+        comboX: (n) => `🔥 COMBO ×${n}`,
+        ring: (n) => `Ring ${n}`,
+        miss: 'VERPASST!',
+        caught: 'SNAP!',
+        bonusCaught: '⭐ BONUS!',
+        levelUp: (n) => `LEVEL ${n}!`,
+      },
+      en: {
+        intro: 'Satellites race around orbital rings! Switch rings and catch them as they pass through the 12 o\'clock zone.',
+        how1: 'Satellites orbit on 4 rings',
+        how2: 'Press 1–4 or tap the ring button',
+        how3: 'Catch satellites in the ⚡ Catch Zone (top)',
+        how4: 'Miss 3 satellites = Game Over',
+        startBtn: '🚀 START',
+        gameOverTitle: '💫 Game Over',
+        finalScoreLabel: 'FINAL SCORE',
+        levelReached: 'Level reached:',
+        playAgain: '🔄 Play Again',
+        backHome: '← Back',
+        scoreLabel: 'SCORE',
+        levelLabel: 'LEVEL',
+        tapHint: 'Press 1–4 or tap buttons',
+        comboX: (n) => `🔥 COMBO ×${n}`,
+        ring: (n) => `Ring ${n}`,
+        miss: 'MISS!',
+        caught: 'SNAP!',
+        bonusCaught: '⭐ BONUS!',
+        levelUp: (n) => `LEVEL ${n}!`,
+      },
+      fr: {
+        intro: 'Des satellites filent sur des orbites ! Changez de ring et interceptez-les quand ils passent par la zone 12 heures.',
+        how1: 'Les satellites orbitent sur 4 anneaux',
+        how2: 'Appuie sur 1–4 ou touche le bouton du ring',
+        how3: 'Attrape les satellites dans la zone ⚡ (en haut)',
+        how4: '3 ratés = Game Over',
+        startBtn: '🚀 DÉMARRER',
+        gameOverTitle: '💫 Game Over',
+        finalScoreLabel: 'SCORE FINAL',
+        levelReached: 'Niveau atteint :',
+        playAgain: '🔄 Rejouer',
+        backHome: '← Retour',
+        scoreLabel: 'SCORE',
+        levelLabel: 'NIVEAU',
+        tapHint: 'Appuie sur 1–4 ou les boutons',
+        comboX: (n) => `🔥 COMBO ×${n}`,
+        ring: (n) => `Ring ${n}`,
+        miss: 'RATÉ !',
+        caught: 'SNAP !',
+        bonusCaught: '⭐ BONUS !',
+        levelUp: (n) => `NIVEAU ${n} !`,
+      },
+      it: {
+        intro: 'I satelliti corrono sulle orbite! Cambia ring e catturali quando passano dalla zona delle 12.',
+        how1: 'I satelliti orbitano su 4 ring',
+        how2: 'Premi 1–4 o tocca il pulsante del ring',
+        how3: 'Cattura i satelliti nella zona ⚡ (in alto)',
+        how4: '3 mancati = Game Over',
+        startBtn: '🚀 INIZIA',
+        gameOverTitle: '💫 Game Over',
+        finalScoreLabel: 'PUNTEGGIO FINALE',
+        levelReached: 'Livello raggiunto:',
+        playAgain: '🔄 Rigioca',
+        backHome: '← Indietro',
+        scoreLabel: 'PUNTI',
+        levelLabel: 'LIVELLO',
+        tapHint: 'Premi 1–4 o tocca i pulsanti',
+        comboX: (n) => `🔥 COMBO ×${n}`,
+        ring: (n) => `Ring ${n}`,
+        miss: 'MANCATO!',
+        caught: 'SNAP!',
+        bonusCaught: '⭐ BONUS!',
+        levelUp: (n) => `LIVELLO ${n}!`,
+      },
+      es: {
+        intro: '¡Los satélites corren por las órbitas! Cambia de anillo e interceéptales cuando pasen por la zona de las 12.',
+        how1: 'Los satélites orbitan en 4 anillos',
+        how2: 'Pulsa 1–4 o toca el botón del anillo',
+        how3: 'Atrapa satélites en la zona ⚡ (arriba)',
+        how4: '3 fallos = Game Over',
+        startBtn: '🚀 EMPEZAR',
+        gameOverTitle: '💫 Game Over',
+        finalScoreLabel: 'PUNTUACIÓN FINAL',
+        levelReached: 'Nivel alcanzado:',
+        playAgain: '🔄 Jugar de nuevo',
+        backHome: '← Volver',
+        scoreLabel: 'PUNTOS',
+        levelLabel: 'NIVEL',
+        tapHint: 'Pulsa 1–4 o toca los botones',
+        comboX: (n) => `🔥 COMBO ×${n}`,
+        ring: (n) => `Anillo ${n}`,
+        miss: '¡FALLO!',
+        caught: '¡SNAP!',
+        bonusCaught: '⭐ ¡BONUS!',
+        levelUp: (n) => `¡NIVEL ${n}!`,
+      },
+    };
+
+    const { t, lang } = initI18n(TRANSLATIONS);
+
+    // ── Canvas setup ────────────────────────────────────────────────────────
+
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width;
+    const H = canvas.height;
+    const CX = W / 2;
+    const CY = H / 2;
+
+    // Ring radii (innermost first)
+    const RING_RADII = [62, 102, 142, 182];
+    const RING_COLORS = ['#ff6b9d', '#ffcc00', '#00ccff', '#aa77ff'];
+    const SATELLITE_RADIUS = 9;
+    const CATCHER_SIZE = 18;
+
+    // ── Game state ──────────────────────────────────────────────────────────
+
+    let state = {};
+
+    function initState() {
+      state = {
+        score: 0,
+        lives: 3,
+        level: 1,
+        combo: 0,
+        playerRing: 0,
+        satellites: [],
+        lastTimestamp: null,
+        elapsedMs: 0,
+        prevAngles: {},
+        running: false,
+        levelTarget: 8,  // catches needed to advance
+        levelProgress: 0,
+        animFrame: null,
+      };
+    }
+
+    function startLevel(lvl) {
+      state.level = lvl;
+      state.satellites = generateLevel(lvl);
+      state.prevAngles = {};
+      state.elapsedMs = 0;
+      state.lastTimestamp = null;
+      state.levelProgress = 0;
+      state.levelTarget = 6 + lvl * 2;
+
+      // Stagger satellite start times for clarity
+      state.satellites.forEach((s, i) => {
+        s.elapsedOffset = 0; // all start together
+      });
+
+      updateRingButtons();
+      document.getElementById('level-display').textContent = lvl;
+    }
+
+    // ── Ring buttons ────────────────────────────────────────────────────────
+
+    function updateRingButtons() {
+      const container = document.getElementById('ring-buttons');
+      container.innerHTML = '';
+      for (let i = 0; i < RING_COUNT; i++) {
+        const btn = document.createElement('button');
+        btn.className = 'ring-btn';
+        btn.textContent = i + 1;
+        btn.style.borderColor = RING_COLORS[i];
+        btn.style.boxShadow = `0 0 10px ${RING_COLORS[i]}44`;
+        btn.dataset.ring = i;
+        btn.addEventListener('click', () => selectRing(i));
+        btn.addEventListener('touchstart', (e) => {
+          e.preventDefault();
+          selectRing(i);
+        });
+        container.appendChild(btn);
+      }
+      highlightRingButton();
+    }
+
+    function highlightRingButton() {
+      document.querySelectorAll('.ring-btn').forEach((btn, i) => {
+        if (parseInt(btn.dataset.ring) === state.playerRing) {
+          btn.style.background = RING_COLORS[i] + '44';
+          btn.style.transform = 'scale(1.1)';
+        } else {
+          btn.style.background = 'transparent';
+          btn.style.transform = 'scale(1)';
+        }
+      });
+    }
+
+    function selectRing(r) {
+      if (r < 0 || r >= RING_COUNT) return;
+      state.playerRing = r;
+      highlightRingButton();
+    }
+
+    // ── Keyboard ────────────────────────────────────────────────────────────
+
+    document.addEventListener('keydown', (e) => {
+      if (!state.running) return;
+      const key = e.key;
+      if (key >= '1' && key <= '4') {
+        selectRing(parseInt(key) - 1);
+      }
+    });
+
+    // ── Draw ────────────────────────────────────────────────────────────────
+
+    function draw() {
+      ctx.clearRect(0, 0, W, H);
+
+      // Background glow at center
+      const bgGrad = ctx.createRadialGradient(CX, CY, 0, CX, CY, 200);
+      bgGrad.addColorStop(0, '#0d0d2a');
+      bgGrad.addColorStop(1, '#050510');
+      ctx.fillStyle = bgGrad;
+      ctx.fillRect(0, 0, W, H);
+
+      // Stars (static, seeded)
+      drawStars();
+
+      // Rings
+      for (let i = 0; i < RING_COUNT; i++) {
+        const r = RING_RADII[i];
+        const color = RING_COLORS[i];
+        const isPlayerRing = i === state.playerRing;
+
+        ctx.beginPath();
+        ctx.arc(CX, CY, r, 0, 2 * Math.PI);
+        ctx.strokeStyle = isPlayerRing ? color : color + '55';
+        ctx.lineWidth = isPlayerRing ? 2.5 : 1.5;
+        ctx.stroke();
+
+        if (isPlayerRing) {
+          ctx.beginPath();
+          ctx.arc(CX, CY, r, 0, 2 * Math.PI);
+          ctx.strokeStyle = color + '22';
+          ctx.lineWidth = 8;
+          ctx.stroke();
+        }
+      }
+
+      // Catch zone arc (top area)
+      const halfRad = (12 * Math.PI) / 180;
+      const catchStartAngle = TOP_ANGLE - halfRad;
+      const catchEndAngle = TOP_ANGLE + halfRad;
+
+      for (let i = 0; i < RING_COUNT; i++) {
+        const r = RING_RADII[i];
+        const isActive = i === state.playerRing;
+        ctx.beginPath();
+        ctx.arc(CX, CY, r, catchStartAngle, catchEndAngle);
+        ctx.strokeStyle = isActive ? '#ffffff' : '#ffffff22';
+        ctx.lineWidth = isActive ? 4 : 2;
+        ctx.stroke();
+      }
+
+      // Catch zone indicator line (12 o'clock)
+      ctx.save();
+      ctx.translate(CX, CY);
+      ctx.rotate(TOP_ANGLE);
+      ctx.beginPath();
+      ctx.moveTo(RING_RADII[0] - 15, 0);
+      ctx.lineTo(RING_RADII[RING_COUNT - 1] + 15, 0);
+      ctx.strokeStyle = '#ffffff44';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([4, 4]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // ⚡ icon at top
+      ctx.fillStyle = '#ffffff88';
+      ctx.font = '14px system-ui';
+      ctx.textAlign = 'center';
+      ctx.fillText('⚡', 0, -(RING_RADII[RING_COUNT - 1] + 22));
+      ctx.restore();
+
+      // Satellites
+      for (const sat of state.satellites) {
+        const angle = getSatelliteAngle(sat.startAngle, sat.speed, state.elapsedMs);
+        const r = RING_RADII[sat.ring];
+        const x = CX + Math.cos(angle) * r;
+        const y = CY + Math.sin(angle) * r;
+        const color = RING_COLORS[sat.ring];
+        const inZone = isInCatchZone(angle);
+        const onPlayerRing = sat.ring === state.playerRing;
+
+        // Satellite glow
+        if (onPlayerRing && inZone) {
+          const glow = ctx.createRadialGradient(x, y, 0, x, y, SATELLITE_RADIUS * 3);
+          glow.addColorStop(0, color + 'aa');
+          glow.addColorStop(1, 'transparent');
+          ctx.fillStyle = glow;
+          ctx.beginPath();
+          ctx.arc(x, y, SATELLITE_RADIUS * 3, 0, 2 * Math.PI);
+          ctx.fill();
+        }
+
+        // Satellite body
+        ctx.beginPath();
+        ctx.arc(x, y, SATELLITE_RADIUS, 0, 2 * Math.PI);
+        ctx.fillStyle = sat.type === 'bonus' ? '#fff' : sat.type === 'fast' ? '#ff4444' : color;
+        ctx.fill();
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = onPlayerRing && inZone ? 2 : 1;
+        ctx.stroke();
+
+        // Bonus star icon
+        if (sat.type === 'bonus') {
+          ctx.fillStyle = '#ffcc00';
+          ctx.font = `${SATELLITE_RADIUS}px system-ui`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText('★', x, y);
+          ctx.textBaseline = 'alphabetic';
+        }
+
+        // Satellite trail
+        const trailLen = sat.type === 'fast' ? 0.25 : 0.12;
+        const trailGrad = ctx.createLinearGradient(
+          CX + Math.cos(angle - trailLen * sat.speed / Math.abs(sat.speed)) * r,
+          CY + Math.sin(angle - trailLen * sat.speed / Math.abs(sat.speed)) * r,
+          x, y
+        );
+        trailGrad.addColorStop(0, 'transparent');
+        trailGrad.addColorStop(1, color + '55');
+        // Draw trail as arc (simplified: few points)
+        ctx.beginPath();
+        const trailAngle = 0.3 + (sat.type === 'fast' ? 0.2 : 0);
+        ctx.arc(CX, CY, r, angle - trailAngle, angle);
+        ctx.strokeStyle = color + '44';
+        ctx.lineWidth = 4;
+        ctx.stroke();
+      }
+
+      // Catcher on active ring
+      const catcherAngle = TOP_ANGLE;
+      const cr = RING_RADII[state.playerRing];
+      const cx2 = CX + Math.cos(catcherAngle) * cr;
+      const cy2 = CY + Math.sin(catcherAngle) * cr;
+
+      ctx.save();
+      ctx.translate(cx2, cy2);
+
+      // Catcher glow
+      const catchGlow = ctx.createRadialGradient(0, 0, 0, 0, 0, CATCHER_SIZE * 2);
+      catchGlow.addColorStop(0, RING_COLORS[state.playerRing] + '66');
+      catchGlow.addColorStop(1, 'transparent');
+      ctx.fillStyle = catchGlow;
+      ctx.beginPath();
+      ctx.arc(0, 0, CATCHER_SIZE * 2, 0, 2 * Math.PI);
+      ctx.fill();
+
+      // Catcher shape (rounded diamond/catcher mitt)
+      ctx.beginPath();
+      ctx.arc(0, 0, CATCHER_SIZE, 0, 2 * Math.PI);
+      ctx.strokeStyle = RING_COLORS[state.playerRing];
+      ctx.lineWidth = 2.5;
+      ctx.stroke();
+      ctx.fillStyle = RING_COLORS[state.playerRing] + '33';
+      ctx.fill();
+
+      // Crosshair
+      ctx.strokeStyle = RING_COLORS[state.playerRing] + 'aa';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(-CATCHER_SIZE + 4, 0); ctx.lineTo(CATCHER_SIZE - 4, 0);
+      ctx.moveTo(0, -CATCHER_SIZE + 4); ctx.lineTo(0, CATCHER_SIZE - 4);
+      ctx.stroke();
+
+      ctx.restore();
+
+      // Center planet
+      const planetGrad = ctx.createRadialGradient(CX - 8, CY - 8, 2, CX, CY, 30);
+      planetGrad.addColorStop(0, '#6666ff');
+      planetGrad.addColorStop(1, '#1a1a66');
+      ctx.beginPath();
+      ctx.arc(CX, CY, 28, 0, 2 * Math.PI);
+      ctx.fillStyle = planetGrad;
+      ctx.fill();
+      ctx.strokeStyle = '#4444aa';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    }
+
+    let starCache = null;
+    function drawStars() {
+      if (!starCache) {
+        starCache = [];
+        const rng = mulberry32(42);
+        for (let i = 0; i < 60; i++) {
+          starCache.push({
+            x: rng() * W,
+            y: rng() * H,
+            r: rng() * 1.5 + 0.3,
+            a: rng() * 0.5 + 0.2,
+          });
+        }
+      }
+      for (const s of starCache) {
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.r, 0, 2 * Math.PI);
+        ctx.fillStyle = `rgba(255,255,255,${s.a})`;
+        ctx.fill();
+      }
+    }
+
+    function mulberry32(seed) {
+      return function() {
+        seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+        let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+        t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+        return ((t ^ t >>> 14) >>> 0) / 4294967296;
+      };
+    }
+
+    // ── Score popup ─────────────────────────────────────────────────────────
+
+    function showPopup(text, x, y, color) {
+      const el = document.createElement('div');
+      el.className = 'score-popup';
+      el.textContent = text;
+      el.style.color = color || '#fff';
+      el.style.left = x + 'px';
+      el.style.top = y + 'px';
+      document.getElementById('canvas-wrapper').appendChild(el);
+      setTimeout(() => el.remove(), 850);
+    }
+
+    // ── Game loop ────────────────────────────────────────────────────────────
+
+    function gameLoop(timestamp) {
+      if (!state.running) return;
+
+      if (state.lastTimestamp === null) state.lastTimestamp = timestamp;
+      const dt = Math.min(timestamp - state.lastTimestamp, 50); // cap at 50ms
+      state.lastTimestamp = timestamp;
+      state.elapsedMs += dt;
+
+      // Check satellite catch/miss
+      for (const sat of state.satellites) {
+        const prevAngle = state.prevAngles[sat.id] ?? sat.startAngle;
+        const currAngle = getSatelliteAngle(sat.startAngle, sat.speed, state.elapsedMs);
+
+        const onPlayerRing = sat.ring === state.playerRing;
+        const inZoneNow = isInCatchZone(currAngle);
+        const wasInZone = isInCatchZone(prevAngle);
+
+        // Catch: satellite enters the catch zone on the player's ring
+        if (onPlayerRing && !wasInZone && inZoneNow) {
+          // Award catch
+          state.combo++;
+          const pts = scoreForCatch(sat, state.combo);
+          state.score += pts;
+          state.levelProgress++;
+
+          const catcherAngle = TOP_ANGLE;
+          const cr = RING_RADII[sat.ring];
+          const px = CX + Math.cos(catcherAngle) * cr;
+          const py = CY + Math.sin(catcherAngle) * cr;
+          const label = sat.type === 'bonus'
+            ? `${t('bonusCaught')} +${pts}`
+            : state.combo >= 3
+              ? `${t('caught')} +${pts}`
+              : `+${pts}`;
+          const color = sat.type === 'bonus' ? '#ffcc00' : state.combo >= 3 ? '#ff6b9d' : '#00ffcc';
+          showPopup(label, px - 30, py - 20, color);
+
+          // Briefly respawn satellite at new position
+          sat.startAngle = getSatelliteAngle(sat.startAngle, sat.speed, state.elapsedMs) + Math.PI;
+          state.elapsedMs = 0;
+          for (const k in state.prevAngles) state.prevAngles[k] = null;
+
+          updateHUD();
+        }
+        // Miss: satellite exits the catch zone without being caught
+        else if (!onPlayerRing && wasInZone && !inZoneNow) {
+          // Only penalize if satellite was on a valid ring (not the active one)
+          state.combo = 0;
+          state.lives = loseLife(state.lives);
+
+          const px = CX;
+          const py = CY - RING_RADII[sat.ring];
+          showPopup(t('miss'), px - 20, py - 10, '#ff4444');
+
+          updateHUD();
+
+          if (isGameOver(state.lives)) {
+            endGame();
+            return;
+          }
+        }
+
+        state.prevAngles[sat.id] = currAngle;
+      }
+
+      // Level up
+      if (state.levelProgress >= state.levelTarget) {
+        const nextLevel = state.level + 1;
+        showLevelUp(nextLevel);
+        startLevel(nextLevel);
+      }
+
+      draw();
+      state.animFrame = requestAnimationFrame(gameLoop);
+    }
+
+    function updateHUD() {
+      document.getElementById('score-display').textContent = formatScore(state.score);
+      const livesEl = document.getElementById('lives-display');
+      livesEl.textContent = '❤️'.repeat(state.lives) + '🖤'.repeat(Math.max(0, 3 - state.lives));
+      const comboEl = document.getElementById('combo-display');
+      if (state.combo >= 3) {
+        comboEl.textContent = t('comboX')(state.combo);
+        comboEl.classList.remove('flash');
+        void comboEl.offsetWidth; // reflow
+        comboEl.classList.add('flash');
+      } else {
+        comboEl.textContent = '';
+      }
+      document.getElementById('level-display').textContent = state.level;
+    }
+
+    function showLevelUp(lvl) {
+      const el = document.createElement('div');
+      el.style.cssText = `
+        position: absolute;
+        top: 50%; left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 2rem;
+        font-weight: bold;
+        color: #ffcc00;
+        text-shadow: 0 0 30px #ffcc00;
+        pointer-events: none;
+        z-index: 200;
+        animation: floatUp 1s ease-out forwards;
+      `;
+      el.textContent = t('levelUp')(lvl);
+      document.getElementById('canvas-wrapper').appendChild(el);
+      setTimeout(() => el.remove(), 1000);
+    }
+
+    // ── Game control ─────────────────────────────────────────────────────────
+
+    function startGame() {
+      document.getElementById('start-screen').style.display = 'none';
+      document.getElementById('gameover-screen').style.display = 'none';
+      document.getElementById('game-container').style.display = 'flex';
+
+      initState();
+      startLevel(1);
+      updateHUD();
+
+      state.running = true;
+      state.animFrame = requestAnimationFrame(gameLoop);
+    }
+
+    function endGame() {
+      state.running = false;
+      if (state.animFrame) cancelAnimationFrame(state.animFrame);
+
+      document.getElementById('game-container').style.display = 'none';
+      document.getElementById('gameover-screen').style.display = 'flex';
+      document.getElementById('final-score').textContent = formatScore(state.score);
+      document.getElementById('final-level').textContent = state.level;
+    }
+
+    // ── UI wiring ────────────────────────────────────────────────────────────
+
+    document.getElementById('start-btn').addEventListener('click', startGame);
+    document.getElementById('restart-btn').addEventListener('click', startGame);
+  </script>
+</body>
+</html>
