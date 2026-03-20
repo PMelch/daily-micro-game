@@ -1,0 +1,1124 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Treasure Vault 🏺</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    .back-bar {
+      width: 100%;
+      background: #0a0a1a;
+      padding: 0.5rem 1rem;
+      border-bottom: 1px solid #333;
+    }
+    .back-bar a {
+      color: #ffcc00;
+      text-decoration: none;
+      font-size: 0.9rem;
+      font-family: system-ui, sans-serif;
+    }
+    .back-bar a:hover { text-decoration: underline; }
+
+    body {
+      background: #0a0a1a;
+      color: #f0e6c8;
+      font-family: system-ui, -apple-system, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    #app {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 1rem;
+      max-width: 480px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    h1 {
+      font-size: 1.8rem;
+      text-align: center;
+      color: #ffcc00;
+      text-shadow: 0 0 20px rgba(255,204,0,0.5);
+      margin-bottom: 0.3rem;
+    }
+    .subtitle {
+      color: #9988aa;
+      font-size: 0.85rem;
+      text-align: center;
+      margin-bottom: 1.5rem;
+    }
+
+    /* ---- SCREENS ---- */
+    .screen { width: 100%; display: none; flex-direction: column; gap: 1rem; }
+    .screen.active { display: flex; }
+
+    /* SETUP */
+    .setup-card {
+      background: #12102a;
+      border: 1px solid #3a3260;
+      border-radius: 12px;
+      padding: 1.2rem;
+    }
+    .setup-card h2 { color: #ffcc00; margin-bottom: 1rem; font-size: 1.1rem; }
+
+    .player-count-row {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+    .count-btn {
+      flex: 1;
+      padding: 0.6rem;
+      border-radius: 8px;
+      border: 2px solid #3a3260;
+      background: #1a1836;
+      color: #f0e6c8;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .count-btn.selected {
+      border-color: #ffcc00;
+      background: #2a2050;
+      color: #ffcc00;
+    }
+
+    .player-inputs { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1rem; }
+    .player-input-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .player-dot {
+      width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0;
+    }
+    .player-name-input {
+      flex: 1;
+      padding: 0.5rem 0.7rem;
+      background: #1a1836;
+      border: 1px solid #3a3260;
+      border-radius: 8px;
+      color: #f0e6c8;
+      font-size: 0.95rem;
+    }
+    .player-name-input:focus { outline: none; border-color: #ffcc00; }
+
+    .rules-mini {
+      font-size: 0.8rem;
+      color: #9988aa;
+      line-height: 1.5;
+      border-top: 1px solid #2a2050;
+      padding-top: 0.8rem;
+    }
+    .rules-mini b { color: #ffcc00; }
+
+    .btn-primary {
+      width: 100%;
+      padding: 0.9rem;
+      background: linear-gradient(135deg, #c9a227, #ffcc00);
+      color: #0a0a1a;
+      font-size: 1rem;
+      font-weight: bold;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 20px rgba(255,204,0,0.4); }
+    .btn-primary:active { transform: translateY(0); }
+
+    /* AUCTION */
+    .round-header {
+      text-align: center;
+      font-size: 0.85rem;
+      color: #9988aa;
+    }
+    .round-header span { color: #ffcc00; font-weight: bold; }
+
+    .treasure-card {
+      background: linear-gradient(135deg, #1a1030, #2a1a40);
+      border: 2px solid #8844aa;
+      border-radius: 16px;
+      padding: 1.5rem;
+      text-align: center;
+      box-shadow: 0 0 30px rgba(136,68,170,0.3);
+    }
+    .treasure-emoji { font-size: 4rem; margin-bottom: 0.5rem; display: block; }
+    .treasure-name { font-size: 1.2rem; color: #f0e6c8; margin-bottom: 0.3rem; }
+    .treasure-value {
+      font-size: 1.8rem;
+      font-weight: bold;
+      color: #ffcc00;
+    }
+    .treasure-value-label { font-size: 0.8rem; color: #9988aa; }
+
+    .turn-indicator {
+      background: #1a1836;
+      border: 1px solid #3a3260;
+      border-radius: 10px;
+      padding: 0.8rem 1rem;
+      text-align: center;
+      font-size: 0.9rem;
+    }
+    .turn-indicator .player-name-highlight { font-weight: bold; }
+
+    .bid-section {
+      background: #12102a;
+      border: 1px solid #3a3260;
+      border-radius: 12px;
+      padding: 1rem;
+    }
+    .bid-info {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 0.8rem;
+      font-size: 0.85rem;
+      color: #9988aa;
+    }
+    .bid-info .tokens-left { color: #ffcc00; font-weight: bold; font-size: 1rem; }
+
+    .bid-slider-row {
+      display: flex;
+      align-items: center;
+      gap: 0.8rem;
+      margin-bottom: 0.8rem;
+    }
+    .bid-amount-display {
+      background: #0a0a1a;
+      border: 2px solid #ffcc00;
+      border-radius: 8px;
+      padding: 0.4rem 0.8rem;
+      font-size: 1.4rem;
+      font-weight: bold;
+      color: #ffcc00;
+      min-width: 3rem;
+      text-align: center;
+    }
+    input[type=range] {
+      flex: 1;
+      -webkit-appearance: none;
+      height: 6px;
+      border-radius: 3px;
+      background: #3a3260;
+      outline: none;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 22px; height: 22px;
+      border-radius: 50%;
+      background: #ffcc00;
+      cursor: pointer;
+    }
+
+    .bid-quick-btns {
+      display: flex;
+      gap: 0.4rem;
+      margin-bottom: 0.8rem;
+    }
+    .quick-btn {
+      flex: 1;
+      padding: 0.4rem;
+      border: 1px solid #3a3260;
+      background: #1a1836;
+      color: #9988aa;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: all 0.1s;
+    }
+    .quick-btn:hover { border-color: #ffcc00; color: #ffcc00; }
+
+    .btn-bid {
+      width: 100%;
+      padding: 0.8rem;
+      background: linear-gradient(135deg, #6622aa, #9944cc);
+      color: white;
+      font-size: 1rem;
+      font-weight: bold;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .btn-bid:hover { transform: translateY(-1px); box-shadow: 0 4px 15px rgba(153,68,204,0.4); }
+    .btn-pass {
+      background: #2a2050;
+      color: #9988aa;
+    }
+    .btn-pass:hover { background: #3a2870; color: #f0e6c8; }
+
+    /* COVER SCREEN (between players) */
+    .cover-screen-content {
+      background: #0a0a1a;
+      border-radius: 16px;
+      padding: 2rem;
+      text-align: center;
+      border: 1px solid #3a3260;
+    }
+    .cover-screen-content .big-icon { font-size: 3rem; margin-bottom: 1rem; display: block; }
+    .cover-screen-content h2 { color: #ffcc00; margin-bottom: 0.5rem; font-size: 1.4rem; }
+    .cover-screen-content p { color: #9988aa; margin-bottom: 1.5rem; font-size: 0.9rem; }
+
+    /* REVEAL */
+    .reveal-card {
+      background: #12102a;
+      border: 1px solid #3a3260;
+      border-radius: 12px;
+      padding: 1rem;
+    }
+    .reveal-title { color: #ffcc00; font-size: 1rem; margin-bottom: 0.8rem; text-align: center; }
+    .reveal-rows { display: flex; flex-direction: column; gap: 0.5rem; }
+    .reveal-row {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      padding: 0.5rem 0.6rem;
+      background: #1a1836;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      position: relative;
+      overflow: hidden;
+    }
+    .reveal-row.winner {
+      background: linear-gradient(90deg, #2a1a40, #3a2050);
+      border: 1px solid #8844aa;
+    }
+    .reveal-row .bid-val { margin-left: auto; font-weight: bold; color: #ffcc00; }
+    .reveal-row .bid-val.tie { color: #ff6644; text-decoration: line-through; }
+    .winner-badge {
+      background: #ffcc00;
+      color: #0a0a1a;
+      font-size: 0.7rem;
+      font-weight: bold;
+      padding: 0.1rem 0.4rem;
+      border-radius: 4px;
+    }
+    .no-winner-msg { text-align: center; color: #ff6644; font-size: 0.9rem; padding: 0.4rem; }
+
+    .btn-next {
+      width: 100%;
+      padding: 0.8rem;
+      background: #2a2050;
+      color: #f0e6c8;
+      font-size: 1rem;
+      border: 1px solid #3a3260;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .btn-next:hover { background: #3a3060; }
+
+    /* SCOREBOARD */
+    .score-row {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      padding: 0.4rem 0;
+      font-size: 0.85rem;
+      color: #9988aa;
+    }
+    .score-row .score-tokens { margin-left: auto; }
+
+    /* FINAL RESULTS */
+    .results-card {
+      background: linear-gradient(135deg, #1a1030, #2a1a40);
+      border: 2px solid #8844aa;
+      border-radius: 16px;
+      padding: 1.5rem;
+      text-align: center;
+    }
+    .winner-crown { font-size: 3rem; display: block; margin-bottom: 0.5rem; }
+    .winner-name-final { font-size: 1.8rem; font-weight: bold; color: #ffcc00; margin-bottom: 0.3rem; }
+    .result-rows { display: flex; flex-direction: column; gap: 0.5rem; margin-top: 1rem; }
+    .result-row {
+      display: flex;
+      align-items: center;
+      gap: 0.7rem;
+      background: #1a1836;
+      border-radius: 8px;
+      padding: 0.6rem 0.8rem;
+      font-size: 0.9rem;
+    }
+    .result-row.first-place {
+      background: linear-gradient(90deg, #2a1a40, #3a2050);
+      border: 1px solid #ffcc00;
+    }
+    .result-score { margin-left: auto; font-weight: bold; color: #ffcc00; font-size: 1.1rem; }
+    .result-breakdown { font-size: 0.75rem; color: #9988aa; }
+
+    .player-colors {
+      background: #0a0a1a;
+      border: 1px solid #2a2050;
+      border-radius: 8px;
+      padding: 0.5rem 0.8rem;
+      margin-bottom: 0.8rem;
+    }
+
+    /* Animations */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .fade-in { animation: fadeIn 0.3s ease; }
+
+    @keyframes goldPulse {
+      0%,100% { box-shadow: 0 0 15px rgba(255,204,0,0.3); }
+      50% { box-shadow: 0 0 35px rgba(255,204,0,0.7); }
+    }
+    .gold-pulse { animation: goldPulse 1.5s infinite; }
+  </style>
+</head>
+<body>
+  <div class="back-bar"><a href="/">← <span data-i18n="backToGames">Back to Games</span></a></div>
+
+  <div id="app">
+    <h1>🏺 Treasure Vault</h1>
+    <p class="subtitle" data-i18n="subtitle">Blindes Bieten. Höchste einzigartige Bid gewinnt.</p>
+
+    <!-- SETUP SCREEN -->
+    <div id="screen-setup" class="screen active">
+      <div class="setup-card">
+        <h2 data-i18n="howManyPlayers">Wie viele Spieler?</h2>
+        <div class="player-count-row" id="count-btns"></div>
+        <div class="player-inputs" id="player-inputs"></div>
+        <div class="rules-mini" data-i18n-html="rulesHtml"></div>
+      </div>
+      <button class="btn-primary" onclick="startGame()" data-i18n="startGame">Spiel starten!</button>
+    </div>
+
+    <!-- COVER SCREEN (pass device) -->
+    <div id="screen-cover" class="screen">
+      <div class="cover-screen-content">
+        <span class="big-icon">🙈</span>
+        <h2 id="cover-player-name">Spieler 1</h2>
+        <p id="cover-msg" data-i18n="coverMsg">Bitte das Gerät weitergeben!</p>
+        <button class="btn-primary" id="cover-btn" onclick="revealBidScreen()" data-i18n="coverBtn">Ich bin bereit →</button>
+      </div>
+    </div>
+
+    <!-- BID SCREEN -->
+    <div id="screen-bid" class="screen">
+      <div class="round-header">
+        <span data-i18n="round">Runde</span> <span id="round-num">1</span>/8 &nbsp;·&nbsp;
+        <span data-i18n="item">Schatz</span> <span id="item-num">1</span>
+      </div>
+
+      <div class="treasure-card fade-in">
+        <span class="treasure-emoji" id="treasure-emoji">🏺</span>
+        <div class="treasure-name" id="treasure-name">Vase</div>
+        <div class="treasure-value" id="treasure-value">8</div>
+        <div class="treasure-value-label" data-i18n="pointsLabel">Punkte</div>
+      </div>
+
+      <div class="turn-indicator" id="turn-indicator"></div>
+
+      <div class="bid-section">
+        <div class="bid-info">
+          <span data-i18n="yourTokens">Deine Tokens:</span>
+          <span class="tokens-left" id="bid-tokens">15</span>
+        </div>
+        <div class="bid-slider-row">
+          <div class="bid-amount-display" id="bid-display">0</div>
+          <input type="range" id="bid-slider" min="0" max="15" value="0"
+            oninput="updateBidDisplay(this.value)">
+        </div>
+        <div class="bid-quick-btns" id="quick-btns"></div>
+        <button class="btn-bid" id="bid-btn" onclick="submitBid()" data-i18n="placeBid">Gebot abgeben!</button>
+      </div>
+
+      <!-- Mini scoreboard -->
+      <div class="player-colors">
+        <div id="mini-scores"></div>
+      </div>
+    </div>
+
+    <!-- REVEAL SCREEN -->
+    <div id="screen-reveal" class="screen">
+      <div class="treasure-card fade-in" id="reveal-treasure-card">
+        <span class="treasure-emoji" id="reveal-emoji">🏺</span>
+        <div class="treasure-name" id="reveal-name">Vase</div>
+        <div class="treasure-value" id="reveal-value">8</div>
+        <div class="treasure-value-label" data-i18n="pointsLabel">Punkte</div>
+      </div>
+
+      <div class="reveal-card fade-in">
+        <div class="reveal-title" data-i18n="allBids">Alle Gebote:</div>
+        <div class="reveal-rows" id="reveal-rows"></div>
+        <div id="reveal-outcome" style="margin-top:0.8rem;"></div>
+      </div>
+
+      <button class="btn-next" id="next-btn" onclick="nextRound()">
+        <span data-i18n="nextRound">Nächste Runde →</span>
+      </button>
+    </div>
+
+    <!-- FINAL RESULTS SCREEN -->
+    <div id="screen-results" class="screen">
+      <div class="results-card fade-in">
+        <span class="winner-crown">🏆</span>
+        <div class="winner-name-final" id="final-winner-name">—</div>
+        <div style="color:#9988aa;font-size:0.85rem" data-i18n="gewinnt">hat gewonnen!</div>
+      </div>
+
+      <div class="result-rows fade-in" id="final-result-rows"></div>
+
+      <button class="btn-primary" onclick="restartGame()" data-i18n="playAgain">Nochmal spielen!</button>
+    </div>
+  </div>
+
+  <script src="/shared/i18n.js"></script>
+  <script type="module">
+    // ---- i18n ----
+    const TRANSLATIONS = {
+      de: {
+        backToGames: 'Zurück zur Übersicht',
+        subtitle: 'Blindes Bieten · Höchste einzigartige Bid gewinnt',
+        howManyPlayers: 'Wie viele Spieler?',
+        rulesHtml: '<b>Regeln:</b> Jede Runde erscheint ein Schatz. Alle bieten gleichzeitig (geheim) Tokens. Die <b>höchste einzigartige Bid</b> gewinnt den Schatz! Gleiche Gebote heben sich auf. Am Ende zählen: Schatz-Punkte + verbleibende Tokens.',
+        startGame: 'Spiel starten! 🏺',
+        coverMsg: 'Bitte das Gerät schön verdeckt halten!',
+        coverBtn: 'Ich bin bereit →',
+        round: 'Runde',
+        item: 'Schatz',
+        pointsLabel: 'Punkte wert',
+        yourTokens: 'Deine Tokens:',
+        placeBid: '🤫 Gebot abgeben!',
+        passBid: 'Passen (0)',
+        allBids: 'Alle Gebote:',
+        nextRound: 'Nächste Runde →',
+        seeResults: 'Ergebnisse! 🏆',
+        gewinnt: 'hat gewonnen!',
+        playAgain: 'Nochmal spielen! 🎲',
+        passLabel: 'gepasst',
+        tiedLabel: 'gestrichen (Tie)',
+        winsLabel: 'gewinnt',
+        noWinner: '💥 Gleichstand – niemand gewinnt den Schatz!',
+        turnBid: 'bietet jetzt (versteckt)!',
+        passDevice: 'Gerät weitergeben an',
+        tokenUnit: 'Token',
+        tokensUnit: 'Tokens',
+        treasureNameCrown: 'Krone',
+        treasureNameDiamond: 'Diamant',
+        treasureNameVase: 'Vase',
+        treasureNameSword: 'Schwert',
+        treasureNameScroll: 'Schriftrolle',
+        treasureNameCoin: 'Münze',
+        treasureNameRing: 'Ring',
+        treasureNameKey: 'Schlüssel',
+        treasureNameAmulet: 'Amulett',
+        treasureNameMedallion: 'Medaillon',
+        treasureNameMask: 'Maske',
+        treasureNameGem: 'Edelstein',
+        treasureNameEye: 'Auge',
+        treasureNameDice: 'Würfel',
+        treasureNameFeather: 'Feder',
+        treasureNameClover: 'Kleeblatt',
+        finalScoreLabel: 'Punkte',
+        treasuresWon: 'Schätze',
+        tokensRemaining: 'Tokens übrig',
+      },
+      en: {
+        backToGames: 'Back to Games',
+        subtitle: 'Blind Bidding · Highest unique bid wins',
+        howManyPlayers: 'How many players?',
+        rulesHtml: '<b>Rules:</b> Each round reveals a treasure. Everyone secretly bids tokens simultaneously. The <b>highest unique bid</b> wins the treasure! Tied bids cancel out. Final score: treasure points + remaining tokens.',
+        startGame: 'Start Game! 🏺',
+        coverMsg: 'Keep the screen hidden from others!',
+        coverBtn: "I'm ready →",
+        round: 'Round',
+        item: 'Treasure',
+        pointsLabel: 'points worth',
+        yourTokens: 'Your tokens:',
+        placeBid: '🤫 Place Bid!',
+        passBid: 'Pass (0)',
+        allBids: 'All Bids:',
+        nextRound: 'Next Round →',
+        seeResults: 'Results! 🏆',
+        gewinnt: 'wins!',
+        playAgain: 'Play Again! 🎲',
+        passLabel: 'passed',
+        tiedLabel: 'cancelled (Tie)',
+        winsLabel: 'wins',
+        noWinner: '💥 Tie — nobody wins the treasure!',
+        turnBid: 'is bidding now (secretly)!',
+        passDevice: 'Pass the device to',
+        tokenUnit: 'token',
+        tokensUnit: 'tokens',
+        treasureNameCrown: 'Crown',
+        treasureNameDiamond: 'Diamond',
+        treasureNameVase: 'Vase',
+        treasureNameSword: 'Sword',
+        treasureNameScroll: 'Scroll',
+        treasureNameCoin: 'Coin',
+        treasureNameRing: 'Ring',
+        treasureNameKey: 'Key',
+        treasureNameAmulet: 'Amulet',
+        treasureNameMedallion: 'Medallion',
+        treasureNameMask: 'Mask',
+        treasureNameGem: 'Gem',
+        treasureNameEye: 'Eye',
+        treasureNameDice: 'Dice',
+        treasureNameFeather: 'Feather',
+        treasureNameClover: 'Clover',
+        finalScoreLabel: 'points',
+        treasuresWon: 'treasures',
+        tokensRemaining: 'tokens left',
+      },
+      fr: {
+        backToGames: 'Retour aux jeux',
+        subtitle: 'Enchères secrètes · La plus haute mise unique gagne',
+        howManyPlayers: 'Combien de joueurs ?',
+        rulesHtml: '<b>Règles :</b> Chaque manche révèle un trésor. Tous misent secrètement des jetons. La <b>mise unique la plus haute</b> remporte le trésor ! Les mises égales s\'annulent. Score final : points trésor + jetons restants.',
+        startGame: 'Démarrer ! 🏺',
+        coverMsg: 'Cacher l\'écran des autres !',
+        coverBtn: 'Je suis prêt →',
+        round: 'Manche',
+        item: 'Trésor',
+        pointsLabel: 'points',
+        yourTokens: 'Tes jetons :',
+        placeBid: '🤫 Miser !',
+        passBid: 'Passer (0)',
+        allBids: 'Toutes les mises :',
+        nextRound: 'Manche suivante →',
+        seeResults: 'Résultats ! 🏆',
+        gewinnt: 'gagne !',
+        playAgain: 'Rejouer ! 🎲',
+        passLabel: 'passé',
+        tiedLabel: 'annulé (Égalité)',
+        winsLabel: 'gagne',
+        noWinner: '💥 Égalité — personne ne remporte le trésor !',
+        turnBid: 'mise maintenant (en secret) !',
+        passDevice: 'Passer à',
+        tokenUnit: 'jeton',
+        tokensUnit: 'jetons',
+        treasureNameCrown: 'Couronne',
+        treasureNameDiamond: 'Diamant',
+        treasureNameVase: 'Vase',
+        treasureNameSword: 'Épée',
+        treasureNameScroll: 'Parchemin',
+        treasureNameCoin: 'Pièce',
+        treasureNameRing: 'Anneau',
+        treasureNameKey: 'Clé',
+        treasureNameAmulet: 'Amulette',
+        treasureNameMedallion: 'Médaillon',
+        treasureNameMask: 'Masque',
+        treasureNameGem: 'Gemme',
+        treasureNameEye: 'Œil',
+        treasureNameDice: 'Dé',
+        treasureNameFeather: 'Plume',
+        treasureNameClover: 'Trèfle',
+        finalScoreLabel: 'points',
+        treasuresWon: 'trésors',
+        tokensRemaining: 'jetons restants',
+      },
+      it: {
+        backToGames: 'Torna ai giochi',
+        subtitle: 'Aste cieche · L\'offerta unica più alta vince',
+        howManyPlayers: 'Quanti giocatori?',
+        rulesHtml: '<b>Regole:</b> Ogni round rivela un tesoro. Tutti fanno un\'offerta segreta di token. L\'<b>offerta unica più alta</b> vince il tesoro! Le offerte uguali si annullano. Punteggio finale: punti tesoro + token rimanenti.',
+        startGame: 'Inizia! 🏺',
+        coverMsg: 'Tieni lo schermo nascosto dagli altri!',
+        coverBtn: 'Sono pronto →',
+        round: 'Round',
+        item: 'Tesoro',
+        pointsLabel: 'punti',
+        yourTokens: 'I tuoi token:',
+        placeBid: '🤫 Fai offerta!',
+        passBid: 'Passa (0)',
+        allBids: 'Tutte le offerte:',
+        nextRound: 'Round successivo →',
+        seeResults: 'Risultati! 🏆',
+        gewinnt: 'vince!',
+        playAgain: 'Gioca ancora! 🎲',
+        passLabel: 'passato',
+        tiedLabel: 'annullato (Pareggio)',
+        winsLabel: 'vince',
+        noWinner: '💥 Pareggio — nessuno vince il tesoro!',
+        turnBid: 'sta facendo l\'offerta (in segreto)!',
+        passDevice: 'Passa il dispositivo a',
+        tokenUnit: 'token',
+        tokensUnit: 'token',
+        treasureNameCrown: 'Corona',
+        treasureNameDiamond: 'Diamante',
+        treasureNameVase: 'Vaso',
+        treasureNameSword: 'Spada',
+        treasureNameScroll: 'Pergamena',
+        treasureNameCoin: 'Moneta',
+        treasureNameRing: 'Anello',
+        treasureNameKey: 'Chiave',
+        treasureNameAmulet: 'Amuleto',
+        treasureNameMedallion: 'Medaglione',
+        treasureNameMask: 'Maschera',
+        treasureNameGem: 'Gemma',
+        treasureNameEye: 'Occhio',
+        treasureNameDice: 'Dado',
+        treasureNameFeather: 'Piuma',
+        treasureNameClover: 'Trifoglio',
+        finalScoreLabel: 'punti',
+        treasuresWon: 'tesori',
+        tokensRemaining: 'token rimanenti',
+      },
+      es: {
+        backToGames: 'Volver a los juegos',
+        subtitle: 'Subastas ciegas · La puja única más alta gana',
+        howManyPlayers: '¿Cuántos jugadores?',
+        rulesHtml: '<b>Reglas:</b> Cada ronda revela un tesoro. Todos pujan en secreto con tokens. ¡La <b>puja única más alta</b> gana el tesoro! Las pujas iguales se anulan. Puntuación final: puntos de tesoro + tokens restantes.',
+        startGame: '¡Empezar! 🏺',
+        coverMsg: '¡Mantén la pantalla oculta de los demás!',
+        coverBtn: 'Estoy listo →',
+        round: 'Ronda',
+        item: 'Tesoro',
+        pointsLabel: 'puntos',
+        yourTokens: 'Tus tokens:',
+        placeBid: '🤫 ¡Pujar!',
+        passBid: 'Pasar (0)',
+        allBids: 'Todas las pujas:',
+        nextRound: 'Siguiente ronda →',
+        seeResults: '¡Resultados! 🏆',
+        gewinnt: '¡gana!',
+        playAgain: '¡Jugar de nuevo! 🎲',
+        passLabel: 'pasó',
+        tiedLabel: 'anulado (Empate)',
+        winsLabel: 'gana',
+        noWinner: '💥 ¡Empate — nadie gana el tesoro!',
+        turnBid: '¡está pujando ahora (en secreto)!',
+        passDevice: 'Pasar a',
+        tokenUnit: 'token',
+        tokensUnit: 'tokens',
+        treasureNameCrown: 'Corona',
+        treasureNameDiamond: 'Diamante',
+        treasureNameVase: 'Jarrón',
+        treasureNameSword: 'Espada',
+        treasureNameScroll: 'Pergamino',
+        treasureNameCoin: 'Moneda',
+        treasureNameRing: 'Anillo',
+        treasureNameKey: 'Llave',
+        treasureNameAmulet: 'Amuleto',
+        treasureNameMedallion: 'Medallón',
+        treasureNameMask: 'Máscara',
+        treasureNameGem: 'Gema',
+        treasureNameEye: 'Ojo',
+        treasureNameDice: 'Dado',
+        treasureNameFeather: 'Pluma',
+        treasureNameClover: 'Trébol',
+        finalScoreLabel: 'puntos',
+        treasuresWon: 'tesoros',
+        tokensRemaining: 'tokens restantes',
+      },
+    };
+
+    const { t, lang, onLangChange } = initI18n(TRANSLATIONS);
+
+    // Treasure name map
+    const TREASURE_NAME_KEYS = {
+      crown: 'treasureNameCrown', diamond: 'treasureNameDiamond', vase: 'treasureNameVase',
+      sword: 'treasureNameSword', scroll: 'treasureNameScroll', coin: 'treasureNameCoin',
+      ring: 'treasureNameRing', key: 'treasureNameKey', amulet: 'treasureNameAmulet',
+      medallion: 'treasureNameMedallion', mask: 'treasureNameMask', gem: 'treasureNameGem',
+      eye: 'treasureNameEye', dice: 'treasureNameDice', feather: 'treasureNameFeather',
+      clover: 'treasureNameClover',
+    };
+    function treasureName(item) {
+      const key = TREASURE_NAME_KEYS[item.name] || item.name;
+      return t(key);
+    }
+
+    // ---- Player colors ----
+    const PLAYER_COLORS = ['#e63946','#06d6a0','#4fc3f7','#ffd166'];
+    const PLAYER_DOT_COLORS = ['#ff4466','#00ff99','#44ccff','#ffdd44'];
+
+    // ---- Game State ----
+    let state = {};
+
+    function initState(numPlayers, names) {
+      const STARTING_TOKENS = 20;
+      const players = names.slice(0, numPlayers).map((name, i) => ({
+        name,
+        tokens: STARTING_TOKENS,
+        tokensSpent: 0,
+        treasuresWon: [],
+        color: PLAYER_COLORS[i],
+        dotColor: PLAYER_DOT_COLORS[i],
+      }));
+
+      const treasures = generateTreasures(Date.now());
+
+      return {
+        players,
+        numPlayers,
+        treasures,
+        currentTreasureIdx: 0,
+        currentBidderIdx: 0,
+        bids: [], // collected this round
+        phase: 'bidding', // 'bidding' | 'reveal'
+      };
+    }
+
+    // ---- Logic (inlined for no-module game page) ----
+    function generateTreasures(seed) {
+      const POOL = [
+        { emoji: '👑', name: 'crown', value: 10 },
+        { emoji: '💎', name: 'diamond', value: 9 },
+        { emoji: '🏺', name: 'vase', value: 8 },
+        { emoji: '⚔️', name: 'sword', value: 7 },
+        { emoji: '📜', name: 'scroll', value: 7 },
+        { emoji: '🪙', name: 'coin', value: 6 },
+        { emoji: '💍', name: 'ring', value: 6 },
+        { emoji: '🗝️', name: 'key', value: 5 },
+        { emoji: '🪬', name: 'amulet', value: 5 },
+        { emoji: '🏵️', name: 'medallion', value: 4 },
+        { emoji: '🎭', name: 'mask', value: 4 },
+        { emoji: '🪨', name: 'gem', value: 3 },
+        { emoji: '🧿', name: 'eye', value: 3 },
+        { emoji: '🎲', name: 'dice', value: 2 },
+        { emoji: '🪶', name: 'feather', value: 2 },
+        { emoji: '🍀', name: 'clover', value: 1 },
+      ];
+      let s = (seed >>> 0);
+      const rand = () => {
+        s += 0x6D2B79F5;
+        let t2 = s;
+        t2 = Math.imul(t2 ^ (t2 >>> 15), t2 | 1);
+        t2 ^= t2 + Math.imul(t2 ^ (t2 >>> 7), t2 | 61);
+        return ((t2 ^ (t2 >>> 14)) >>> 0) / 4294967296;
+      };
+      const pool = [...POOL];
+      for (let i = pool.length - 1; i > 0; i--) {
+        const j = Math.floor(rand() * (i + 1));
+        [pool[i], pool[j]] = [pool[j], pool[i]];
+      }
+      return pool.slice(0, 8).map((item, idx) => ({ ...item, id: idx }));
+    }
+
+    function resolveAuction(bids) {
+      const counts = {};
+      for (const b of bids) counts[b] = (counts[b] || 0) + 1;
+      const uniqueBids = Object.keys(counts)
+        .map(Number)
+        .filter(b => b > 0 && counts[b] === 1)
+        .sort((a, b) => b - a);
+      if (uniqueBids.length === 0) return { winnerIdx: -1, paid: 0, tie: true };
+      const winningBid = uniqueBids[0];
+      const winnerIdx = bids.indexOf(winningBid);
+      return { winnerIdx, paid: winningBid, tie: false };
+    }
+
+    // ---- DOM helpers ----
+    function showScreen(id) {
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+    }
+
+    function buildSetupScreen() {
+      // Count buttons
+      const countRow = document.getElementById('count-btns');
+      countRow.innerHTML = '';
+      for (let n = 2; n <= 4; n++) {
+        const btn = document.createElement('button');
+        btn.className = 'count-btn' + (n === 2 ? ' selected' : '');
+        btn.textContent = n;
+        btn.dataset.count = n;
+        btn.onclick = () => {
+          document.querySelectorAll('.count-btn').forEach(b => b.classList.remove('selected'));
+          btn.classList.add('selected');
+          buildPlayerInputs(n);
+        };
+        countRow.appendChild(btn);
+      }
+      buildPlayerInputs(2);
+    }
+
+    const DEFAULT_NAMES = ['Spieler 1', 'Spieler 2', 'Spieler 3', 'Spieler 4'];
+
+    function buildPlayerInputs(n) {
+      const container = document.getElementById('player-inputs');
+      container.innerHTML = '';
+      for (let i = 0; i < n; i++) {
+        const row = document.createElement('div');
+        row.className = 'player-input-row';
+
+        const dot = document.createElement('div');
+        dot.className = 'player-dot';
+        dot.style.background = PLAYER_DOT_COLORS[i];
+
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.className = 'player-name-input';
+        input.value = DEFAULT_NAMES[i];
+        input.maxLength = 16;
+        input.dataset.playerIdx = i;
+
+        row.appendChild(dot);
+        row.appendChild(input);
+        container.appendChild(row);
+      }
+    }
+
+    // ---- Game flow ----
+    window.startGame = function() {
+      const selectedCount = parseInt(document.querySelector('.count-btn.selected').dataset.count);
+      const inputs = document.querySelectorAll('.player-name-input');
+      const names = Array.from(inputs).map(i => i.value.trim() || DEFAULT_NAMES[i.dataset.playerIdx]);
+
+      state = initState(selectedCount, names);
+      startNextBidderTurn();
+    };
+
+    function startNextBidderTurn() {
+      const { currentBidderIdx, players, currentTreasureIdx, treasures, bids } = state;
+
+      // If all players have bid, go to reveal
+      if (bids.length === players.length) {
+        showRevealScreen();
+        return;
+      }
+
+      const player = players[currentBidderIdx];
+      const treasure = treasures[currentTreasureIdx];
+
+      // Show cover screen
+      document.getElementById('cover-player-name').textContent = player.name;
+      const msgEl = document.getElementById('cover-msg');
+      const btnEl = document.getElementById('cover-btn');
+
+      if (bids.length === 0) {
+        msgEl.textContent = t('coverMsg');
+        btnEl.textContent = t('coverBtn');
+      } else {
+        msgEl.textContent = `${t('passDevice')}: ${player.name}`;
+        btnEl.textContent = t('coverBtn');
+      }
+
+      showScreen('screen-cover');
+    }
+
+    window.revealBidScreen = function() {
+      const { currentBidderIdx, players, currentTreasureIdx, treasures } = state;
+      const player = players[currentBidderIdx];
+      const treasure = treasures[currentTreasureIdx];
+
+      // Update bid screen
+      document.getElementById('round-num').textContent = currentTreasureIdx + 1;
+      document.getElementById('item-num').textContent = currentTreasureIdx + 1;
+      document.getElementById('treasure-emoji').textContent = treasure.emoji;
+      document.getElementById('treasure-name').textContent = treasureName(treasure);
+      document.getElementById('treasure-value').textContent = treasure.value;
+
+      const turnEl = document.getElementById('turn-indicator');
+      turnEl.innerHTML = `<span style="color:${player.dotColor};font-weight:bold">${player.name}</span> ${t('turnBid')}`;
+
+      document.getElementById('bid-tokens').textContent = player.tokens;
+
+      // Slider
+      const slider = document.getElementById('bid-slider');
+      slider.max = player.tokens;
+      slider.value = 0;
+      updateBidDisplay(0);
+
+      // Quick bid buttons
+      const quickContainer = document.getElementById('quick-btns');
+      quickContainer.innerHTML = '';
+      const suggestions = [0, Math.floor(player.tokens * 0.25), Math.floor(player.tokens * 0.5), player.tokens]
+        .filter((v, i, arr) => arr.indexOf(v) === i && v <= player.tokens);
+      suggestions.forEach(v => {
+        const btn = document.createElement('button');
+        btn.className = 'quick-btn';
+        btn.textContent = v === 0 ? t('passBid') : `${v}`;
+        btn.onclick = () => { slider.value = v; updateBidDisplay(v); };
+        quickContainer.appendChild(btn);
+      });
+
+      // Mini scores
+      renderMiniScores();
+
+      showScreen('screen-bid');
+    };
+
+    window.updateBidDisplay = function(val) {
+      document.getElementById('bid-display').textContent = val;
+    };
+
+    window.submitBid = function() {
+      const { currentBidderIdx } = state;
+      const bidVal = parseInt(document.getElementById('bid-slider').value);
+
+      state.bids.push(bidVal);
+      state.players[currentBidderIdx].tokens -= bidVal;
+      state.players[currentBidderIdx].tokensSpent = (state.players[currentBidderIdx].tokensSpent || 0) + bidVal;
+      state.currentBidderIdx = (state.currentBidderIdx + 1) % state.players.length;
+
+      startNextBidderTurn();
+    };
+
+    function showRevealScreen() {
+      const { bids, players, currentTreasureIdx, treasures } = state;
+      const treasure = treasures[currentTreasureIdx];
+      const result = resolveAuction(bids);
+
+      document.getElementById('reveal-emoji').textContent = treasure.emoji;
+      document.getElementById('reveal-name').textContent = treasureName(treasure);
+      document.getElementById('reveal-value').textContent = treasure.value;
+
+      // Determine tie mask
+      const counts = {};
+      for (const b of bids) counts[b] = (counts[b] || 0) + 1;
+
+      const rowsEl = document.getElementById('reveal-rows');
+      rowsEl.innerHTML = '';
+      bids.forEach((bid, i) => {
+        const player = players[i];
+        const isWinner = result.winnerIdx === i;
+        const isTied = bid > 0 && counts[bid] > 1;
+
+        const row = document.createElement('div');
+        row.className = 'reveal-row' + (isWinner ? ' winner' : '');
+
+        const dot = document.createElement('div');
+        dot.className = 'player-dot';
+        dot.style.background = player.dotColor;
+
+        const nameSpan = document.createElement('span');
+        nameSpan.textContent = player.name;
+
+        const bidSpan = document.createElement('span');
+        bidSpan.className = 'bid-val' + (isTied ? ' tie' : '');
+        bidSpan.textContent = bid === 0 ? `(${t('passLabel')})` : bid;
+
+        row.appendChild(dot);
+        row.appendChild(nameSpan);
+
+        if (isWinner) {
+          const badge = document.createElement('span');
+          badge.className = 'winner-badge';
+          badge.textContent = t('winsLabel') + '!';
+          row.appendChild(badge);
+        }
+        row.appendChild(bidSpan);
+        rowsEl.appendChild(row);
+      });
+
+      const outcomeEl = document.getElementById('reveal-outcome');
+      if (result.winnerIdx >= 0) {
+        const winner = players[result.winnerIdx];
+        // Award treasure
+        winner.treasuresWon.push(treasure);
+        winner.tokens += 0; // tokens already deducted
+        outcomeEl.innerHTML = `<div style="text-align:center;color:#06d6a0;font-weight:bold;font-size:1rem">
+          ${winner.emoji || ''}🎉 <span style="color:${winner.dotColor}">${winner.name}</span> ${t('winsLabel')} ${treasure.emoji}!
+        </div>`;
+      } else {
+        // Refund all bids
+        bids.forEach((bid, i) => { players[i].tokens += bid; players[i].tokensSpent = (players[i].tokensSpent || 0) - bid; });
+        outcomeEl.innerHTML = `<div class="no-winner-msg">${t('noWinner')}</div>`;
+      }
+
+      // Next button
+      const nextBtn = document.getElementById('next-btn');
+      const isLast = currentTreasureIdx >= 7;
+      nextBtn.innerHTML = isLast
+        ? `<span data-i18n="seeResults">${t('seeResults')}</span>`
+        : `<span data-i18n="nextRound">${t('nextRound')}</span>`;
+
+      showScreen('screen-reveal');
+    }
+
+    window.nextRound = function() {
+      const isLast = state.currentTreasureIdx >= 7;
+      if (isLast) {
+        showFinalResults();
+        return;
+      }
+      state.currentTreasureIdx++;
+      state.currentBidderIdx = 0;
+      state.bids = [];
+      startNextBidderTurn();
+    };
+
+    function showFinalResults() {
+      const { players } = state;
+
+      // Calculate scores
+      const scored = players.map(p => {
+        const treasureValue = p.treasuresWon.reduce((sum, t) => sum + t.value, 0);
+        const score = treasureValue + p.tokens;
+        return { ...p, score, treasureValue };
+      }).sort((a, b) => b.score - a.score);
+
+      document.getElementById('final-winner-name').textContent = scored[0].name;
+
+      const rowsEl = document.getElementById('final-result-rows');
+      rowsEl.innerHTML = '';
+
+      scored.forEach((p, i) => {
+        const row = document.createElement('div');
+        row.className = 'result-row' + (i === 0 ? ' first-place' : '');
+
+        const dot = document.createElement('div');
+        dot.className = 'player-dot';
+        dot.style.background = p.dotColor;
+
+        const info = document.createElement('div');
+        info.innerHTML = `<div style="font-weight:bold;color:${i===0?'#ffcc00':'#f0e6c8'}">${p.name}</div>
+          <div class="result-breakdown">
+            ${p.treasuresWon.length} ${t('treasuresWon')}: ${p.treasureValue}pts &nbsp;+&nbsp; ${p.tokens} ${t('tokensRemaining')}
+          </div>`;
+
+        const scoreEl = document.createElement('div');
+        scoreEl.className = 'result-score';
+        scoreEl.textContent = `${p.score} ${t('finalScoreLabel')}`;
+
+        if (i === 0) {
+          const crown = document.createElement('span');
+          crown.textContent = '🏆';
+          row.appendChild(crown);
+        }
+        row.appendChild(dot);
+        row.appendChild(info);
+        row.appendChild(scoreEl);
+        rowsEl.appendChild(row);
+      });
+
+      showScreen('screen-results');
+    }
+
+    function renderMiniScores() {
+      const { players } = state;
+      const el = document.getElementById('mini-scores');
+      el.innerHTML = '';
+      players.forEach(p => {
+        const row = document.createElement('div');
+        row.className = 'score-row';
+        row.innerHTML = `
+          <div class="player-dot" style="background:${p.dotColor}"></div>
+          <span>${p.name}</span>
+          <span style="color:#ffcc00;font-size:0.8rem">${p.treasuresWon.map(t => t.emoji).join('')}</span>
+          <span class="score-tokens">🪙 ${p.tokens}</span>
+        `;
+        el.appendChild(row);
+      });
+    }
+
+    window.restartGame = function() {
+      showScreen('screen-setup');
+    };
+
+    // Update text on language change
+    onLangChange(() => {
+      document.querySelector('.subtitle').textContent = t('subtitle');
+      if (state && state.players) {
+        // re-render current screen if in game
+      }
+    });
+
+    // Init
+    buildSetupScreen();
+  </script>
+</body>
+</html>
