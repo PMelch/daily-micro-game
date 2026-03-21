@@ -1,0 +1,873 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Pixel Storm 🌩️</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #0a0a1a;
+    color: #fff;
+    font-family: system-ui, -apple-system, sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+  .back-bar {
+    width: 100%;
+    background: #0a0a1a;
+    padding: 0.5rem 1rem;
+    border-bottom: 1px solid #333;
+  }
+  .back-bar a {
+    color: #ffcc00;
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .back-bar a:hover { text-decoration: underline; }
+
+  #app {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    gap: 1rem;
+  }
+
+  h1 {
+    font-size: 2.2rem;
+    font-weight: 900;
+    letter-spacing: -1px;
+    background: linear-gradient(135deg, #e74c3c, #f39c12, #3498db, #9b59b6);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .subtitle { color: #aaa; font-size: 0.95rem; text-align: center; }
+
+  /* Lobby */
+  #screen-lobby, #screen-join, #screen-room, #screen-playing, #screen-ended {
+    width: 100%;
+    max-width: 440px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.2rem;
+  }
+
+  input[type=text] {
+    width: 100%;
+    padding: 0.8rem 1rem;
+    background: #1a1a2e;
+    border: 1px solid #444;
+    border-radius: 8px;
+    color: #fff;
+    font-size: 1rem;
+    outline: none;
+    text-align: center;
+  }
+  input[type=text]:focus { border-color: #ffcc00; }
+  input.code-input {
+    font-size: 2.2rem;
+    font-weight: 800;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    max-width: 220px;
+  }
+
+  .btn {
+    width: 100%;
+    padding: 0.9rem;
+    border: none;
+    border-radius: 10px;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.1s, opacity 0.1s;
+  }
+  .btn:active { transform: scale(0.97); }
+  .btn-primary { background: linear-gradient(135deg, #e74c3c, #f39c12); color: #fff; }
+  .btn-secondary { background: #1a1a2e; color: #ffcc00; border: 1px solid #ffcc00; }
+  .btn-blue { background: linear-gradient(135deg, #3498db, #9b59b6); color: #fff; }
+  .btn-green { background: linear-gradient(135deg, #2ecc71, #1abc9c); color: #fff; }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* Room screen */
+  .room-code-display {
+    font-size: 3rem;
+    font-weight: 900;
+    letter-spacing: 0.4em;
+    color: #ffcc00;
+    background: #1a1a2e;
+    padding: 0.6rem 1.5rem;
+    border-radius: 12px;
+    border: 2px solid #ffcc00;
+    text-align: center;
+  }
+  .player-list {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  .player-item {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    padding: 0.6rem 1rem;
+    background: #1a1a2e;
+    border-radius: 8px;
+  }
+  .player-dot {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .player-name { font-weight: 600; }
+  .host-badge {
+    margin-left: auto;
+    font-size: 0.75rem;
+    background: #ffcc00;
+    color: #000;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-weight: 700;
+  }
+
+  /* Game */
+  #screen-playing {
+    max-width: 100%;
+    align-items: stretch;
+    padding: 0 0.5rem;
+  }
+  .hud {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.3rem 0.5rem;
+  }
+  .timer {
+    font-size: 2rem;
+    font-weight: 900;
+    color: #ffcc00;
+  }
+  .timer.urgent { color: #e74c3c; animation: pulse 0.5s infinite alternate; }
+  @keyframes pulse { from { opacity: 1; } to { opacity: 0.5; } }
+  
+  .score-bar {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    justify-content: center;
+    padding: 0.3rem;
+  }
+  .score-chip {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    background: #1a1a2e;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 700;
+  }
+  .score-dot { width: 12px; height: 12px; border-radius: 50%; }
+
+  canvas#grid {
+    width: 100%;
+    max-width: 480px;
+    aspect-ratio: 1;
+    display: block;
+    margin: 0 auto;
+    border-radius: 6px;
+    cursor: crosshair;
+    touch-action: none;
+  }
+
+  .my-color-indicator {
+    text-align: center;
+    font-size: 0.9rem;
+    color: #aaa;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  .my-color-swatch {
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+  }
+
+  /* Countdown overlay */
+  #countdown-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.85);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    font-size: 8rem;
+    font-weight: 900;
+    animation: popIn 0.3s ease-out;
+  }
+  @keyframes popIn { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+  /* Results */
+  #screen-ended {
+    max-width: 480px;
+  }
+  .result-row {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    width: 100%;
+    padding: 0.7rem 1rem;
+    background: #1a1a2e;
+    border-radius: 8px;
+  }
+  .result-rank { font-size: 1.4rem; width: 36px; text-align: center; }
+  .result-bar-wrap { flex: 1; background: #0a0a1a; border-radius: 4px; height: 12px; overflow: hidden; }
+  .result-bar { height: 100%; border-radius: 4px; transition: width 1s ease; }
+  .result-score { font-weight: 700; font-size: 0.9rem; color: #aaa; }
+
+  .error-msg {
+    color: #e74c3c;
+    font-size: 0.9rem;
+    text-align: center;
+    min-height: 1.2em;
+  }
+
+  .connecting { color: #aaa; font-size: 0.9rem; text-align: center; }
+
+  /* Pie chart for results */
+  #result-pie {
+    width: 160px;
+    height: 160px;
+  }
+</style>
+</head>
+<body>
+<div class="back-bar"><a href="/">← <span data-i18n="backToGames">Zurück zu den Spielen</span></a></div>
+
+<div id="app">
+
+  <!-- LOBBY SCREEN: choose create or join -->
+  <div id="screen-lobby">
+    <h1>⚡ Pixel Storm</h1>
+    <p class="subtitle" data-i18n="subtitle">Echtzeit-Territoriumskampf! Male so viele Zellen wie möglich in deiner Farbe.</p>
+    <input type="text" id="player-name" maxlength="16" data-i18n-placeholder="namePlaceholder" value="">
+    <button class="btn btn-primary" onclick="showCreate()" data-i18n="createRoom">Raum erstellen</button>
+    <button class="btn btn-secondary" onclick="showJoin()" data-i18n="joinRoom">Raum beitreten</button>
+  </div>
+
+  <!-- JOIN SCREEN -->
+  <div id="screen-join" style="display:none">
+    <h1>⚡ Pixel Storm</h1>
+    <input type="text" id="player-name-join" maxlength="16" data-i18n-placeholder="namePlaceholder">
+    <input type="text" class="code-input" id="room-code-input" maxlength="4" data-i18n-placeholder="codePlaceholder" autocomplete="off">
+    <button class="btn btn-blue" onclick="joinRoom()" data-i18n="joinBtn">Beitreten</button>
+    <button class="btn btn-secondary" onclick="showLobby()" data-i18n="back">Zurück</button>
+    <div class="error-msg" id="join-error"></div>
+  </div>
+
+  <!-- ROOM (waiting) SCREEN -->
+  <div id="screen-room" style="display:none">
+    <h1>⚡ Pixel Storm</h1>
+    <p style="color:#aaa;font-size:0.9rem" data-i18n="shareCode">Teile diesen Code mit deinen Mitspielern:</p>
+    <div class="room-code-display" id="room-code-show"></div>
+    <div class="player-list" id="player-list"></div>
+    <div class="error-msg" id="room-error"></div>
+    <button class="btn btn-green" id="start-btn" onclick="requestStart()" data-i18n="startGame">Spiel starten</button>
+    <p style="color:#666;font-size:0.8rem" data-i18n="minPlayers">Mindestens 2 Spieler erforderlich</p>
+  </div>
+
+  <!-- PLAYING SCREEN -->
+  <div id="screen-playing" style="display:none">
+    <div class="hud">
+      <div class="timer" id="timer-display">60</div>
+      <div class="my-color-indicator">
+        <div class="my-color-swatch" id="my-swatch"></div>
+        <span id="my-color-name"></span>
+      </div>
+    </div>
+    <div class="score-bar" id="score-bar"></div>
+    <canvas id="grid" width="512" height="512"></canvas>
+  </div>
+
+  <!-- ENDED SCREEN -->
+  <div id="screen-ended" style="display:none">
+    <h1 data-i18n="gameOver">Spiel vorbei!</h1>
+    <svg id="result-pie" viewBox="0 0 160 160"></svg>
+    <div id="result-list" style="width:100%;display:flex;flex-direction:column;gap:0.5rem;"></div>
+    <button class="btn btn-primary" onclick="requestPlayAgain()" data-i18n="playAgain">Nochmal spielen</button>
+    <button class="btn btn-secondary" onclick="showLobby()" data-i18n="newGame">Neues Spiel</button>
+  </div>
+
+</div>
+
+<!-- Countdown overlay (hidden) -->
+<div id="countdown-overlay" style="display:none"></div>
+
+<script src="/shared/i18n.js"></script>
+<script>
+const TRANSLATIONS = {
+  de: {
+    backToGames: 'Zurück zu den Spielen',
+    subtitle: 'Echtzeit-Territoriumskampf! Male so viele Zellen wie möglich in deiner Farbe — 60 Sekunden!',
+    namePlaceholder: 'Dein Name',
+    codePlaceholder: 'CODE',
+    createRoom: '⚡ Raum erstellen',
+    joinRoom: '🔗 Raum beitreten',
+    joinBtn: 'Beitreten',
+    back: '← Zurück',
+    shareCode: 'Teile diesen Code mit deinen Mitspielern:',
+    startGame: '🚀 Spiel starten!',
+    minPlayers: 'Mindestens 2 Spieler erforderlich',
+    hostBadge: 'Host',
+    waitingForPlayers: 'Warte auf Spieler...',
+    gameOver: '🏆 Spiel vorbei!',
+    playAgain: '🔄 Nochmal spielen',
+    newGame: '🏠 Neues Spiel',
+    you: '(Du)',
+    cells: 'Zellen',
+    goText: 'LOS!',
+    winner: '🏆 Gewinner',
+    draw: '🤝 Unentschieden',
+    connecting: 'Verbinde...',
+    errorRoomNotFound: 'Raum nicht gefunden!',
+    errorRoomFull: 'Raum ist voll!',
+    errorGameStarted: 'Spiel bereits gestartet!',
+    errorNeed2: 'Mindestens 2 Spieler nötig!',
+    disconnected: 'Verbindung getrennt. Bitte neu laden.',
+  },
+  en: {
+    backToGames: 'Back to Games',
+    subtitle: 'Real-time territory battle! Paint as many cells as possible in your color — 60 seconds!',
+    namePlaceholder: 'Your name',
+    codePlaceholder: 'CODE',
+    createRoom: '⚡ Create Room',
+    joinRoom: '🔗 Join Room',
+    joinBtn: 'Join',
+    back: '← Back',
+    shareCode: 'Share this code with your players:',
+    startGame: '🚀 Start Game!',
+    minPlayers: 'Minimum 2 players required',
+    hostBadge: 'Host',
+    waitingForPlayers: 'Waiting for players...',
+    gameOver: '🏆 Game Over!',
+    playAgain: '🔄 Play Again',
+    newGame: '🏠 New Game',
+    you: '(You)',
+    cells: 'cells',
+    goText: 'GO!',
+    winner: '🏆 Winner',
+    draw: '🤝 Draw',
+    connecting: 'Connecting...',
+    errorRoomNotFound: 'Room not found!',
+    errorRoomFull: 'Room is full!',
+    errorGameStarted: 'Game already started!',
+    errorNeed2: 'Need at least 2 players!',
+    disconnected: 'Disconnected. Please reload.',
+  },
+  fr: {
+    backToGames: 'Retour aux jeux',
+    subtitle: 'Bataille territoriale en temps réel ! Peins le plus de cellules possible dans ta couleur — 60 secondes !',
+    namePlaceholder: 'Ton nom',
+    codePlaceholder: 'CODE',
+    createRoom: '⚡ Créer une salle',
+    joinRoom: '🔗 Rejoindre',
+    joinBtn: 'Rejoindre',
+    back: '← Retour',
+    shareCode: 'Partage ce code avec tes joueurs :',
+    startGame: '🚀 Démarrer !',
+    minPlayers: '2 joueurs minimum',
+    hostBadge: 'Hôte',
+    waitingForPlayers: 'Attente de joueurs...',
+    gameOver: '🏆 Fin de partie !',
+    playAgain: '🔄 Rejouer',
+    newGame: '🏠 Nouveau jeu',
+    you: '(Toi)',
+    cells: 'cases',
+    goText: 'GO !',
+    winner: '🏆 Gagnant',
+    draw: '🤝 Égalité',
+    connecting: 'Connexion...',
+    errorRoomNotFound: 'Salle introuvable !',
+    errorRoomFull: 'Salle complète !',
+    errorGameStarted: 'Partie déjà commencée !',
+    errorNeed2: '2 joueurs minimum !',
+    disconnected: 'Déconnecté. Recharge la page.',
+  },
+  it: {
+    backToGames: 'Torna ai giochi',
+    subtitle: 'Battaglia territoriale in tempo reale! Dipingi più celle possibili nel tuo colore — 60 secondi!',
+    namePlaceholder: 'Il tuo nome',
+    codePlaceholder: 'CODICE',
+    createRoom: '⚡ Crea stanza',
+    joinRoom: '🔗 Unisciti',
+    joinBtn: 'Unisciti',
+    back: '← Indietro',
+    shareCode: 'Condividi questo codice:',
+    startGame: '🚀 Inizia!',
+    minPlayers: 'Minimo 2 giocatori',
+    hostBadge: 'Host',
+    waitingForPlayers: 'In attesa di giocatori...',
+    gameOver: '🏆 Fine partita!',
+    playAgain: '🔄 Gioca ancora',
+    newGame: '🏠 Nuovo gioco',
+    you: '(Tu)',
+    cells: 'celle',
+    goText: 'VIA!',
+    winner: '🏆 Vincitore',
+    draw: '🤝 Pareggio',
+    connecting: 'Connessione...',
+    errorRoomNotFound: 'Stanza non trovata!',
+    errorRoomFull: 'Stanza piena!',
+    errorGameStarted: 'Partita già iniziata!',
+    errorNeed2: 'Servono almeno 2 giocatori!',
+    disconnected: 'Disconnesso. Ricarica la pagina.',
+  },
+  es: {
+    backToGames: 'Volver a los juegos',
+    subtitle: '¡Batalla territorial en tiempo real! Pinta el mayor número de celdas en tu color — ¡60 segundos!',
+    namePlaceholder: 'Tu nombre',
+    codePlaceholder: 'CÓDIGO',
+    createRoom: '⚡ Crear sala',
+    joinRoom: '🔗 Unirse',
+    joinBtn: 'Unirse',
+    back: '← Atrás',
+    shareCode: 'Comparte este código:',
+    startGame: '🚀 ¡Empezar!',
+    minPlayers: 'Mínimo 2 jugadores',
+    hostBadge: 'Anfitrión',
+    waitingForPlayers: 'Esperando jugadores...',
+    gameOver: '🏆 ¡Fin del juego!',
+    playAgain: '🔄 Jugar de nuevo',
+    newGame: '🏠 Nuevo juego',
+    you: '(Tú)',
+    cells: 'celdas',
+    goText: '¡YA!',
+    winner: '🏆 Ganador',
+    draw: '🤝 Empate',
+    connecting: 'Conectando...',
+    errorRoomNotFound: '¡Sala no encontrada!',
+    errorRoomFull: '¡Sala llena!',
+    errorGameStarted: '¡Partida ya iniciada!',
+    errorNeed2: '¡Se necesitan 2 jugadores!',
+    disconnected: 'Desconectado. Recarga la página.',
+  }
+};
+const { t, lang } = initI18n(TRANSLATIONS);
+
+// --- State ---
+const WS_URL = 'wss://day-038-pixel-storm.lab.gogerl.com';
+const GRID_SIZE = 16;
+const TOTAL_CELLS = GRID_SIZE * GRID_SIZE;
+
+let ws = null;
+let myId = null;
+let myColor = null;
+let isHost = false;
+let players = [];
+let grid = new Array(TOTAL_CELLS).fill(null);
+let painting = false;
+let pendingCells = new Set();
+let paintFlushInterval = null;
+
+// Canvas
+const canvas = document.getElementById('grid');
+const ctx = canvas.getContext('2d');
+const CELL = 512 / GRID_SIZE;
+
+// --- Screen switching ---
+function hideAll() {
+  ['screen-lobby','screen-join','screen-room','screen-playing','screen-ended'].forEach(id => {
+    document.getElementById(id).style.display = 'none';
+  });
+}
+function showLobby() {
+  if (ws) { ws.close(); ws = null; }
+  hideAll();
+  document.getElementById('screen-lobby').style.display = 'flex';
+  myId = null; myColor = null; isHost = false; players = [];
+}
+function showCreate() {
+  hideAll();
+  connect('create');
+}
+function showJoin() {
+  hideAll();
+  document.getElementById('screen-join').style.display = 'flex';
+  document.getElementById('join-error').textContent = '';
+  const nameEl = document.getElementById('player-name-join');
+  nameEl.value = document.getElementById('player-name').value;
+}
+function showRoom(code) {
+  hideAll();
+  document.getElementById('screen-room').style.display = 'flex';
+  document.getElementById('room-code-show').textContent = code;
+  document.getElementById('room-error').textContent = '';
+  document.getElementById('start-btn').disabled = !isHost;
+}
+function showPlaying() {
+  hideAll();
+  document.getElementById('screen-playing').style.display = 'flex';
+  document.getElementById('my-swatch').style.background = myColor || '#fff';
+  const p = players.find(x => x.id === myId);
+  document.getElementById('my-color-name').textContent = (p ? p.name : '') + ' ' + t('you');
+}
+function showEnded(scores, grid) {
+  hideAll();
+  document.getElementById('screen-ended').style.display = 'flex';
+  renderResults(scores, grid);
+}
+
+// --- Connect ---
+function getPlayerName(inputId) {
+  const el = document.getElementById(inputId || 'player-name');
+  return (el && el.value.trim()) || ('Player ' + (Math.floor(Math.random()*99)+1));
+}
+
+function connect(mode) {
+  if (ws) ws.close();
+  ws = new WebSocket(WS_URL);
+
+  ws.onopen = () => {
+    if (mode === 'create') {
+      ws.send(JSON.stringify({ type: 'create', name: getPlayerName('player-name') }));
+    }
+  };
+
+  ws.onmessage = (evt) => {
+    const msg = JSON.parse(evt.data);
+    handleMessage(msg);
+  };
+
+  ws.onclose = () => {
+    // If game is in progress, show disconnect message
+    if (document.getElementById('screen-playing').style.display !== 'none') {
+      alert(t('disconnected'));
+    }
+  };
+
+  ws.onerror = () => {};
+}
+
+function joinRoom() {
+  const code = document.getElementById('room-code-input').value.trim().toUpperCase();
+  const name = getPlayerName('player-name-join');
+  if (code.length !== 4) { document.getElementById('join-error').textContent = t('errorRoomNotFound'); return; }
+
+  if (ws) ws.close();
+  ws = new WebSocket(WS_URL);
+  ws.onopen = () => {
+    ws.send(JSON.stringify({ type: 'join', code, name }));
+  };
+  ws.onmessage = (evt) => {
+    const msg = JSON.parse(evt.data);
+    handleMessage(msg);
+  };
+  ws.onclose = () => {};
+}
+
+function requestStart() {
+  if (!ws) return;
+  ws.send(JSON.stringify({ type: 'start' }));
+}
+
+function requestPlayAgain() {
+  if (!ws) return;
+  ws.send(JSON.stringify({ type: 'playAgain' }));
+}
+
+// --- Message handler ---
+function handleMessage(msg) {
+  switch (msg.type) {
+    case 'state': {
+      myId = msg.yourId;
+      players = msg.players;
+      isHost = players.length > 0 && players[0].id === myId;
+      grid = msg.grid;
+      const me = players.find(p => p.id === myId);
+      myColor = me ? me.color : '#fff';
+
+      if (msg.phase === 'lobby') {
+        showRoom(msg.code);
+        renderPlayerList();
+      } else if (msg.phase === 'playing') {
+        showPlaying();
+        renderFullGrid();
+        renderScoreBar();
+        document.getElementById('timer-display').textContent = msg.timeLeft;
+      }
+      break;
+    }
+    case 'playerJoined':
+    case 'playerLeft': {
+      players = msg.players;
+      isHost = players.length > 0 && players[0].id === myId;
+      renderPlayerList();
+      if (document.getElementById('start-btn')) {
+        document.getElementById('start-btn').disabled = !isHost;
+      }
+      break;
+    }
+    case 'error': {
+      const errMap = {
+        'Room not found': t('errorRoomNotFound'),
+        'Room full': t('errorRoomFull'),
+        'Game already started': t('errorGameStarted'),
+        'Need at least 2 players': t('errorNeed2'),
+      };
+      const friendly = errMap[msg.message] || msg.message;
+      const joinErr = document.getElementById('join-error');
+      const roomErr = document.getElementById('room-error');
+      if (joinErr && document.getElementById('screen-join').style.display !== 'none') joinErr.textContent = friendly;
+      else if (roomErr) roomErr.textContent = friendly;
+      break;
+    }
+    case 'countdown': {
+      showCountdown(msg.count);
+      break;
+    }
+    case 'start': {
+      grid = msg.grid;
+      hideCountdown();
+      showPlaying();
+      renderFullGrid();
+      renderScoreBar();
+      document.getElementById('timer-display').textContent = msg.timeLeft;
+      startPaintFlush();
+      break;
+    }
+    case 'tick': {
+      const timerEl = document.getElementById('timer-display');
+      timerEl.textContent = msg.timeLeft;
+      timerEl.className = 'timer' + (msg.timeLeft <= 10 ? ' urgent' : '');
+      break;
+    }
+    case 'painted': {
+      const { playerId, color, cells } = msg;
+      cells.forEach(idx => { grid[idx] = playerId; });
+      // Find color from players array
+      const p = players.find(x => x.id === playerId);
+      const c = p ? p.color : color;
+      cells.forEach(idx => paintCell(idx, c));
+      // Update scores
+      renderScoreBar();
+      break;
+    }
+    case 'gameOver': {
+      stopPaintFlush();
+      showEnded(msg.scores, msg.grid);
+      break;
+    }
+    case 'reset': {
+      players = msg.players;
+      const me = players.find(p => p.id === myId);
+      myColor = me ? me.color : myColor;
+      isHost = players.length > 0 && players[0].id === myId;
+      grid = new Array(TOTAL_CELLS).fill(null);
+      showRoom(document.getElementById('room-code-show') ? document.getElementById('room-code-show').textContent : '');
+      renderPlayerList();
+      break;
+    }
+  }
+}
+
+// --- UI Rendering ---
+function renderPlayerList() {
+  const list = document.getElementById('player-list');
+  if (!list) return;
+  list.innerHTML = players.map((p, i) => `
+    <div class="player-item">
+      <div class="player-dot" style="background:${p.color}"></div>
+      <span class="player-name">${escHtml(p.name)}${p.id === myId ? ' <span style="color:#aaa;font-size:0.8em">' + t('you') + '</span>' : ''}</span>
+      ${i === 0 ? `<span class="host-badge">${t('hostBadge')}</span>` : ''}
+    </div>
+  `).join('');
+  const startBtn = document.getElementById('start-btn');
+  if (startBtn) startBtn.disabled = !isHost;
+}
+
+function renderScoreBar() {
+  const bar = document.getElementById('score-bar');
+  if (!bar) return;
+  const scores = {};
+  players.forEach(p => { scores[p.id] = 0; });
+  grid.forEach(cell => { if (cell && scores[cell] !== undefined) scores[cell]++; });
+  bar.innerHTML = players.map(p => `
+    <div class="score-chip">
+      <div class="score-dot" style="background:${p.color}"></div>
+      <span>${escHtml(p.name)}: ${scores[p.id] || 0}</span>
+    </div>
+  `).join('');
+}
+
+function renderFullGrid() {
+  ctx.clearRect(0, 0, 512, 512);
+  // Background
+  ctx.fillStyle = '#1a1a2e';
+  ctx.fillRect(0, 0, 512, 512);
+  // Grid lines
+  ctx.strokeStyle = '#0a0a1a';
+  ctx.lineWidth = 0.5;
+  for (let i = 0; i <= GRID_SIZE; i++) {
+    ctx.beginPath(); ctx.moveTo(i*CELL, 0); ctx.lineTo(i*CELL, 512); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0, i*CELL); ctx.lineTo(512, i*CELL); ctx.stroke();
+  }
+  // Cells
+  for (let i = 0; i < TOTAL_CELLS; i++) {
+    if (grid[i]) {
+      const p = players.find(x => x.id === grid[i]);
+      if (p) paintCell(i, p.color);
+    }
+  }
+}
+
+function paintCell(idx, color) {
+  const col = idx % GRID_SIZE;
+  const row = Math.floor(idx / GRID_SIZE);
+  ctx.fillStyle = color;
+  ctx.fillRect(col * CELL + 0.5, row * CELL + 0.5, CELL - 0.5, CELL - 0.5);
+}
+
+function renderResults(scores, finalGrid) {
+  // Compute
+  const totals = {};
+  players.forEach(p => { totals[p.id] = 0; });
+  if (finalGrid) finalGrid.forEach(cell => { if (cell && totals[cell] !== undefined) totals[cell]++; });
+  else Object.assign(totals, scores);
+
+  const sorted = players.slice().sort((a, b) => (totals[b.id] || 0) - (totals[a.id] || 0));
+  const maxScore = Math.max(...sorted.map(p => totals[p.id] || 0), 1);
+
+  const list = document.getElementById('result-list');
+  const ranks = ['🥇','🥈','🥉','4️⃣','5️⃣','6️⃣'];
+  list.innerHTML = sorted.map((p, i) => {
+    const score = totals[p.id] || 0;
+    const pct = (score / maxScore * 100).toFixed(1);
+    return `<div class="result-row">
+      <div class="result-rank">${ranks[i]}</div>
+      <div class="player-dot" style="background:${p.color}"></div>
+      <div style="flex:1">
+        <div style="font-weight:700">${escHtml(p.name)}${p.id === myId ? ' <span style="color:#aaa;font-size:0.8em">' + t('you') + '</span>' : ''}</div>
+        <div class="result-bar-wrap"><div class="result-bar" style="width:0%;background:${p.color}" data-pct="${pct}"></div></div>
+      </div>
+      <div class="result-score">${score} ${t('cells')}</div>
+    </div>`;
+  }).join('');
+
+  // Animate bars
+  setTimeout(() => {
+    list.querySelectorAll('.result-bar').forEach(bar => {
+      bar.style.width = bar.dataset.pct + '%';
+    });
+  }, 100);
+
+  // Draw pie
+  drawPie(sorted, totals);
+}
+
+function drawPie(sorted, totals) {
+  const svg = document.getElementById('result-pie');
+  const total = sorted.reduce((s, p) => s + (totals[p.id] || 0), 0) || 1;
+  const cx = 80, cy = 80, r = 70;
+  let startAngle = -Math.PI / 2;
+  let paths = '';
+  sorted.forEach(p => {
+    const frac = (totals[p.id] || 0) / total;
+    const endAngle = startAngle + frac * 2 * Math.PI;
+    const x1 = cx + r * Math.cos(startAngle);
+    const y1 = cy + r * Math.sin(startAngle);
+    const x2 = cx + r * Math.cos(endAngle);
+    const y2 = cy + r * Math.sin(endAngle);
+    const large = frac > 0.5 ? 1 : 0;
+    paths += `<path d="M${cx},${cy} L${x1},${y1} A${r},${r} 0 ${large} 1 ${x2},${y2} Z" fill="${p.color}" stroke="#0a0a1a" stroke-width="1"/>`;
+    startAngle = endAngle;
+  });
+  svg.innerHTML = paths;
+}
+
+// --- Countdown ---
+function showCountdown(n) {
+  const el = document.getElementById('countdown-overlay');
+  el.style.display = 'flex';
+  el.textContent = n;
+  // Re-trigger animation
+  el.style.animation = 'none';
+  el.offsetHeight;
+  el.style.animation = 'popIn 0.3s ease-out';
+}
+function hideCountdown() {
+  document.getElementById('countdown-overlay').style.display = 'none';
+}
+
+// --- Painting interaction ---
+canvas.addEventListener('pointerdown', onPointerDown);
+canvas.addEventListener('pointermove', onPointerMove);
+canvas.addEventListener('pointerup', () => { painting = false; });
+canvas.addEventListener('pointerleave', () => { painting = false; });
+
+function onPointerDown(e) {
+  e.preventDefault();
+  painting = true;
+  paintAt(e);
+}
+function onPointerMove(e) {
+  if (!painting) return;
+  e.preventDefault();
+  paintAt(e);
+}
+
+function paintAt(e) {
+  if (!ws || !myId || !myColor) return;
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = 512 / rect.width;
+  const scaleY = 512 / rect.height;
+  const x = (e.clientX - rect.left) * scaleX;
+  const y = (e.clientY - rect.top) * scaleY;
+  const col = Math.floor(x / CELL);
+  const row = Math.floor(y / CELL);
+  if (col < 0 || col >= GRID_SIZE || row < 0 || row >= GRID_SIZE) return;
+  const idx = row * GRID_SIZE + col;
+  if (grid[idx] !== myId) {
+    grid[idx] = myId;
+    paintCell(idx, myColor);
+    pendingCells.add(idx);
+  }
+}
+
+function startPaintFlush() {
+  paintFlushInterval = setInterval(() => {
+    if (pendingCells.size > 0) {
+      const cells = Array.from(pendingCells);
+      pendingCells.clear();
+      ws.send(JSON.stringify({ type: 'paint', cells }));
+    }
+  }, 50);
+}
+
+function stopPaintFlush() {
+  if (paintFlushInterval) { clearInterval(paintFlushInterval); paintFlushInterval = null; }
+  pendingCells.clear();
+}
+
+// --- Utility ---
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// Init
+showLobby();
+document.getElementById('player-name').value = 'Player ' + (Math.floor(Math.random()*89)+1);
+</script>
+</body>
+</html>
