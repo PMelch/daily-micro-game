@@ -1,0 +1,885 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Deep Ping 🔵</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  .back-bar {
+    width: 100%;
+    background: #0a0a1a;
+    padding: 0.5rem 1rem;
+    border-bottom: 1px solid #333;
+  }
+  .back-bar a {
+    color: #ffcc00;
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-family: system-ui, sans-serif;
+  }
+  .back-bar a:hover { text-decoration: underline; }
+
+  body {
+    background: #030d1a;
+    color: #cce8ff;
+    font-family: 'Courier New', monospace;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    overflow: hidden;
+    touch-action: none;
+  }
+
+  #game-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    max-width: 520px;
+    flex: 1;
+    padding: 0.5rem;
+  }
+
+  #hud {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    padding: 0.4rem 0.5rem;
+    background: rgba(0,20,50,0.8);
+    border: 1px solid #0a4a7a;
+    border-radius: 8px;
+    margin-bottom: 0.5rem;
+    font-size: 0.85rem;
+  }
+  .hud-item { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+  .hud-label { font-size: 0.65rem; color: #5599bb; text-transform: uppercase; letter-spacing: 1px; }
+  .hud-value { font-size: 1.1rem; font-weight: bold; color: #00ddff; }
+  .hud-value.pings { color: #00ff99; }
+  .hud-value.score { color: #ffcc00; }
+  .hud-value.treasures { color: #ff9900; }
+
+  #canvas-wrapper {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 1;
+    max-height: calc(100vh - 200px);
+    cursor: crosshair;
+  }
+
+  #gameCanvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+    border: 1px solid #0a4a7a;
+    border-radius: 4px;
+  }
+
+  #ping-ripple {
+    position: absolute;
+    border-radius: 50%;
+    pointer-events: none;
+    border: 2px solid #00ffcc;
+    opacity: 0;
+    transform: translate(-50%, -50%);
+    animation: none;
+  }
+
+  #controls {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(3, 1fr);
+    gap: 6px;
+    width: 160px;
+    margin: 0.5rem 0;
+  }
+
+  .ctrl-btn {
+    background: rgba(0,40,80,0.8);
+    border: 1px solid #0a4a7a;
+    color: #00ccff;
+    border-radius: 8px;
+    font-size: 1.4rem;
+    padding: 10px;
+    cursor: pointer;
+    transition: background 0.1s, transform 0.1s;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  .ctrl-btn:active { background: rgba(0,80,150,0.9); transform: scale(0.95); }
+  .ctrl-btn.center { background: rgba(0,80,40,0.6); border-color: #00ff99; color: #00ff99; font-size: 1.1rem; }
+
+  #status-msg {
+    font-size: 0.8rem;
+    color: #5599bb;
+    text-align: center;
+    min-height: 1.2em;
+    margin-bottom: 0.2rem;
+  }
+
+  /* Overlay screens */
+  .overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,5,20,0.95);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    padding: 2rem;
+    text-align: center;
+  }
+  .overlay.hidden { display: none; }
+
+  .overlay h1 { font-size: 2rem; margin-bottom: 0.5rem; }
+  .overlay h2 { font-size: 1.4rem; margin-bottom: 1rem; color: #00ddff; }
+  .overlay p  { color: #7abadd; margin-bottom: 0.6rem; line-height: 1.5; font-size: 0.9rem; max-width: 360px; }
+
+  .start-emoji { font-size: 4rem; margin-bottom: 1rem; }
+
+  .btn-primary {
+    background: linear-gradient(135deg, #005599, #002244);
+    border: 2px solid #00aaff;
+    color: #00ddff;
+    padding: 0.8rem 2.5rem;
+    font-family: 'Courier New', monospace;
+    font-size: 1.1rem;
+    border-radius: 8px;
+    cursor: pointer;
+    margin-top: 1rem;
+    transition: all 0.2s;
+  }
+  .btn-primary:hover { background: linear-gradient(135deg, #0077cc, #003366); transform: scale(1.04); }
+
+  .difficulty-selector { display: flex; gap: 1rem; margin: 1rem 0; flex-wrap: wrap; justify-content: center; }
+  .diff-btn {
+    background: rgba(0,30,60,0.8);
+    border: 1px solid #0a4a7a;
+    color: #5599bb;
+    padding: 0.5rem 1.2rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-family: 'Courier New', monospace;
+    font-size: 0.9rem;
+    transition: all 0.2s;
+  }
+  .diff-btn.active { border-color: #00aaff; color: #00ddff; background: rgba(0,60,120,0.8); }
+
+  .result-stats { display: flex; gap: 1.5rem; margin: 1.2rem 0; flex-wrap: wrap; justify-content: center; }
+  .result-stat { display: flex; flex-direction: column; align-items: center; }
+  .result-stat .val { font-size: 1.8rem; font-weight: bold; color: #00ddff; }
+  .result-stat .lbl { font-size: 0.7rem; color: #5599bb; text-transform: uppercase; }
+
+  /* ping flash on canvas */
+  @keyframes pingRipple {
+    0%   { opacity: 0.9; width: 0px; height: 0px; }
+    100% { opacity: 0;   width: 200px; height: 200px; }
+  }
+
+  #depth-meter {
+    font-size: 0.7rem;
+    color: #3377aa;
+    letter-spacing: 2px;
+    margin-bottom: 0.3rem;
+  }
+</style>
+</head>
+<body>
+<div class="back-bar"><a href="/">← Back to Games</a></div>
+
+<!-- Start Screen -->
+<div class="overlay" id="screen-start">
+  <div class="start-emoji">🔵</div>
+  <h1 style="color:#00ddff">DEEP PING</h1>
+  <p data-i18n="startDesc"></p>
+  <div class="difficulty-selector">
+    <button class="diff-btn active" data-diff="easy" data-i18n="diffEasy"></button>
+    <button class="diff-btn" data-diff="normal" data-i18n="diffNormal"></button>
+    <button class="diff-btn" data-diff="hard" data-i18n="diffHard"></button>
+  </div>
+  <p style="font-size:0.78rem;color:#3a7a99" data-i18n="startHint"></p>
+  <button class="btn-primary" id="btn-start" data-i18n="btnDive"></button>
+</div>
+
+<!-- Win Screen -->
+<div class="overlay hidden" id="screen-win">
+  <div class="start-emoji">🏆</div>
+  <h2 data-i18n="winTitle"></h2>
+  <div class="result-stats">
+    <div class="result-stat"><div class="val" id="res-score">0</div><div class="lbl" data-i18n="resScore"></div></div>
+    <div class="result-stat"><div class="val" id="res-treasures">0</div><div class="lbl" data-i18n="resTreasures"></div></div>
+    <div class="result-stat"><div class="val" id="res-pings-left">0</div><div class="lbl" data-i18n="resPings"></div></div>
+  </div>
+  <p id="win-msg" style="color:#ffcc00"></p>
+  <button class="btn-primary" id="btn-replay-win" data-i18n="btnPlayAgain"></button>
+</div>
+
+<!-- Game Over Screen -->
+<div class="overlay hidden" id="screen-dead">
+  <div class="start-emoji">💥</div>
+  <h2 data-i18n="deadTitle"></h2>
+  <div class="result-stats">
+    <div class="result-stat"><div class="val" id="dead-score">0</div><div class="lbl" data-i18n="resScore"></div></div>
+    <div class="result-stat"><div class="val" id="dead-treasures">0</div><div class="lbl" data-i18n="resTreasures"></div></div>
+  </div>
+  <p data-i18n="deadMsg" style="color:#ff6644"></p>
+  <button class="btn-primary" id="btn-replay-dead" data-i18n="btnTryAgain"></button>
+</div>
+
+<!-- Game UI -->
+<div id="game-container">
+  <div id="hud">
+    <div class="hud-item">
+      <div class="hud-label" data-i18n="hudPings"></div>
+      <div class="hud-value pings" id="hud-pings">10</div>
+    </div>
+    <div class="hud-item">
+      <div class="hud-label" data-i18n="hudScore"></div>
+      <div class="hud-value score" id="hud-score">0</div>
+    </div>
+    <div class="hud-item">
+      <div class="hud-label" data-i18n="hudTreasures"></div>
+      <div class="hud-value treasures" id="hud-treasures">0/0</div>
+    </div>
+    <div class="hud-item">
+      <div class="hud-label" data-i18n="hudDepth"></div>
+      <div class="hud-value" id="hud-depth" style="color:#aa88ff">0</div>
+    </div>
+  </div>
+
+  <div id="depth-meter">≋ SONAR ACTIVE ≋</div>
+
+  <div id="canvas-wrapper">
+    <canvas id="gameCanvas" width="500" height="500"></canvas>
+    <div id="ping-ripple"></div>
+  </div>
+
+  <div id="status-msg" data-i18n="statusHint"></div>
+
+  <div id="controls">
+    <div></div>
+    <button class="ctrl-btn" id="btn-up">↑</button>
+    <div></div>
+    <button class="ctrl-btn" id="btn-left">←</button>
+    <button class="ctrl-btn center" id="btn-ping">📡</button>
+    <button class="ctrl-btn" id="btn-right">→</button>
+    <div></div>
+    <button class="ctrl-btn" id="btn-down">↓</button>
+    <div></div>
+  </div>
+</div>
+
+<script src="/shared/i18n.js"></script>
+<script>
+// === TRANSLATIONS ===
+const TRANSLATIONS = {
+  de: {
+    startDesc: 'Du steuerst ein U-Boot im pechschwarzen Ozean. Klicke, um Sonar-Ping abzufeuern und kurz alles in der Nähe zu enthüllen. Finde Schätze, meide Minen, erreiche den Ausgang!',
+    startHint: 'Klicke auf die Karte für Sonar-Ping • Pfeiltasten oder Buttons zum Bewegen',
+    diffEasy: 'Leicht',
+    diffNormal: 'Normal',
+    diffHard: 'Schwer',
+    btnDive: '🌊 TAUCHEN',
+    winTitle: 'AUSGANG ERREICHT!',
+    resScore: 'Punkte',
+    resTreasures: 'Schätze',
+    resPings: 'Pings übrig',
+    btnPlayAgain: '🔄 Nochmal tauchen',
+    deadTitle: 'MINE GETROFFEN!',
+    deadMsg: 'Das U-Boot ist versenkt. Mehr Sonar benutzen nächste Mal!',
+    btnTryAgain: '🔄 Nochmal versuchen',
+    hudPings: 'Sonar',
+    hudScore: 'Punkte',
+    hudTreasures: 'Schätze',
+    hudDepth: 'Tiefe',
+    statusHint: 'Klick auf Karte = Sonar-Ping | Buttons = Bewegen',
+    mineWarning: '⚠️ Sonar erkennt Gefahr in der Nähe!',
+    pingEmpty: 'Keine Sonar-Pings mehr!',
+    treasureFound: '💰 Schatz gefunden! +100 Punkte',
+    winBonus: '🏆 Alle Schätze gesammelt! Mega-Bonus! +500',
+  },
+  en: {
+    startDesc: 'Navigate a submarine through a pitch-black ocean. Click to fire a sonar ping and briefly reveal everything nearby. Find treasures, dodge mines, reach the exit!',
+    startHint: 'Click map for sonar ping • Arrow keys or buttons to move',
+    diffEasy: 'Easy',
+    diffNormal: 'Normal',
+    diffHard: 'Hard',
+    btnDive: '🌊 DIVE',
+    winTitle: 'EXIT REACHED!',
+    resScore: 'Score',
+    resTreasures: 'Treasures',
+    resPings: 'Pings left',
+    btnPlayAgain: '🔄 Dive again',
+    deadTitle: 'MINE HIT!',
+    deadMsg: 'Sub destroyed. Use more sonar next time!',
+    btnTryAgain: '🔄 Try again',
+    hudPings: 'Sonar',
+    hudScore: 'Score',
+    hudTreasures: 'Treasures',
+    hudDepth: 'Depth',
+    statusHint: 'Click map = Sonar ping | Buttons = Move',
+    mineWarning: '⚠️ Sonar detects danger nearby!',
+    pingEmpty: 'No more sonar pings!',
+    treasureFound: '💰 Treasure found! +100 pts',
+    winBonus: '🏆 All treasures collected! Mega-bonus! +500',
+  },
+  fr: {
+    startDesc: 'Navigue un sous-marin dans un océan de ténèbres. Clique pour émettre un ping sonar et révéler brièvement les alentours. Trouve des trésors, évite les mines, atteins la sortie !',
+    startHint: 'Clic sur carte = ping sonar • Flèches ou boutons pour se déplacer',
+    diffEasy: 'Facile',
+    diffNormal: 'Normal',
+    diffHard: 'Difficile',
+    btnDive: '🌊 PLONGER',
+    winTitle: 'SORTIE ATTEINTE !',
+    resScore: 'Score',
+    resTreasures: 'Trésors',
+    resPings: 'Pings restants',
+    btnPlayAgain: '🔄 Replonger',
+    deadTitle: 'MINE TOUCHÉE !',
+    deadMsg: 'Sous-marin détruit. Utilise plus le sonar la prochaine fois !',
+    btnTryAgain: '🔄 Réessayer',
+    hudPings: 'Sonar',
+    hudScore: 'Score',
+    hudTreasures: 'Trésors',
+    hudDepth: 'Prof.',
+    statusHint: 'Clic carte = ping sonar | Boutons = déplacer',
+    mineWarning: '⚠️ Le sonar détecte un danger proche !',
+    pingEmpty: 'Plus de pings sonar !',
+    treasureFound: '💰 Trésor trouvé ! +100 pts',
+    winBonus: '🏆 Tous les trésors collectés ! Méga-bonus ! +500',
+  },
+  it: {
+    startDesc: 'Naviga un sottomarino in un oceano buio pesto. Clicca per emettere un ping sonar e rivelare brevemente i dintorni. Trova tesori, schiva mine, raggiungi l\'uscita!',
+    startHint: 'Clic sulla mappa = ping sonar • Frecce o pulsanti per muoversi',
+    diffEasy: 'Facile',
+    diffNormal: 'Normale',
+    diffHard: 'Difficile',
+    btnDive: '🌊 IMMERSIONE',
+    winTitle: 'USCITA RAGGIUNTA!',
+    resScore: 'Punteggio',
+    resTreasures: 'Tesori',
+    resPings: 'Ping rimasti',
+    btnPlayAgain: '🔄 Rimmergiti',
+    deadTitle: 'MINA COLPITA!',
+    deadMsg: 'Sottomarino distrutto. Usa più sonar la prossima volta!',
+    btnTryAgain: '🔄 Riprova',
+    hudPings: 'Sonar',
+    hudScore: 'Punti',
+    hudTreasures: 'Tesori',
+    hudDepth: 'Profondità',
+    statusHint: 'Clic mappa = ping sonar | Pulsanti = muovi',
+    mineWarning: '⚠️ Sonar rileva pericolo vicino!',
+    pingEmpty: 'Nessun ping sonar rimasto!',
+    treasureFound: '💰 Tesoro trovato! +100 punti',
+    winBonus: '🏆 Tutti i tesori raccolti! Mega-bonus! +500',
+  },
+  es: {
+    startDesc: 'Navega un submarino por un océano completamente oscuro. Haz clic para emitir un ping de sonar y revelar brevemente los alrededores. ¡Encuentra tesoros, esquiva minas, llega a la salida!',
+    startHint: 'Clic en mapa = ping sonar • Flechas o botones para mover',
+    diffEasy: 'Fácil',
+    diffNormal: 'Normal',
+    diffHard: 'Difícil',
+    btnDive: '🌊 SUMERGIRSE',
+    winTitle: '¡SALIDA ALCANZADA!',
+    resScore: 'Puntuación',
+    resTreasures: 'Tesoros',
+    resPings: 'Pings restantes',
+    btnPlayAgain: '🔄 Volver a sumergirse',
+    deadTitle: '¡MINA GOLPEADA!',
+    deadMsg: 'Submarino destruido. ¡Usa más sonar la próxima vez!',
+    btnTryAgain: '🔄 Intentar de nuevo',
+    hudPings: 'Sonar',
+    hudScore: 'Puntos',
+    hudTreasures: 'Tesoros',
+    hudDepth: 'Prof.',
+    statusHint: 'Clic mapa = ping sonar | Botones = mover',
+    mineWarning: '⚠️ ¡El sonar detecta peligro cercano!',
+    pingEmpty: '¡Sin más pings de sonar!',
+    treasureFound: '💰 ¡Tesoro encontrado! +100 pts',
+    winBonus: '🏆 ¡Todos los tesoros! ¡Mega-bonus! +500',
+  }
+};
+
+const { t, lang, onLangChange, translatePage } = initI18n(TRANSLATIONS);
+
+// === GAME LOGIC (inline, mirrors game-logic.js for browser) ===
+const CELL = { EMPTY: 0, WALL: 1, MINE: 2, TREASURE: 3, EXIT: 4 };
+
+function isWalkable(cell) { return cell !== CELL.WALL; }
+
+function getCellsInRadius(cx, cy, radius, gridW, gridH) {
+  const cells = [];
+  for (let dy = -radius; dy <= radius; dy++) {
+    for (let dx = -radius; dx <= radius; dx++) {
+      if (Math.sqrt(dx*dx + dy*dy) <= radius) {
+        const nx = cx + dx, ny = cy + dy;
+        if (nx >= 0 && nx < gridW && ny >= 0 && ny < gridH) cells.push(`${nx},${ny}`);
+      }
+    }
+  }
+  return cells;
+}
+
+function mulberry32(seed) {
+  return function() {
+    seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+    let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+
+// Difficulty presets
+const DIFFICULTY = {
+  easy:   { mines: 8,  treasures: 5, pings: 12, gridSize: 15 },
+  normal: { mines: 14, treasures: 6, pings: 9,  gridSize: 17 },
+  hard:   { mines: 20, treasures: 7, pings: 6,  gridSize: 19 },
+};
+
+function createGameState(cfg, seed) {
+  const { gridW: gW, gridH: gH, mineCount, treasureCount, pingCount } = {
+    gridW: cfg.gridSize, gridH: cfg.gridSize,
+    mineCount: cfg.mines, treasureCount: cfg.treasures,
+    pingCount: cfg.pings
+  };
+  const gridW = gW, gridH = gH;
+  const grid = [];
+  for (let y = 0; y < gridH; y++) grid.push(new Array(gridW).fill(CELL.WALL));
+
+  for (let y = 1; y < gridH-1; y++)
+    for (let x = 1; x < gridW-1; x++)
+      grid[y][x] = CELL.EMPTY;
+
+  const rng = mulberry32(seed || 42);
+  for (let y = 2; y < gridH-2; y++) {
+    for (let x = 2; x < gridW-2; x++) {
+      const keep = (x === 1 && y === 1) || (x === gridW-2 && y === gridH-2);
+      if (!keep && rng() < 0.18) grid[y][x] = CELL.WALL;
+    }
+  }
+
+  // Ensure start/exit clear
+  grid[1][1] = CELL.EMPTY; grid[1][2] = CELL.EMPTY; grid[2][1] = CELL.EMPTY;
+  grid[gridH-2][gridW-2] = CELL.EXIT;
+  grid[gridH-3][gridW-2] = CELL.EMPTY; grid[gridH-2][gridW-3] = CELL.EMPTY;
+
+  const forbidden = new Set([
+    '1,1','1,2','2,1','2,2',
+    `${gridW-2},${gridH-2}`,`${gridW-3},${gridH-2}`,`${gridW-2},${gridH-3}`,`${gridW-3},${gridH-3}`
+  ]);
+
+  const mineRng = mulberry32(seed ? seed+137 : 137);
+  let mPlaced = 0;
+  for (let i = 0; i < mineCount * 30 && mPlaced < mineCount; i++) {
+    const x = 1 + Math.floor(mineRng() * (gridW-2));
+    const y = 1 + Math.floor(mineRng() * (gridH-2));
+    if (grid[y][x] === CELL.EMPTY && !forbidden.has(`${x},${y}`)) {
+      grid[y][x] = CELL.MINE; mPlaced++;
+    }
+  }
+
+  const tRng = mulberry32(seed ? seed+77 : 77);
+  let tPlaced = 0;
+  for (let i = 0; i < treasureCount * 30 && tPlaced < treasureCount; i++) {
+    const x = 1 + Math.floor(tRng() * (gridW-2));
+    const y = 1 + Math.floor(tRng() * (gridH-2));
+    if (grid[y][x] === CELL.EMPTY && !forbidden.has(`${x},${y}`)) {
+      grid[y][x] = CELL.TREASURE; tPlaced++;
+    }
+  }
+
+  const revealed = new Set();
+  getCellsInRadius(1, 1, 2, gridW, gridH).forEach(c => revealed.add(c));
+
+  return {
+    grid, sub: { x: 1, y: 1 }, pings: pingCount,
+    score: 0, revealed, gridW, gridH,
+    alive: true, won: false, totalTreasures: tPlaced,
+    collectedTreasures: 0, moveCount: 0,
+    pingsUsed: 0, lastPing: null
+  };
+}
+
+function moveSubFn(state, dx, dy) {
+  const nx = state.sub.x + dx, ny = state.sub.y + dy;
+  if (nx < 0 || nx >= state.gridW || ny < 0 || ny >= state.gridH) return { ...state };
+  if (!isWalkable(state.grid[ny][nx])) return { ...state };
+
+  const cell = state.grid[ny][nx];
+  const newGrid = state.grid.map(r => [...r]);
+  const newRevealed = new Set(state.revealed);
+  getCellsInRadius(nx, ny, 1, state.gridW, state.gridH).forEach(c => newRevealed.add(c));
+  newRevealed.add(`${nx},${ny}`);
+
+  const ns = {
+    ...state, sub: { x: nx, y: ny }, grid: newGrid, revealed: newRevealed,
+    mine_hit: false, reached_exit: false,
+    moveCount: state.moveCount + 1
+  };
+
+  if (cell === CELL.MINE) { ns.mine_hit = true; ns.alive = false; return ns; }
+  if (cell === CELL.EXIT) { ns.reached_exit = true; ns.won = true; return ns; }
+  if (cell === CELL.TREASURE) {
+    ns.grid[ny][nx] = CELL.EMPTY;
+    ns.score = state.score + 100;
+    ns.collectedTreasures = state.collectedTreasures + 1;
+  }
+  return ns;
+}
+
+function emitPingFn(state, cx, cy) {
+  if (state.pings <= 0) return { ...state };
+  const PING_RADIUS = 4;
+  const revealed = new Set(state.revealed);
+  getCellsInRadius(cx, cy, PING_RADIUS, state.gridW, state.gridH).forEach(c => revealed.add(c));
+  return {
+    ...state, pings: state.pings - 1, revealed,
+    pingsUsed: state.pingsUsed + 1,
+    lastPing: { x: cx, y: cy, radius: PING_RADIUS, time: Date.now() }
+  };
+}
+
+// === RENDERER ===
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+const CANVAS_SIZE = 500;
+canvas.width = CANVAS_SIZE;
+canvas.height = CANVAS_SIZE;
+
+let gameState = null;
+let selectedDiff = 'normal';
+let currentSeed = Date.now();
+let floatingTexts = [];
+let pingAnims = [];
+
+function getCellSize() {
+  if (!gameState) return 30;
+  return CANVAS_SIZE / gameState.gridW;
+}
+
+function drawGame() {
+  if (!gameState) return;
+  const cs = getCellSize();
+  ctx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+
+  // Draw deep ocean background
+  ctx.fillStyle = '#010a18';
+  ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+
+  // Draw grid cells
+  for (let y = 0; y < gameState.gridH; y++) {
+    for (let x = 0; x < gameState.gridW; x++) {
+      const key = `${x},${y}`;
+      const isRevealed = gameState.revealed.has(key);
+      const cell = gameState.grid[y][x];
+      const px = x * cs, py = y * cs;
+
+      if (!isRevealed) {
+        // Dark unexplored
+        ctx.fillStyle = '#010a18';
+        ctx.fillRect(px, py, cs, cs);
+        // Very subtle grid
+        ctx.strokeStyle = 'rgba(0,50,100,0.15)';
+        ctx.strokeRect(px+0.5, py+0.5, cs-1, cs-1);
+      } else {
+        if (cell === CELL.WALL) {
+          // Rocky wall with a rocky texture feel
+          ctx.fillStyle = '#0d1f30';
+          ctx.fillRect(px, py, cs, cs);
+          ctx.fillStyle = '#1a3045';
+          ctx.fillRect(px+1, py+1, cs-2, cs-2);
+        } else {
+          // Open water
+          ctx.fillStyle = '#041828';
+          ctx.fillRect(px, py, cs, cs);
+          ctx.strokeStyle = 'rgba(0,100,180,0.1)';
+          ctx.strokeRect(px+0.5, py+0.5, cs-1, cs-1);
+        }
+
+        // Special cells (only when revealed)
+        if (cell === CELL.MINE) {
+          // Mine indicator
+          const cx2 = px + cs/2, cy2 = py + cs/2, r = cs*0.28;
+          ctx.fillStyle = '#ff3300';
+          ctx.beginPath(); ctx.arc(cx2, cy2, r, 0, Math.PI*2); ctx.fill();
+          // Spikes
+          ctx.strokeStyle = '#ff6600'; ctx.lineWidth = 1;
+          for (let a = 0; a < 8; a++) {
+            const ang = (a/8)*Math.PI*2;
+            ctx.beginPath();
+            ctx.moveTo(cx2 + Math.cos(ang)*r, cy2 + Math.sin(ang)*r);
+            ctx.lineTo(cx2 + Math.cos(ang)*(r+3), cy2 + Math.sin(ang)*(r+3));
+            ctx.stroke();
+          }
+          ctx.lineWidth = 1;
+        } else if (cell === CELL.TREASURE) {
+          const cx2 = px + cs/2, cy2 = py + cs/2;
+          ctx.fillStyle = '#b8880a';
+          ctx.fillRect(px + cs*0.2, py + cs*0.25, cs*0.6, cs*0.5);
+          ctx.fillStyle = '#ffcc00';
+          ctx.fillRect(px + cs*0.25, py + cs*0.3, cs*0.5, cs*0.15);
+          // Glint
+          ctx.fillStyle = 'rgba(255,220,0,0.6)';
+          ctx.beginPath(); ctx.arc(cx2-cs*0.08, py+cs*0.35, cs*0.06, 0, Math.PI*2); ctx.fill();
+        } else if (cell === CELL.EXIT) {
+          // Exit portal
+          const cx2 = px + cs/2, cy2 = py + cs/2;
+          const t_now = Date.now() / 1000;
+          const pulse = 0.7 + 0.3 * Math.sin(t_now * 3);
+          ctx.fillStyle = `rgba(0,200,255,${pulse * 0.3})`;
+          ctx.beginPath(); ctx.arc(cx2, cy2, cs*0.45, 0, Math.PI*2); ctx.fill();
+          ctx.strokeStyle = `rgba(0,220,255,${pulse})`;
+          ctx.lineWidth = 2;
+          ctx.beginPath(); ctx.arc(cx2, cy2, cs*0.35, 0, Math.PI*2); ctx.stroke();
+          ctx.fillStyle = `rgba(0,255,220,${pulse})`;
+          ctx.font = `${cs*0.5}px serif`;
+          ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+          ctx.fillText('⬡', cx2, cy2);
+          ctx.lineWidth = 1;
+        }
+      }
+    }
+  }
+
+  // Draw ping animations
+  const now = Date.now();
+  pingAnims = pingAnims.filter(p => now - p.startTime < 800);
+  for (const p of pingAnims) {
+    const elapsed = (now - p.startTime) / 800;
+    const cs2 = getCellSize();
+    const cx2 = p.x * cs2 + cs2/2;
+    const cy2 = p.y * cs2 + cs2/2;
+    const maxR = p.radius * cs2;
+    const r = maxR * elapsed;
+    ctx.strokeStyle = `rgba(0,255,204,${1 - elapsed})`;
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(cx2, cy2, r, 0, Math.PI*2); ctx.stroke();
+    ctx.lineWidth = 1;
+  }
+
+  // Draw submarine
+  const { x: sx, y: sy } = gameState.sub;
+  const scx = sx * cs + cs/2, scy = sy * cs + cs/2;
+
+  // Sub glow
+  const t2 = Date.now() / 1000;
+  const glowR = cs * (0.5 + 0.05 * Math.sin(t2 * 4));
+  const grd = ctx.createRadialGradient(scx, scy, 0, scx, scy, glowR);
+  grd.addColorStop(0, 'rgba(0,200,255,0.3)');
+  grd.addColorStop(1, 'rgba(0,200,255,0)');
+  ctx.fillStyle = grd;
+  ctx.beginPath(); ctx.arc(scx, scy, glowR, 0, Math.PI*2); ctx.fill();
+
+  // Sub body
+  ctx.fillStyle = '#00aadd';
+  ctx.beginPath();
+  ctx.ellipse(scx, scy, cs*0.38, cs*0.22, 0, 0, Math.PI*2);
+  ctx.fill();
+  // Conning tower
+  ctx.fillStyle = '#0088bb';
+  ctx.fillRect(scx - cs*0.08, scy - cs*0.3, cs*0.16, cs*0.15);
+  // Periscope
+  ctx.strokeStyle = '#00ddff'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(scx, scy - cs*0.3); ctx.lineTo(scx, scy - cs*0.42); ctx.stroke();
+  // Windows
+  ctx.fillStyle = '#88eeff';
+  ctx.beginPath(); ctx.arc(scx + cs*0.1, scy, cs*0.07, 0, Math.PI*2); ctx.fill();
+
+  // Draw floating texts
+  floatingTexts = floatingTexts.filter(ft => now - ft.start < 1500);
+  for (const ft of floatingTexts) {
+    const age = (now - ft.start) / 1500;
+    ctx.globalAlpha = 1 - age;
+    ctx.fillStyle = ft.color || '#ffcc00';
+    ctx.font = 'bold 14px Courier New';
+    ctx.textAlign = 'center';
+    ctx.fillText(ft.text, ft.x, ft.y - age * 40);
+    ctx.globalAlpha = 1;
+  }
+}
+
+function addFloatingText(x, y, text, color) {
+  floatingTexts.push({ x, y, text, color, start: Date.now() });
+}
+
+let animFrame;
+function gameLoop() {
+  drawGame();
+  animFrame = requestAnimationFrame(gameLoop);
+}
+
+// === INPUT HANDLING ===
+function doMove(dx, dy) {
+  if (!gameState || !gameState.alive || gameState.won) return;
+  const prev = gameState;
+  gameState = moveSubFn(gameState, dx, dy);
+  updateHUD();
+
+  const cs = getCellSize();
+  const fx = gameState.sub.x * cs + cs/2;
+  const fy = gameState.sub.y * cs + cs/2;
+
+  if (gameState.mine_hit) {
+    addFloatingText(fx, fy, '💥 BOOM!', '#ff4400');
+    setTimeout(showDead, 600);
+  } else if (gameState.reached_exit) {
+    // Bonus for all treasures
+    if (gameState.collectedTreasures >= gameState.totalTreasures) {
+      gameState = { ...gameState, score: gameState.score + 500 };
+      addFloatingText(fx, fy, t('winBonus'), '#ffcc00');
+    }
+    setTimeout(showWin, 500);
+  } else if (gameState.score > prev.score) {
+    addFloatingText(fx, fy, '+100', '#ffcc00');
+    setStatus(t('treasureFound'));
+  }
+
+  // Proximity warning: mine adjacent?
+  const sx = gameState.sub.x, sy = gameState.sub.y;
+  let nearMine = false;
+  for (const c of getCellsInRadius(sx, sy, 2, gameState.gridW, gameState.gridH)) {
+    const [cx2, cy2] = c.split(',').map(Number);
+    if (gameState.grid[cy2][cx2] === CELL.MINE && gameState.revealed.has(c)) {
+      nearMine = true; break;
+    }
+  }
+  if (nearMine) setStatus(t('mineWarning'));
+}
+
+function doPing(canvasX, canvasY) {
+  if (!gameState || !gameState.alive || gameState.won) return;
+  if (gameState.pings <= 0) { setStatus(t('pingEmpty')); return; }
+
+  const cs = getCellSize();
+  const gx = Math.floor(canvasX / cs);
+  const gy = Math.floor(canvasY / cs);
+
+  gameState = emitPingFn(gameState, gx, gy);
+  pingAnims.push({ x: gx, y: gy, radius: 4, startTime: Date.now() });
+  updateHUD();
+}
+
+function updateHUD() {
+  if (!gameState) return;
+  document.getElementById('hud-pings').textContent = gameState.pings;
+  document.getElementById('hud-score').textContent = gameState.score;
+  document.getElementById('hud-treasures').textContent =
+    `${gameState.collectedTreasures}/${gameState.totalTreasures}`;
+  // Depth = moves made
+  document.getElementById('hud-depth').textContent = gameState.moveCount;
+}
+
+let statusTimer;
+function setStatus(msg) {
+  document.getElementById('status-msg').textContent = msg;
+  clearTimeout(statusTimer);
+  statusTimer = setTimeout(() => {
+    document.getElementById('status-msg').textContent = t('statusHint');
+  }, 2500);
+}
+
+function showWin() {
+  document.getElementById('res-score').textContent = gameState.score;
+  document.getElementById('res-treasures').textContent =
+    `${gameState.collectedTreasures}/${gameState.totalTreasures}`;
+  document.getElementById('res-pings-left').textContent = gameState.pings;
+  document.getElementById('screen-win').classList.remove('hidden');
+}
+
+function showDead() {
+  document.getElementById('dead-score').textContent = gameState.score;
+  document.getElementById('dead-treasures').textContent =
+    `${gameState.collectedTreasures}/${gameState.totalTreasures}`;
+  document.getElementById('screen-dead').classList.remove('hidden');
+}
+
+function startGame() {
+  currentSeed = Date.now();
+  const cfg = DIFFICULTY[selectedDiff];
+  gameState = createGameState(cfg, currentSeed);
+  floatingTexts = [];
+  pingAnims = [];
+  document.getElementById('screen-start').classList.add('hidden');
+  document.getElementById('screen-win').classList.add('hidden');
+  document.getElementById('screen-dead').classList.add('hidden');
+  updateHUD();
+  document.getElementById('status-msg').textContent = t('statusHint');
+  if (!animFrame) gameLoop();
+}
+
+// Button controls
+document.getElementById('btn-up').addEventListener('click', () => doMove(0, -1));
+document.getElementById('btn-down').addEventListener('click', () => doMove(0, 1));
+document.getElementById('btn-left').addEventListener('click', () => doMove(-1, 0));
+document.getElementById('btn-right').addEventListener('click', () => doMove(1, 0));
+document.getElementById('btn-ping').addEventListener('click', () => {
+  if (gameState) doPing(gameState.sub.x * getCellSize() + getCellSize()/2,
+                        gameState.sub.y * getCellSize() + getCellSize()/2);
+});
+
+// Keyboard
+document.addEventListener('keydown', e => {
+  if (!gameState) return;
+  const map = { ArrowUp: [0,-1], ArrowDown: [0,1], ArrowLeft: [-1,0], ArrowRight: [1,0],
+                w: [0,-1], s: [0,1], a: [-1,0], d: [1,0] };
+  if (map[e.key]) { e.preventDefault(); doMove(...map[e.key]); }
+  if (e.key === ' ') { e.preventDefault();
+    doPing(gameState.sub.x * getCellSize() + getCellSize()/2,
+           gameState.sub.y * getCellSize() + getCellSize()/2);
+  }
+});
+
+// Canvas click for ping
+canvas.addEventListener('click', e => {
+  if (!gameState || !gameState.alive || gameState.won) return;
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = CANVAS_SIZE / rect.width;
+  const scaleY = CANVAS_SIZE / rect.height;
+  const cx = (e.clientX - rect.left) * scaleX;
+  const cy = (e.clientY - rect.top) * scaleY;
+  doPing(cx, cy);
+});
+
+// Touch support for canvas
+canvas.addEventListener('touchend', e => {
+  e.preventDefault();
+  if (!gameState || !gameState.alive || gameState.won) return;
+  const touch = e.changedTouches[0];
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = CANVAS_SIZE / rect.width;
+  const scaleY = CANVAS_SIZE / rect.height;
+  doPing((touch.clientX - rect.left) * scaleX, (touch.clientY - rect.top) * scaleY);
+}, { passive: false });
+
+// Difficulty selector
+document.querySelectorAll('.diff-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    selectedDiff = btn.dataset.diff;
+  });
+});
+
+// Start/replay buttons
+document.getElementById('btn-start').addEventListener('click', startGame);
+document.getElementById('btn-replay-win').addEventListener('click', () => {
+  document.getElementById('screen-win').classList.add('hidden');
+  document.getElementById('screen-start').classList.remove('hidden');
+});
+document.getElementById('btn-replay-dead').addEventListener('click', () => {
+  document.getElementById('screen-dead').classList.add('hidden');
+  document.getElementById('screen-start').classList.remove('hidden');
+});
+
+// Handle language changes
+onLangChange(() => translatePage());
+
+// Initial idle draw
+gameLoop();
+</script>
+</body>
+</html>
