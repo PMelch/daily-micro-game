@@ -1,0 +1,1158 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chroma Split</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    .back-bar {
+      width: 100%;
+      background: #0a0a1a;
+      padding: 0.5rem 1rem;
+      border-bottom: 1px solid #333;
+    }
+    .back-bar a {
+      color: #ffcc00;
+      text-decoration: none;
+      font-size: 0.9rem;
+      font-family: system-ui, sans-serif;
+    }
+    .back-bar a:hover { text-decoration: underline; }
+
+    body {
+      background: #08081a;
+      color: #e0e0ff;
+      font-family: system-ui, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    #app {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 1rem;
+      gap: 0.75rem;
+    }
+
+    h1 {
+      font-size: 1.8rem;
+      background: linear-gradient(135deg, #ff4466, #66ff99, #4499ff);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      letter-spacing: 0.05em;
+      text-align: center;
+    }
+
+    #level-info {
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+      font-size: 0.9rem;
+      color: #aaa;
+    }
+    .level-badge {
+      background: #1a1a3a;
+      border: 1px solid #334;
+      border-radius: 6px;
+      padding: 0.25rem 0.75rem;
+      color: #ffcc00;
+      font-weight: bold;
+    }
+    #mirrors-left {
+      color: #88ff99;
+    }
+
+    #instructions {
+      background: #111128;
+      border: 1px solid #223;
+      border-radius: 8px;
+      padding: 0.6rem 1rem;
+      font-size: 0.82rem;
+      color: #99aacc;
+      max-width: 520px;
+      text-align: center;
+      line-height: 1.5;
+    }
+
+    #toolbar {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .tool-btn {
+      background: #1a1a3a;
+      border: 2px solid #334;
+      border-radius: 8px;
+      color: #ccd;
+      cursor: pointer;
+      padding: 0.4rem 0.8rem;
+      font-size: 0.85rem;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+    .tool-btn:hover { border-color: #668; background: #22224a; }
+    .tool-btn.active {
+      border-color: #ffcc00;
+      background: #2a2a1a;
+      color: #ffcc00;
+    }
+    .tool-btn.erase { border-color: #ff4444; }
+    .tool-btn.erase.active { background: #2a1a1a; color: #ff6666; }
+
+    /* ---- GRID ---- */
+    #grid-container {
+      position: relative;
+      display: inline-block;
+    }
+
+    canvas {
+      display: block;
+      border-radius: 8px;
+      border: 1px solid #223;
+      cursor: crosshair;
+    }
+
+    /* ---- HUD ---- */
+    #hud {
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    #progress-bar-wrap {
+      background: #111128;
+      border: 1px solid #223;
+      border-radius: 20px;
+      overflow: hidden;
+      width: 200px;
+      height: 8px;
+    }
+    #progress-bar {
+      height: 100%;
+      background: linear-gradient(90deg, #ff4466, #ffcc00, #66ff99);
+      transition: width 0.3s;
+      width: 0%;
+    }
+    #targets-label { font-size: 0.85rem; color: #99aacc; }
+
+    #btn-row {
+      display: flex;
+      gap: 0.5rem;
+    }
+    .action-btn {
+      background: #1a1a3a;
+      border: 2px solid #334;
+      border-radius: 8px;
+      color: #ccd;
+      cursor: pointer;
+      padding: 0.4rem 1rem;
+      font-size: 0.85rem;
+      transition: all 0.15s;
+    }
+    .action-btn:hover { border-color: #668; }
+    #btn-reset { border-color: #ff6633; }
+    #btn-reset:hover { background: #2a1a0a; color: #ff9966; }
+
+    /* ---- OVERLAYS ---- */
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(8,8,26,0.93);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 1.2rem;
+      z-index: 100;
+      padding: 1.5rem;
+    }
+    .overlay.hidden { display: none; }
+
+    .overlay h2 {
+      font-size: 2rem;
+      text-align: center;
+    }
+    .overlay p {
+      font-size: 1rem;
+      color: #aabbc8;
+      text-align: center;
+      max-width: 380px;
+      line-height: 1.6;
+    }
+
+    .big-btn {
+      background: linear-gradient(135deg, #1a2a4a, #2a1a4a);
+      border: 2px solid #4466aa;
+      border-radius: 10px;
+      color: #ddeeff;
+      cursor: pointer;
+      padding: 0.8rem 2rem;
+      font-size: 1.1rem;
+      transition: all 0.2s;
+      min-width: 160px;
+      text-align: center;
+    }
+    .big-btn:hover { border-color: #88aaff; background: #2a3a5a; transform: translateY(-1px); }
+    .big-btn.primary { border-color: #ffcc00; color: #ffcc00; }
+    .big-btn.primary:hover { background: #2a2a1a; }
+
+    /* color swatches in legend */
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      justify-content: center;
+      max-width: 380px;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+      font-size: 0.78rem;
+      color: #99aacc;
+    }
+    .swatch {
+      width: 14px;
+      height: 14px;
+      border-radius: 3px;
+      border: 1px solid #446;
+      flex-shrink: 0;
+    }
+
+    .win-stars {
+      font-size: 2rem;
+      letter-spacing: 0.3rem;
+    }
+
+    /* Level dots */
+    #level-dots {
+      display: flex;
+      gap: 6px;
+    }
+    .ldot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #223;
+      border: 1px solid #446;
+      transition: background 0.2s;
+    }
+    .ldot.done { background: #66ff99; border-color: #66ff99; }
+    .ldot.current { background: #ffcc00; border-color: #ffcc00; }
+  </style>
+</head>
+<body>
+  <div class="back-bar"><a href="/">← <span data-i18n="back">Zurück</span></a></div>
+
+  <div id="app">
+    <h1>🌈 Chroma Split</h1>
+
+    <div id="level-info">
+      <div class="level-badge" id="level-label">Level 1/8</div>
+      <div id="level-dots"></div>
+    </div>
+
+    <div id="instructions" data-i18n-html="instructions"></div>
+
+    <div id="toolbar">
+      <button class="tool-btn active" data-tool="mirror-slash" id="btn-slash">/ <span data-i18n="mirror">Spiegel</span></button>
+      <button class="tool-btn" data-tool="mirror-back" id="btn-back">\ <span data-i18n="mirror">Spiegel</span></button>
+      <button class="tool-btn" data-tool="splitter" id="btn-split">✦ <span data-i18n="splitter">Splitter</span></button>
+      <button class="tool-btn erase" data-tool="erase" id="btn-erase">✕ <span data-i18n="erase">Löschen</span></button>
+    </div>
+
+    <div id="grid-container">
+      <canvas id="gameCanvas"></canvas>
+    </div>
+
+    <div id="hud">
+      <span id="targets-label">
+        <span data-i18n="targets">Ziele</span>: <b id="targets-done">0</b>/<b id="targets-total">0</b>
+      </span>
+      <div id="progress-bar-wrap"><div id="progress-bar"></div></div>
+      <span id="mirrors-left">
+        <span data-i18n="mirrors_left">Spiegel</span>: <b id="mirrors-count">0</b>
+      </span>
+    </div>
+
+    <div id="btn-row">
+      <button class="action-btn" id="btn-reset" data-i18n="reset">↺ Reset</button>
+      <button class="action-btn" id="btn-hint" data-i18n="hint">💡 Hinweis</button>
+    </div>
+  </div>
+
+  <!-- Start Screen -->
+  <div class="overlay" id="overlay-start">
+    <h2>🌈 Chroma Split</h2>
+    <p data-i18n="intro_text"></p>
+    <div class="legend" id="legend-colors"></div>
+    <p style="font-size:0.8rem;color:#667" data-i18n="intro_tip"></p>
+    <button class="big-btn primary" id="btn-play" data-i18n="play">Spielen</button>
+  </div>
+
+  <!-- Win Screen -->
+  <div class="overlay hidden" id="overlay-win">
+    <h2 data-i18n="win_title">🎉 Gelöst!</h2>
+    <div class="win-stars" id="win-stars">⭐⭐⭐</div>
+    <p id="win-msg"></p>
+    <button class="big-btn primary" id="btn-next" data-i18n="next_level">Nächstes Level →</button>
+    <button class="big-btn" id="btn-replay" data-i18n="replay">Wiederholen</button>
+  </div>
+
+  <!-- Game Complete Screen -->
+  <div class="overlay hidden" id="overlay-complete">
+    <h2>🏆</h2>
+    <h2 data-i18n="complete_title">Alle Level gelöst!</h2>
+    <p data-i18n="complete_msg"></p>
+    <button class="big-btn primary" id="btn-restart" data-i18n="play_again">Von vorne</button>
+  </div>
+
+  <script src="/shared/i18n.js"></script>
+  <script src="game-logic.js"></script>
+  <script>
+  // =========================================================
+  // TRANSLATIONS
+  // =========================================================
+  const TRANSLATIONS = {
+    de: {
+      back: 'Zurück',
+      mirror: 'Spiegel',
+      splitter: 'Splitter',
+      erase: 'Löschen',
+      targets: 'Ziele',
+      mirrors_left: 'Spiegel übrig',
+      reset: '↺ Reset',
+      hint: '💡 Hinweis',
+      instructions: 'Platziere Spiegel (\\/) und Splitter (✦) um die Lichtstrahlen umzulenken. Mische Farben: R+G=Gelb, R+B=Magenta, G+B=Cyan. Beleuchte alle 🎯 Ziele mit der richtigen Farbe!',
+      intro_text: 'Leite farbige Lichtstrahlen durch dein Spiegel-Netzwerk! Lasse Rot, Grün und Blau sich mischen um neue Farben zu erzeugen. Beleuchte alle Ziele in der richtigen Farbe um das Level zu lösen.',
+      intro_tip: 'Klicke auf ein Feld um einen Spiegel zu platzieren. Klicke nochmal um umzuschalten.',
+      play: '▶ Spielen',
+      win_title: '✨ Gelöst!',
+      next_level: 'Nächstes Level →',
+      replay: '↺ Wiederholen',
+      complete_title: 'Alle Level gemeistert!',
+      complete_msg: 'Du hast alle 8 Level von Chroma Split gelöst. Ein echter Lichtkünstler!',
+      play_again: 'Nochmal spielen',
+      stars_3: 'Perfekt! Minimale Spiegel!',
+      stars_2: 'Gut gelöst!',
+      stars_1: 'Level geschafft!',
+      hint_msg: 'Tipp: ',
+    },
+    en: {
+      back: 'Back',
+      mirror: 'Mirror',
+      splitter: 'Splitter',
+      erase: 'Erase',
+      targets: 'Targets',
+      mirrors_left: 'Mirrors left',
+      reset: '↺ Reset',
+      hint: '💡 Hint',
+      instructions: 'Place mirrors (\\/) and splitters (✦) to redirect light beams. Mix colors: R+G=Yellow, R+B=Magenta, G+B=Cyan. Illuminate all 🎯 targets with the correct color!',
+      intro_text: 'Guide colored light beams through your mirror network! Let Red, Green and Blue mix to create new colors. Illuminate all targets with the right color to solve each level.',
+      intro_tip: 'Click a cell to place a mirror. Click again to toggle type.',
+      play: '▶ Play',
+      win_title: '✨ Solved!',
+      next_level: 'Next Level →',
+      replay: '↺ Replay',
+      complete_title: 'All Levels Mastered!',
+      complete_msg: 'You solved all 8 levels of Chroma Split. A true light artist!',
+      play_again: 'Play Again',
+      stars_3: 'Perfect! Minimal mirrors used!',
+      stars_2: 'Well solved!',
+      stars_1: 'Level complete!',
+      hint_msg: 'Hint: ',
+    },
+    fr: {
+      back: 'Retour',
+      mirror: 'Miroir',
+      splitter: 'Diviseur',
+      erase: 'Effacer',
+      targets: 'Cibles',
+      mirrors_left: 'Miroirs restants',
+      reset: '↺ Reset',
+      hint: '💡 Indice',
+      instructions: 'Place des miroirs (\\/) et diviseurs (✦) pour rediriger les faisceaux. Mélange: R+G=Jaune, R+B=Magenta, G+B=Cyan. Illumine toutes les 🎯 cibles avec la bonne couleur!',
+      intro_text: 'Guide des faisceaux lumineux colorés à travers ton réseau de miroirs ! Laisse Rouge, Vert et Bleu se mélanger pour créer de nouvelles couleurs. Illumine toutes les cibles avec la bonne couleur.',
+      intro_tip: 'Clique sur une cellule pour placer un miroir. Clique encore pour changer de type.',
+      play: '▶ Jouer',
+      win_title: '✨ Résolu !',
+      next_level: 'Niveau suivant →',
+      replay: '↺ Rejouer',
+      complete_title: 'Tous les niveaux maîtrisés !',
+      complete_msg: 'Tu as résolu les 8 niveaux de Chroma Split. Un vrai artiste de la lumière !',
+      play_again: 'Rejouer',
+      stars_3: 'Parfait ! Miroirs minimaux !',
+      stars_2: 'Bien résolu !',
+      stars_1: 'Niveau terminé !',
+      hint_msg: 'Indice : ',
+    },
+    it: {
+      back: 'Indietro',
+      mirror: 'Specchio',
+      splitter: 'Splitter',
+      erase: 'Cancella',
+      targets: 'Obiettivi',
+      mirrors_left: 'Specchi rimasti',
+      reset: '↺ Reset',
+      hint: '💡 Suggerimento',
+      instructions: 'Posiziona specchi (\\/) e splitter (✦) per reindirizzare i raggi. Mescola: R+G=Giallo, R+B=Magenta, G+B=Ciano. Illumina tutti i 🎯 obiettivi con il colore giusto!',
+      intro_text: 'Guida raggi di luce colorati attraverso la tua rete di specchi! Lascia che Rosso, Verde e Blu si mescolino per creare nuovi colori. Illumina tutti gli obiettivi con il colore giusto.',
+      intro_tip: 'Clicca su una cella per posizionare uno specchio. Clicca di nuovo per cambiare tipo.',
+      play: '▶ Gioca',
+      win_title: '✨ Risolto!',
+      next_level: 'Livello successivo →',
+      replay: '↺ Rigioca',
+      complete_title: 'Tutti i livelli completati!',
+      complete_msg: 'Hai risolto tutti gli 8 livelli di Chroma Split. Un vero artista della luce!',
+      play_again: 'Rigioca',
+      stars_3: 'Perfetto! Specchi minimi usati!',
+      stars_2: 'Ben risolto!',
+      stars_1: 'Livello completato!',
+      hint_msg: 'Suggerimento: ',
+    },
+    es: {
+      back: 'Volver',
+      mirror: 'Espejo',
+      splitter: 'Divisor',
+      erase: 'Borrar',
+      targets: 'Objetivos',
+      mirrors_left: 'Espejos restantes',
+      reset: '↺ Reset',
+      hint: '💡 Pista',
+      instructions: 'Coloca espejos (\\/) y divisores (✦) para redirigir los rayos de luz. Mezcla: R+G=Amarillo, R+B=Magenta, G+B=Cian. ¡Ilumina todos los 🎯 objetivos con el color correcto!',
+      intro_text: 'Guía rayos de luz de colores por tu red de espejos. Deja que Rojo, Verde y Azul se mezclen para crear nuevos colores. Ilumina todos los objetivos con el color correcto para resolver cada nivel.',
+      intro_tip: 'Haz clic en una celda para colocar un espejo. Haz clic de nuevo para cambiar el tipo.',
+      play: '▶ Jugar',
+      win_title: '✨ ¡Resuelto!',
+      next_level: 'Siguiente nivel →',
+      replay: '↺ Repetir',
+      complete_title: '¡Todos los niveles superados!',
+      complete_msg: '¡Has resuelto los 8 niveles de Chroma Split. ¡Un verdadero artista de la luz!',
+      play_again: 'Jugar de nuevo',
+      stars_3: '¡Perfecto! ¡Espejos mínimos!',
+      stars_2: '¡Bien resuelto!',
+      stars_1: '¡Nivel completado!',
+      hint_msg: 'Pista: ',
+    },
+  };
+
+  const { t, onLangChange, translatePage } = initI18n(TRANSLATIONS);
+
+  // =========================================================
+  // LEVELS
+  // =========================================================
+  // Format: emitters have row/col/dir/color, mirrors are fixed
+  // targets have row/col/color, maxMirrors is the par
+  // parMirrors: optimal solution count (3 stars if <= par)
+  
+  const LEVELS = [
+    // Level 1 — Tutorial: single red beam, one mirror needed
+    {
+      rows: 5, cols: 7,
+      emitters: [{ row: 4, col: 0, dir: 0, color: 1 }], // RED going RIGHT
+      fixedMirrors: {},
+      walls: [],
+      targets: [{ row: 0, col: 3, color: 1 }], // RED target top
+      maxMirrors: 3,
+      parMirrors: 2,
+      hint: { de: 'Leite den roten Strahl mit einem / Spiegel nach oben.', en: 'Redirect the red beam upward with a / mirror.', fr: 'Redirige le faisceau rouge vers le haut avec un miroir /.', it: 'Reindirizza il raggio rosso verso l\'alto con uno specchio /.', es: 'Redirige el rayo rojo hacia arriba con un espejo /.' },
+    },
+    // Level 2 — Two beams, mix to yellow
+    {
+      rows: 6, cols: 7,
+      emitters: [
+        { row: 5, col: 0, dir: 0, color: 1 },  // RED right
+        { row: 0, col: 6, dir: 2, color: 2 },  // GREEN left
+      ],
+      fixedMirrors: {},
+      walls: [],
+      targets: [{ row: 5, col: 6, color: 3 }], // YELLOW (R+G)
+      maxMirrors: 4,
+      parMirrors: 2,
+      hint: { de: 'Bringe Rot und Grün zusammen um Gelb zu mischen.', en: 'Bring red and green together to mix yellow.', fr: 'Amène rouge et vert ensemble pour mélanger du jaune.', it: 'Unisci rosso e verde per mescolare il giallo.', es: 'Une rojo y verde para mezclar amarillo.' },
+    },
+    // Level 3 — Blue beam, mix magenta
+    {
+      rows: 6, cols: 7,
+      emitters: [
+        { row: 0, col: 0, dir: 1, color: 1 },  // RED down
+        { row: 5, col: 6, dir: 3, color: 4 },  // BLUE up
+      ],
+      fixedMirrors: { '2,4': '/' }, // fixed mirror hint
+      walls: [[2, 2], [3, 2]],
+      targets: [
+        { row: 5, col: 3, color: 5 }, // MAGENTA (R+B)
+      ],
+      maxMirrors: 3,
+      parMirrors: 2,
+      hint: { de: 'Mische Rot und Blau für Magenta.', en: 'Mix red and blue for magenta.', fr: 'Mélange rouge et bleu pour le magenta.', it: 'Mescola rosso e blu per il magenta.', es: 'Mezcla rojo y azul para el magenta.' },
+    },
+    // Level 4 — Three targets, different colors
+    {
+      rows: 7, cols: 8,
+      emitters: [
+        { row: 6, col: 0, dir: 0, color: 1 },  // RED right
+        { row: 0, col: 7, dir: 1, color: 2 },  // GREEN down
+        { row: 3, col: 0, dir: 0, color: 4 },  // BLUE right
+      ],
+      fixedMirrors: {},
+      walls: [[2, 4], [4, 4]],
+      targets: [
+        { row: 6, col: 7, color: 1 },   // RED
+        { row: 6, col: 4, color: 3 },   // YELLOW (R+G)
+        { row: 3, col: 7, color: 6 },   // CYAN (G+B)
+      ],
+      maxMirrors: 5,
+      parMirrors: 4,
+      hint: { de: 'Jeder Strahl muss sein Ziel treffen, manche müssen sich kreuzen.', en: 'Each beam must reach its target, some must cross paths.', fr: 'Chaque faisceau doit atteindre sa cible, certains doivent se croiser.', it: 'Ogni raggio deve raggiungere il suo obiettivo, alcuni devono incrociarsi.', es: 'Cada rayo debe alcanzar su objetivo, algunos deben cruzarse.' },
+    },
+    // Level 5 — Use splitter to split blue into two paths
+    {
+      rows: 7, cols: 9,
+      emitters: [
+        { row: 3, col: 0, dir: 0, color: 4 },  // BLUE right
+        { row: 0, col: 4, dir: 1, color: 1 },  // RED down
+      ],
+      fixedMirrors: { '3,4': 'S' }, // fixed splitter in middle
+      walls: [[1, 2], [5, 6]],
+      targets: [
+        { row: 0, col: 4, color: 4 },  // wait - emitter is here too — fix:
+        // targets at blue's split destinations + red mix
+      ],
+      maxMirrors: 4,
+      parMirrors: 3,
+      hint: { de: 'Der Splitter teilt deinen Strahl in drei Richtungen.', en: 'The splitter divides your beam into three directions.', fr: 'Le diviseur divise ton faisceau en trois directions.', it: 'Lo splitter divide il tuo raggio in tre direzioni.', es: 'El divisor divide tu rayo en tres direcciones.' },
+    },
+    // Level 6 — White light! Mix all three
+    {
+      rows: 8, cols: 9,
+      emitters: [
+        { row: 7, col: 0, dir: 0, color: 1 },  // RED right
+        { row: 7, col: 8, dir: 3, color: 2 },  // GREEN up
+        { row: 0, col: 4, dir: 1, color: 4 },  // BLUE down
+      ],
+      fixedMirrors: {},
+      walls: [[3, 1], [3, 7], [5, 3], [5, 5]],
+      targets: [
+        { row: 7, col: 4, color: 7 },  // WHITE (R+G+B)
+        { row: 3, col: 4, color: 3 },  // YELLOW side target
+      ],
+      maxMirrors: 6,
+      parMirrors: 5,
+      hint: { de: 'Bringe Rot, Grün und Blau alle zum selben Punkt für Weiß!', en: 'Bring red, green and blue all to the same point for white!', fr: 'Amène rouge, vert et bleu au même point pour le blanc!', it: 'Porta rosso, verde e blu allo stesso punto per il bianco!', es: '¡Lleva rojo, verde y azul al mismo punto para el blanco!' },
+    },
+    // Level 7 — Complex maze with walls
+    {
+      rows: 8, cols: 10,
+      emitters: [
+        { row: 0, col: 0, dir: 0, color: 1 },  // RED right
+        { row: 0, col: 9, dir: 1, color: 2 },  // GREEN down
+        { row: 7, col: 9, dir: 2, color: 4 },  // BLUE left
+      ],
+      fixedMirrors: { '4,4': '/' },
+      walls: [[2,2],[2,7],[4,2],[4,7],[6,2],[6,7]],
+      targets: [
+        { row: 0, col: 5, color: 3 },   // YELLOW
+        { row: 7, col: 0, color: 4 },   // BLUE
+        { row: 3, col: 9, color: 6 },   // CYAN (G+B)
+      ],
+      maxMirrors: 6,
+      parMirrors: 5,
+      hint: { de: 'Beachte die Wände: manche Pfade sind blockiert.', en: 'Mind the walls: some paths are blocked.', fr: 'Attention aux murs : certains chemins sont bloqués.', it: 'Attenzione ai muri: alcuni percorsi sono bloccati.', es: 'Cuidado con las paredes: algunos caminos están bloqueados.' },
+    },
+    // Level 8 — The Grand Finale
+    {
+      rows: 9, cols: 10,
+      emitters: [
+        { row: 0, col: 0, dir: 0, color: 1 },  // RED right
+        { row: 8, col: 0, dir: 0, color: 2 },  // GREEN right
+        { row: 0, col: 9, dir: 1, color: 4 },  // BLUE down
+        { row: 4, col: 9, dir: 2, color: 1 },  // RED left (2nd)
+      ],
+      fixedMirrors: { '4,4': 'S', '0,5': '\\' },
+      walls: [[2,2],[2,7],[6,2],[6,7],[4,2],[4,6]],
+      targets: [
+        { row: 0, col: 9, color: 5 },  // MAGENTA (R+B) — emitter row
+        { row: 8, col: 5, color: 3 },  // YELLOW (R+G)
+        { row: 4, col: 0, color: 6 },  // CYAN
+        { row: 8, col: 9, color: 7 },  // WHITE
+      ],
+      maxMirrors: 8,
+      parMirrors: 6,
+      hint: { de: 'Das finale Level! Plane jeden Strahl sorgfältig.', en: 'The final level! Plan each beam carefully.', fr: 'Le niveau final ! Planifie chaque faisceau soigneusement.', it: 'Il livello finale! Pianifica ogni raggio con cura.', es: '¡El nivel final! Planea cada rayo con cuidado.' },
+    },
+  ];
+
+  // Clean up Level 5 targets (fix the emitter collision):
+  LEVELS[4].targets = [
+    { row: 3, col: 8, color: 4 },   // BLUE far right
+    { row: 6, col: 4, color: 5 },   // MAGENTA (R+B) at splitter cross with red going down
+    { row: 0, col: 4, color: 1 },   // RED above (emitter is at 0,4 going down, target at 3,4 splits)
+  ];
+  // Actually re-think level 5 for playability:
+  LEVELS[4] = {
+    rows: 7, cols: 9,
+    emitters: [
+      { row: 3, col: 0, dir: 0, color: 4 },  // BLUE right
+      { row: 0, col: 2, dir: 1, color: 1 },  // RED down
+    ],
+    fixedMirrors: { '3,5': 'S' },
+    walls: [[1,5],[5,3]],
+    targets: [
+      { row: 3, col: 8, color: 4 },  // BLUE far right (passed through splitter)
+      { row: 0, col: 5, color: 4 },  // BLUE up from splitter
+      { row: 6, col: 5, color: 4 },  // BLUE down from splitter
+    ],
+    maxMirrors: 4,
+    parMirrors: 2,
+    hint: { de: 'Der Splitter teilt den Strahl in alle Richtungen — du brauchst weniger Spiegel als gedacht!', en: 'The splitter fans the beam in all directions — you need fewer mirrors than you think!', fr: 'Le diviseur répartit le faisceau — tu as besoin de moins de miroirs que tu ne le crois!', it: 'Lo splitter distribuisce il raggio — hai bisogno di meno specchi di quanto pensi!', es: 'El divisor distribuye el rayo en todas direcciones — ¡necesitas menos espejos de lo que crees!' },
+  };
+
+  // Fix level 8 targets: the BLUE emitter starts at (0,9), so that cell can't be a MAGENTA target
+  LEVELS[7].targets = [
+    { row: 5, col: 9, color: 5 },  // MAGENTA
+    { row: 8, col: 5, color: 3 },  // YELLOW
+    { row: 4, col: 0, color: 6 },  // CYAN
+    { row: 8, col: 9, color: 7 },  // WHITE
+  ];
+
+  // =========================================================
+  // GAME STATE
+  // =========================================================
+  let currentLevel = 0;
+  let activeTool = 'mirror-slash';
+  let placedMirrors = {}; // user-placed: key->"/" or "\\" or "S"
+  let levelDone = new Array(LEVELS.length).fill(false);
+
+  // =========================================================
+  // CANVAS SETUP
+  // =========================================================
+  const canvas = document.getElementById('gameCanvas');
+  const ctx = canvas.getContext('2d');
+  const CELL = 52; // px per cell
+  const PAD = 2;
+
+  function setupCanvas(rows, cols) {
+    const w = cols * CELL + PAD * 2;
+    const h = rows * CELL + PAD * 2;
+    canvas.width = w;
+    canvas.height = h;
+    // Scale for high DPI
+    const scale = window.devicePixelRatio || 1;
+    canvas.style.width = w + 'px';
+    canvas.style.height = h + 'px';
+  }
+
+  // =========================================================
+  // DRAW
+  // =========================================================
+  const COLOR_HEX_MAP = {
+    0: null,
+    1: '#ff3333',
+    2: '#33ee66',
+    3: '#ffee00',
+    4: '#3399ff',
+    5: '#ff33ff',
+    6: '#00ffee',
+    7: '#ffffff',
+  };
+  const COLOR_GLOW = {
+    1: 'rgba(255,60,60,0.6)',
+    2: 'rgba(50,240,100,0.6)',
+    3: 'rgba(255,230,0,0.6)',
+    4: 'rgba(50,150,255,0.6)',
+    5: 'rgba(255,50,255,0.6)',
+    6: 'rgba(0,240,220,0.6)',
+    7: 'rgba(255,255,255,0.6)',
+  };
+
+  function getCellPos(r, c) {
+    return {
+      x: PAD + c * CELL,
+      y: PAD + r * CELL,
+    };
+  }
+
+  function drawGrid(state, colorGrid) {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    const { rows, cols, emitters, fixedMirrors, walls = [], targets } = state;
+    const allMirrors = { ...fixedMirrors, ...placedMirrors };
+
+    // Background cells
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        const { x, y } = getCellPos(r, c);
+        const isWall = (walls || []).some(([wr, wc]) => wr === r && wc === c);
+
+        if (isWall) {
+          ctx.fillStyle = '#222244';
+          ctx.fillRect(x, y, CELL, CELL);
+          ctx.fillStyle = '#334466';
+          ctx.fillRect(x + 3, y + 3, CELL - 6, CELL - 6);
+          // Draw wall texture
+          ctx.strokeStyle = '#445';
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          for (let i = 0; i < 4; i++) {
+            ctx.moveTo(x + 3, y + 3 + i * 12);
+            ctx.lineTo(x + CELL - 3, y + 3 + i * 12);
+          }
+          ctx.stroke();
+          continue;
+        }
+
+        // Base cell
+        ctx.fillStyle = '#0d0d28';
+        ctx.fillRect(x, y, CELL, CELL);
+
+        // Grid line
+        ctx.strokeStyle = '#1a1a44';
+        ctx.lineWidth = 0.5;
+        ctx.strokeRect(x, y, CELL, CELL);
+
+        // Color beam overlay
+        const beamColor = colorGrid[r][c];
+        if (beamColor) {
+          const hex = COLOR_HEX_MAP[beamColor];
+          if (hex) {
+            const gradient = ctx.createRadialGradient(
+              x + CELL/2, y + CELL/2, 2,
+              x + CELL/2, y + CELL/2, CELL * 0.6
+            );
+            gradient.addColorStop(0, hex + 'cc');
+            gradient.addColorStop(1, hex + '22');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(x, y, CELL, CELL);
+
+            // Beam line effect
+            ctx.fillStyle = hex + '55';
+            ctx.fillRect(x + CELL * 0.35, y, CELL * 0.3, CELL);
+            ctx.fillRect(x, y + CELL * 0.35, CELL, CELL * 0.3);
+          }
+        }
+      }
+    }
+
+    // Draw targets
+    for (const tgt of targets) {
+      const { x, y } = getCellPos(tgt.row, tgt.col);
+      const hex = COLOR_HEX_MAP[tgt.color] || '#fff';
+      const actual = colorGrid[tgt.row][tgt.col];
+      const satisfied = actual === tgt.color;
+
+      // Outer ring
+      ctx.strokeStyle = hex;
+      ctx.lineWidth = satisfied ? 3 : 2;
+      ctx.setLineDash(satisfied ? [] : [4, 3]);
+      ctx.beginPath();
+      ctx.arc(x + CELL/2, y + CELL/2, CELL * 0.38, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Glow when satisfied
+      if (satisfied) {
+        ctx.shadowColor = hex;
+        ctx.shadowBlur = 18;
+        ctx.strokeStyle = hex;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(x + CELL/2, y + CELL/2, CELL * 0.38, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+      }
+
+      // Inner fill when satisfied
+      if (satisfied) {
+        ctx.fillStyle = hex + '44';
+        ctx.beginPath();
+        ctx.arc(x + CELL/2, y + CELL/2, CELL * 0.32, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Target icon
+      ctx.fillStyle = satisfied ? hex : hex + '88';
+      ctx.font = `${CELL * 0.38}px system-ui`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('🎯', x + CELL/2, y + CELL/2);
+    }
+
+    // Draw emitters
+    const emitterDirArrow = ['→', '↓', '←', '↑'];
+    for (const em of emitters) {
+      const { x, y } = getCellPos(em.row, em.col);
+      const hex = COLOR_HEX_MAP[em.color];
+
+      // Emitter body
+      ctx.fillStyle = hex + '44';
+      ctx.strokeStyle = hex;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.roundRect(x + 4, y + 4, CELL - 8, CELL - 8, 6);
+      ctx.fill();
+      ctx.stroke();
+
+      // Glow
+      ctx.shadowColor = hex;
+      ctx.shadowBlur = 12;
+      ctx.strokeStyle = hex;
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.roundRect(x + 4, y + 4, CELL - 8, CELL - 8, 6);
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+
+      // Arrow direction
+      ctx.fillStyle = hex;
+      ctx.font = `${CELL * 0.42}px system-ui`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(emitterDirArrow[em.dir], x + CELL/2, y + CELL/2);
+    }
+
+    // Draw fixed mirrors (lighter shade)
+    for (const [key, type] of Object.entries(fixedMirrors)) {
+      const [r, c] = key.split(',').map(Number);
+      drawMirrorCell(r, c, type, true);
+    }
+
+    // Draw placed mirrors
+    for (const [key, type] of Object.entries(placedMirrors)) {
+      const [r, c] = key.split(',').map(Number);
+      drawMirrorCell(r, c, type, false);
+    }
+  }
+
+  function drawMirrorCell(r, c, type, isFixed) {
+    const { x, y } = getCellPos(r, c);
+    const cx = x + CELL / 2;
+    const cy = y + CELL / 2;
+    const r2 = CELL * 0.38;
+
+    // Background circle
+    ctx.fillStyle = isFixed ? '#1a1a44' : '#1a2a1a';
+    ctx.beginPath();
+    ctx.arc(cx, cy, r2, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.strokeStyle = isFixed ? '#6677ff' : '#44ff88';
+    ctx.lineWidth = isFixed ? 1.5 : 2;
+    ctx.beginPath();
+    ctx.arc(cx, cy, r2, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // Draw symbol
+    ctx.strokeStyle = isFixed ? '#aabbff' : '#88ffcc';
+    ctx.lineWidth = isFixed ? 2 : 2.5;
+
+    if (type === '/') {
+      ctx.beginPath();
+      ctx.moveTo(x + CELL * 0.28, y + CELL * 0.72);
+      ctx.lineTo(x + CELL * 0.72, y + CELL * 0.28);
+      ctx.stroke();
+    } else if (type === '\\') {
+      ctx.beginPath();
+      ctx.moveTo(x + CELL * 0.28, y + CELL * 0.28);
+      ctx.lineTo(x + CELL * 0.72, y + CELL * 0.72);
+      ctx.stroke();
+    } else if (type === 'S') {
+      // Draw asterisk/star
+      for (let a = 0; a < 4; a++) {
+        const angle = (a * Math.PI) / 4;
+        ctx.beginPath();
+        ctx.moveTo(cx - Math.cos(angle) * r2 * 0.7, cy - Math.sin(angle) * r2 * 0.7);
+        ctx.lineTo(cx + Math.cos(angle) * r2 * 0.7, cy + Math.sin(angle) * r2 * 0.7);
+        ctx.stroke();
+      }
+    }
+
+    // Lock icon for fixed
+    if (isFixed) {
+      ctx.fillStyle = '#6677ff88';
+      ctx.font = `${CELL * 0.22}px system-ui`;
+      ctx.textAlign = 'right';
+      ctx.textBaseline = 'bottom';
+      ctx.fillText('🔒', x + CELL - 3, y + CELL - 3);
+    }
+  }
+
+  // =========================================================
+  // GAME LOGIC BRIDGE
+  // =========================================================
+  function getCurrentLevelState() {
+    const lvl = LEVELS[currentLevel];
+    const allMirrors = { ...lvl.fixedMirrors, ...placedMirrors };
+    return {
+      rows: lvl.rows,
+      cols: lvl.cols,
+      emitters: lvl.emitters,
+      mirrors: allMirrors,
+      walls: lvl.walls || [],
+      targets: lvl.targets,
+    };
+  }
+
+  function computeAndDraw() {
+    const state = getCurrentLevelState();
+    const colorGrid = propagateBeams(state);
+    drawGrid(LEVELS[currentLevel], colorGrid);
+    updateHUD(state, colorGrid);
+    return { state, colorGrid };
+  }
+
+  function updateHUD(state, colorGrid) {
+    const lvl = LEVELS[currentLevel];
+    const satisfied = state.targets.filter(t => colorGrid[t.row][t.col] === t.color).length;
+    const total = state.targets.length;
+
+    document.getElementById('targets-done').textContent = satisfied;
+    document.getElementById('targets-total').textContent = total;
+
+    const pct = total > 0 ? (satisfied / total) * 100 : 0;
+    document.getElementById('progress-bar').style.width = pct + '%';
+
+    const placed = countPlacedMirrors(placedMirrors, []);
+    const remaining = lvl.maxMirrors - placed;
+    document.getElementById('mirrors-count').textContent = remaining;
+
+    // Check win
+    if (satisfied === total) {
+      setTimeout(() => triggerWin(), 300);
+    }
+  }
+
+  function triggerWin() {
+    const lvl = LEVELS[currentLevel];
+    const placed = countPlacedMirrors(placedMirrors, []);
+    const stars = placed <= lvl.parMirrors ? 3 : placed <= lvl.parMirrors + 2 ? 2 : 1;
+    const starsStr = '⭐'.repeat(stars) + '☆'.repeat(3 - stars);
+
+    levelDone[currentLevel] = true;
+    updateLevelDots();
+
+    document.getElementById('win-stars').textContent = starsStr;
+    document.getElementById('win-msg').textContent =
+      t(stars === 3 ? 'stars_3' : stars === 2 ? 'stars_2' : 'stars_1') +
+      ` (${placed} ${t('mirror')}${placed !== 1 ? 's' : ''})`;
+
+    const isLast = currentLevel >= LEVELS.length - 1;
+    document.getElementById('btn-next').style.display = isLast ? 'none' : '';
+
+    document.getElementById('overlay-win').classList.remove('hidden');
+  }
+
+  // =========================================================
+  // CANVAS INTERACTION
+  // =========================================================
+  function getCell(evt) {
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    const mx = (evt.clientX - rect.left) * scaleX;
+    const my = (evt.clientY - rect.top) * scaleY;
+    const c = Math.floor((mx - PAD) / CELL);
+    const r = Math.floor((my - PAD) / CELL);
+    return { r, c };
+  }
+
+  function isCellFree(r, c) {
+    const lvl = LEVELS[currentLevel];
+    // Not out of bounds
+    if (r < 0 || r >= lvl.rows || c < 0 || c >= lvl.cols) return false;
+    // Not a wall
+    if ((lvl.walls || []).some(([wr, wc]) => wr === r && wc === c)) return false;
+    // Not an emitter
+    if (lvl.emitters.some(e => e.row === r && e.col === c)) return false;
+    // Not a target (can place over target though)
+    // Not a fixed mirror
+    if (lvl.fixedMirrors[`${r},${c}`]) return false;
+    return true;
+  }
+
+  canvas.addEventListener('click', (evt) => {
+    const { r, c } = getCell(evt);
+    const key = `${r},${c}`;
+
+    if (activeTool === 'erase') {
+      delete placedMirrors[key];
+    } else {
+      if (!isCellFree(r, c)) return;
+
+      const toolToMirror = {
+        'mirror-slash': '/',
+        'mirror-back': '\\',
+        'splitter': 'S',
+      };
+      const mirrorType = toolToMirror[activeTool];
+      if (!mirrorType) return;
+
+      const lvl = LEVELS[currentLevel];
+      const placed = countPlacedMirrors(placedMirrors, []);
+
+      // If already placed here, toggle or remove
+      if (placedMirrors[key]) {
+        // cycle: / -> \ -> S -> remove
+        const cycle = { '/': '\\', '\\': 'S', 'S': null };
+        const next = cycle[placedMirrors[key]];
+        if (next) placedMirrors[key] = next;
+        else delete placedMirrors[key];
+      } else {
+        // Check max mirrors
+        if (placed >= lvl.maxMirrors) return;
+        placedMirrors[key] = mirrorType;
+      }
+    }
+
+    computeAndDraw();
+  });
+
+  // =========================================================
+  // TOOLBAR
+  // =========================================================
+  document.querySelectorAll('.tool-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      activeTool = btn.dataset.tool;
+    });
+  });
+
+  // =========================================================
+  // BUTTONS
+  // =========================================================
+  document.getElementById('btn-reset').addEventListener('click', () => {
+    placedMirrors = {};
+    computeAndDraw();
+  });
+
+  document.getElementById('btn-hint').addEventListener('click', () => {
+    const lvl = LEVELS[currentLevel];
+    const lang = document.documentElement.lang || 'de';
+    const hintText = lvl.hint?.[lang] || lvl.hint?.['en'] || '';
+    alert(t('hint_msg') + hintText);
+  });
+
+  document.getElementById('btn-play').addEventListener('click', () => {
+    document.getElementById('overlay-start').classList.add('hidden');
+    loadLevel(0);
+  });
+
+  document.getElementById('btn-next').addEventListener('click', () => {
+    document.getElementById('overlay-win').classList.add('hidden');
+    if (currentLevel < LEVELS.length - 1) {
+      loadLevel(currentLevel + 1);
+    } else {
+      document.getElementById('overlay-complete').classList.remove('hidden');
+    }
+  });
+
+  document.getElementById('btn-replay').addEventListener('click', () => {
+    document.getElementById('overlay-win').classList.add('hidden');
+    placedMirrors = {};
+    computeAndDraw();
+  });
+
+  document.getElementById('btn-restart').addEventListener('click', () => {
+    document.getElementById('overlay-complete').classList.add('hidden');
+    levelDone.fill(false);
+    loadLevel(0);
+  });
+
+  // =========================================================
+  // LEVEL LOADING
+  // =========================================================
+  function loadLevel(idx) {
+    currentLevel = idx;
+    placedMirrors = {};
+    const lvl = LEVELS[idx];
+
+    document.getElementById('level-label').textContent = `Level ${idx + 1}/${LEVELS.length}`;
+    document.getElementById('targets-total').textContent = lvl.targets.length;
+    document.getElementById('mirrors-count').textContent = lvl.maxMirrors;
+
+    setupCanvas(lvl.rows, lvl.cols);
+    updateLevelDots();
+    computeAndDraw();
+  }
+
+  function updateLevelDots() {
+    const dotsEl = document.getElementById('level-dots');
+    dotsEl.innerHTML = '';
+    LEVELS.forEach((_, i) => {
+      const dot = document.createElement('div');
+      dot.className = 'ldot' + (levelDone[i] ? ' done' : '') + (i === currentLevel ? ' current' : '');
+      dotsEl.appendChild(dot);
+    });
+  }
+
+  // =========================================================
+  // LEGEND (color mixing guide in start screen)
+  // =========================================================
+  function buildLegend() {
+    const items = [
+      { color: '#ff3333', label: 'R' },
+      { color: '#33ee66', label: 'G' },
+      { color: '#3399ff', label: 'B' },
+      { color: '#ffee00', label: 'R+G' },
+      { color: '#ff33ff', label: 'R+B' },
+      { color: '#00ffee', label: 'G+B' },
+      { color: '#ffffff', label: 'R+G+B' },
+    ];
+    const legend = document.getElementById('legend-colors');
+    for (const it of items) {
+      const div = document.createElement('div');
+      div.className = 'legend-item';
+      const sw = document.createElement('div');
+      sw.className = 'swatch';
+      sw.style.background = it.color;
+      const lbl = document.createElement('span');
+      lbl.textContent = it.label;
+      div.appendChild(sw);
+      div.appendChild(lbl);
+      legend.appendChild(div);
+    }
+  }
+
+  // =========================================================
+  // INIT
+  // =========================================================
+  buildLegend();
+  // Auto-start if ?autostart param present (for screenshots)
+  if (new URLSearchParams(location.search).has('autostart')) {
+    document.getElementById('overlay-start').classList.add('hidden');
+    // Place a demo mirror for screenshot
+    setTimeout(() => {
+      loadLevel(0);
+      placedMirrors['4,3'] = '/';
+      computeAndDraw();
+    }, 100);
+  }
+  // Render a preview of level 1 in background
+  setupCanvas(LEVELS[0].rows, LEVELS[0].cols);
+  const previewState = {
+    rows: LEVELS[0].rows, cols: LEVELS[0].cols,
+    emitters: LEVELS[0].emitters,
+    mirrors: LEVELS[0].fixedMirrors,
+    walls: LEVELS[0].walls || [],
+    targets: LEVELS[0].targets,
+  };
+  const previewGrid = propagateBeams(previewState);
+  drawGrid(LEVELS[0], previewGrid);
+
+  onLangChange(() => {
+    // Re-translate dynamic content
+  });
+  </script>
+</body>
+</html>
