@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<title>Spell Duel ⚔️</title>
+<style>
+  :root {
+    --fire: #ff4500; --water: #00bfff; --lightning: #ffd700;
+    --nature: #32cd32; --void: #9b59b6; --bg: #0a0a1a;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg); color: #fff;
+    font-family: system-ui, sans-serif; min-height: 100vh;
+    display: flex; flex-direction: column;
+  }
+  .back-bar {
+    width: 100%; background: #0a0a1a; padding: 0.5rem 1rem;
+    border-bottom: 1px solid #333;
+  }
+  .back-bar a { color: #ffcc00; text-decoration: none; font-size: 0.9rem; }
+  .back-bar a:hover { text-decoration: underline; }
+
+  /* ===== SCREENS ===== */
+  .screen { display: none; flex-direction: column; align-items: center;
+    justify-content: center; flex: 1; padding: 1.5rem; gap: 1.2rem; }
+  .screen.active { display: flex; }
+
+  h1 { font-size: 2.4rem; text-align: center; }
+  h2 { font-size: 1.6rem; text-align: center; }
+  .subtitle { opacity: 0.7; text-align: center; font-size: 1rem; max-width: 360px; }
+
+  /* ===== BUTTONS ===== */
+  .btn {
+    background: linear-gradient(135deg, #4a0080, #220040);
+    color: #fff; border: 1px solid #9b59b6; border-radius: 12px;
+    padding: 0.75rem 2rem; font-size: 1.1rem; cursor: pointer;
+    transition: transform 0.1s, box-shadow 0.1s; min-width: 180px;
+  }
+  .btn:active { transform: scale(0.97); }
+  .btn.accent { background: linear-gradient(135deg, #ff4500, #8b0000);
+    border-color: #ff4500; }
+  .btn.big { font-size: 1.3rem; padding: 1rem 2.5rem; }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* ===== SETUP SCREEN ===== */
+  .name-inputs { display: flex; flex-direction: column; gap: 0.8rem; width: 100%; max-width: 340px; }
+  .name-row { display: flex; align-items: center; gap: 0.6rem; }
+  .name-row label { font-size: 1.5rem; }
+  .name-row input {
+    flex: 1; background: #111; border: 1px solid #444; border-radius: 8px;
+    padding: 0.6rem 0.8rem; color: #fff; font-size: 1rem;
+  }
+  .name-row input:focus { outline: none; border-color: #9b59b6; }
+
+  /* ===== BATTLE SCREEN ===== */
+  .battle-layout {
+    display: flex; flex-direction: column; align-items: center;
+    gap: 1rem; width: 100%; max-width: 480px;
+  }
+  .hp-bars { display: flex; justify-content: space-between;
+    width: 100%; gap: 0.5rem; }
+  .hp-panel { flex: 1; background: #111; border-radius: 12px;
+    padding: 0.7rem; text-align: center; border: 1px solid #333; }
+  .hp-panel.p1 { border-color: #ff4500; }
+  .hp-panel.p2 { border-color: #00bfff; }
+  .hp-name { font-size: 0.85rem; opacity: 0.8; margin-bottom: 0.3rem;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .hp-value { font-size: 2rem; font-weight: bold; }
+  .hp-bar-track { background: #222; border-radius: 4px; height: 8px;
+    margin-top: 0.3rem; overflow: hidden; }
+  .hp-bar-fill { height: 100%; border-radius: 4px;
+    transition: width 0.5s ease; }
+  .p1 .hp-bar-fill { background: var(--fire); }
+  .p2 .hp-bar-fill { background: var(--water); }
+
+  .round-indicator {
+    font-size: 0.9rem; opacity: 0.6; text-align: center;
+  }
+  .void-badges { display: flex; gap: 1rem; justify-content: center;
+    font-size: 0.85rem; opacity: 0.7; }
+  .void-badge { padding: 0.2rem 0.6rem; border-radius: 8px;
+    background: #1a001a; border: 1px solid #9b59b6; }
+  .void-badge.used { opacity: 0.35; text-decoration: line-through; }
+
+  /* ===== PICK SCREEN ===== */
+  .pick-header { text-align: center; }
+  .pick-header .wizard-name { font-size: 1.6rem; font-weight: bold; }
+  .pick-header .sub { font-size: 0.9rem; opacity: 0.6; margin-top: 0.2rem; }
+  .spell-grid { display: grid; grid-template-columns: repeat(2, 1fr);
+    gap: 0.8rem; width: 100%; max-width: 360px; }
+  .spell-btn {
+    border: 2px solid #333; border-radius: 14px; padding: 0.9rem;
+    cursor: pointer; background: #0f0f1f;
+    display: flex; flex-direction: column; align-items: center; gap: 0.4rem;
+    transition: transform 0.15s, border-color 0.15s, background 0.15s;
+    font-family: inherit;
+  }
+  .spell-btn:active { transform: scale(0.96); }
+  .spell-btn.selected { border-width: 3px; }
+  .spell-btn .spell-emoji { font-size: 2.2rem; }
+  .spell-btn .spell-name { font-size: 0.85rem; font-weight: bold;
+    color: #fff; }
+  .spell-btn .spell-desc { font-size: 0.7rem; opacity: 0.65;
+    text-align: center; }
+  .spell-btn.disabled { opacity: 0.3; cursor: not-allowed; }
+  .spell-btn.void-btn { grid-column: 1 / -1; }
+
+  .confirm-row { display: flex; gap: 0.8rem; justify-content: center; }
+
+  /* ===== REVEAL SCREEN ===== */
+  .clash-arena { display: flex; justify-content: center;
+    align-items: center; gap: 2rem; width: 100%; max-width: 400px; }
+  .clash-card { display: flex; flex-direction: column; align-items: center;
+    gap: 0.5rem; flex: 1; background: #0f0f1f;
+    border-radius: 16px; padding: 1rem; border: 2px solid #333; }
+  .clash-card .caster { font-size: 0.85rem; opacity: 0.7; }
+  .clash-card .spell-emoji-big { font-size: 3.5rem; }
+  .clash-card .spell-name-big { font-size: 1rem; font-weight: bold; }
+  .clash-vs { font-size: 1.5rem; opacity: 0.5; }
+  .result-banner { font-size: 1.3rem; font-weight: bold;
+    text-align: center; padding: 0.8rem 1.5rem;
+    background: #111; border-radius: 12px; width: 100%; max-width: 360px; }
+  .result-banner.win { color: #ffd700; }
+  .result-banner.draw { color: #aaa; }
+  .damage-labels { display: flex; justify-content: space-around;
+    width: 100%; max-width: 360px; font-size: 0.9rem; }
+  .dmg-label { text-align: center; }
+  .dmg-label .dmg { font-size: 1.4rem; font-weight: bold; }
+  .dmg-label .dmg.hit { color: #ff4500; }
+  .dmg-label .dmg.miss { color: #32cd32; }
+
+  /* ===== GAME OVER ===== */
+  .winner-banner { font-size: 2rem; font-weight: bold;
+    text-align: center; }
+  .final-scores { display: flex; gap: 1.5rem; justify-content: center; }
+  .final-score { text-align: center; }
+  .final-score .score-hp { font-size: 1.6rem; font-weight: bold; }
+  .final-score .score-name { font-size: 0.85rem; opacity: 0.7; }
+
+  /* ===== TRANSITION SCREEN ===== */
+  .handoff-msg { font-size: 1.6rem; text-align: center;
+    line-height: 1.4; }
+  .handoff-emoji { font-size: 4rem; }
+
+  /* ===== SPELL COLORS ===== */
+  .c-fire { color: var(--fire); border-color: var(--fire) !important; }
+  .c-water { color: var(--water); border-color: var(--water) !important; }
+  .c-lightning { color: var(--lightning); border-color: var(--lightning) !important; }
+  .c-nature { color: var(--nature); border-color: var(--nature) !important; }
+  .c-void { color: var(--void); border-color: var(--void) !important; }
+  .bg-fire { background: rgba(255,69,0,0.12) !important; }
+  .bg-water { background: rgba(0,191,255,0.12) !important; }
+  .bg-lightning { background: rgba(255,215,0,0.12) !important; }
+  .bg-nature { background: rgba(50,205,50,0.12) !important; }
+  .bg-void { background: rgba(155,89,182,0.12) !important; }
+
+  .wheel-hint { font-size: 0.75rem; opacity: 0.5; text-align: center;
+    max-width: 300px; line-height: 1.5; }
+
+  @keyframes shake { 0%,100%{transform:translateX(0)} 20%{transform:translateX(-6px)} 60%{transform:translateX(6px)} }
+  @keyframes glow-pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
+  .shake { animation: shake 0.4s ease; }
+  .glow { animation: glow-pulse 0.8s ease 2; }
+</style>
+</head>
+<body>
+<div class="back-bar"><a href="/">← <span data-i18n="back"></span></a></div>
+
+<!-- SETUP SCREEN -->
+<div id="screen-setup" class="screen active">
+  <h1>⚔️ <span data-i18n="title"></span></h1>
+  <p class="subtitle" data-i18n="subtitle"></p>
+  <div class="name-inputs">
+    <div class="name-row">
+      <label>🔥</label>
+      <input id="name-p1" type="text" maxlength="14" data-i18n-placeholder="player1">
+    </div>
+    <div class="name-row">
+      <label>💧</label>
+      <input id="name-p2" type="text" maxlength="14" data-i18n-placeholder="player2">
+    </div>
+  </div>
+  <p class="wheel-hint" data-i18n="wheelHint"></p>
+  <button class="btn big accent" id="btn-start" data-i18n="startDuel"></button>
+</div>
+
+<!-- TRANSITION (handoff) SCREEN -->
+<div id="screen-handoff" class="screen">
+  <div class="handoff-emoji">🧙</div>
+  <p class="handoff-msg" id="handoff-msg"></p>
+  <button class="btn big" id="btn-handoff-ok" data-i18n="imReady"></button>
+</div>
+
+<!-- PICK SCREEN -->
+<div id="screen-pick" class="screen">
+  <div class="pick-header">
+    <div class="wizard-name" id="pick-name"></div>
+    <div class="sub" data-i18n="chooseSpell"></div>
+  </div>
+  <div class="spell-grid" id="spell-grid"></div>
+  <div class="confirm-row">
+    <button class="btn" id="btn-confirm-pick" disabled data-i18n="castSpell"></button>
+  </div>
+  <p class="wheel-hint" data-i18n="voidNote"></p>
+</div>
+
+<!-- REVEAL SCREEN -->
+<div id="screen-reveal" class="screen">
+  <h2 data-i18n="clash"></h2>
+  <div class="clash-arena">
+    <div class="clash-card" id="reveal-p1">
+      <div class="caster" id="reveal-p1-name"></div>
+      <div class="spell-emoji-big" id="reveal-p1-emoji"></div>
+      <div class="spell-name-big" id="reveal-p1-spell"></div>
+    </div>
+    <div class="clash-vs">⚡</div>
+    <div class="clash-card" id="reveal-p2">
+      <div class="caster" id="reveal-p2-name"></div>
+      <div class="spell-emoji-big" id="reveal-p2-emoji"></div>
+      <div class="spell-name-big" id="reveal-p2-spell"></div>
+    </div>
+  </div>
+  <div class="result-banner" id="result-banner"></div>
+  <div class="damage-labels">
+    <div class="dmg-label">
+      <div class="dmg" id="dmg-p1"></div>
+      <div id="dmg-p1-name"></div>
+    </div>
+    <div class="dmg-label">
+      <div class="dmg" id="dmg-p2"></div>
+      <div id="dmg-p2-name"></div>
+    </div>
+  </div>
+  <button class="btn" id="btn-next-round" data-i18n="nextRound"></button>
+</div>
+
+<!-- BATTLE HUD (persistent top bar, shown during battle) -->
+<div id="screen-battle" class="screen">
+  <div class="battle-layout">
+    <div class="hp-bars">
+      <div class="hp-panel p1">
+        <div class="hp-name" id="hud-p1-name"></div>
+        <div class="hp-value" id="hud-p1-hp"></div>
+        <div class="hp-bar-track"><div class="hp-bar-fill" id="bar-p1"></div></div>
+      </div>
+      <div class="hp-panel p2">
+        <div class="hp-name" id="hud-p2-name"></div>
+        <div class="hp-value" id="hud-p2-hp"></div>
+        <div class="hp-bar-track"><div class="hp-bar-fill" id="bar-p2"></div></div>
+      </div>
+    </div>
+    <div class="void-badges">
+      <div class="void-badge" id="void-p1">☄️ Void: <span data-i18n="available"></span></div>
+      <div class="void-badge" id="void-p2">☄️ Void: <span data-i18n="available"></span></div>
+    </div>
+    <div class="round-indicator" id="round-indicator"></div>
+    <button class="btn big accent" id="btn-begin-pick" data-i18n="beginRound"></button>
+  </div>
+</div>
+
+<!-- GAME OVER SCREEN -->
+<div id="screen-gameover" class="screen">
+  <div style="font-size:3rem">⚔️</div>
+  <div class="winner-banner" id="winner-banner"></div>
+  <div class="final-scores">
+    <div class="final-score">
+      <div class="score-name" id="go-p1-name"></div>
+      <div class="score-hp" id="go-p1-hp"></div>
+      <div style="font-size:0.75rem;opacity:0.5;" data-i18n="hpLeft"></div>
+    </div>
+    <div class="final-score">
+      <div class="score-name" id="go-p2-name"></div>
+      <div class="score-hp" id="go-p2-hp"></div>
+      <div style="font-size:0.75rem;opacity:0.5;" data-i18n="hpLeft"></div>
+    </div>
+  </div>
+  <button class="btn big" id="btn-rematch" data-i18n="rematch"></button>
+  <button class="btn" id="btn-newgame" data-i18n="newGame"></button>
+</div>
+
+<script src="/shared/i18n.js"></script>
+<script type="module">
+// Import game logic
+import { resolveClash, calcDamage, isGameOver, getWinner, SPELLS } from './game-logic.js';
+
+const TRANSLATIONS = {
+  de: {
+    back: "Zurück zu Spielen",
+    title: "Spell Duel",
+    subtitle: "Wählt eure Namen und tretet in das magische Duell! Jede Runde wählt ihr gleichzeitig einen Zauber. Das Elementarrad entscheidet wer überlebt.",
+    player1: "Spieler 1 (Feuer)", player2: "Spieler 2 (Wasser)",
+    startDuel: "⚔️ Duell beginnen!",
+    wheelHint: "Elementarrad: 🔥 besiegt 🌿 · 🌿 besiegt 💧 · 💧 besiegt ⚡ · ⚡ besiegt 🔥 · ☄️ Void schlägt alles (einmalig!)",
+    imReady: "✅ Ich bin bereit!",
+    chooseSpell: "Wähle deinen Zauber (gegner schaut weg!)",
+    castSpell: "✨ Zauber beschwören",
+    voidNote: "☄️ Void: schlägt alles, 25 Schaden — aber nur einmal pro Duell!",
+    clash: "⚔️ Aufeinandertreffen!",
+    nextRound: "🔄 Nächste Runde",
+    beginRound: "⚔️ Runde beginnen",
+    available: "verfügbar",
+    used: "verbraucht",
+    hpLeft: "HP übrig",
+    rematch: "🔁 Revanche!",
+    newGame: "🏠 Neue Spieler",
+    round: "Runde",
+    handoffMsg: "Gib das Gerät an {name}!",
+    handoffPickMsg: "🧙 {name} ist dran! Gegner schaut weg, dann Gerät übergeben.",
+    drawMsg: "⚡ Prallaufeinander! Beide nehmen 5 Schaden",
+    winMsg: "🏆 {name} gewinnt diese Runde!",
+    p1Wins: "🏆 {name} siegt!",
+    p2Wins: "🏆 {name} siegt!",
+    drawGame: "🤝 Unentschieden!",
+    noDmg: "kein Schaden",
+    dmgTaken: "{dmg} Schaden",
+    // Spell names
+    fire: "Feuer", water: "Wasser", lightning: "Blitz", nature: "Natur", void: "Void",
+    // Spell descs
+    fire_desc: "Besiegt Natur", water_desc: "Besiegt Blitz",
+    lightning_desc: "Besiegt Feuer", nature_desc: "Besiegt Wasser",
+    void_desc: "Schlägt alles! (1×)",
+  },
+  en: {
+    back: "Back to Games",
+    title: "Spell Duel",
+    subtitle: "Enter your names and step into the magical duel! Each round you secretly pick a spell. The elemental wheel decides who survives.",
+    player1: "Player 1 (Fire)", player2: "Player 2 (Water)",
+    startDuel: "⚔️ Start Duel!",
+    wheelHint: "Elemental wheel: 🔥 beats 🌿 · 🌿 beats 💧 · 💧 beats ⚡ · ⚡ beats 🔥 · ☄️ Void beats all (once!)",
+    imReady: "✅ I'm ready!",
+    chooseSpell: "Choose your spell (opponent looks away!)",
+    castSpell: "✨ Cast Spell",
+    voidNote: "☄️ Void: beats everything, 25 damage — but only once per duel!",
+    clash: "⚔️ Clash!",
+    nextRound: "🔄 Next Round",
+    beginRound: "⚔️ Begin Round",
+    available: "available",
+    used: "used",
+    hpLeft: "HP left",
+    rematch: "🔁 Rematch!",
+    newGame: "🏠 New Players",
+    round: "Round",
+    handoffMsg: "Pass the device to {name}!",
+    handoffPickMsg: "🧙 {name}'s turn! Opponent looks away, then pass the device.",
+    drawMsg: "⚡ Clash! Both take 5 damage",
+    winMsg: "🏆 {name} wins this round!",
+    p1Wins: "🏆 {name} wins!",
+    p2Wins: "🏆 {name} wins!",
+    drawGame: "🤝 It's a draw!",
+    noDmg: "no damage",
+    dmgTaken: "{dmg} damage",
+    fire: "Fire", water: "Water", lightning: "Lightning", nature: "Nature", void: "Void",
+    fire_desc: "Beats Nature", water_desc: "Beats Lightning",
+    lightning_desc: "Beats Fire", nature_desc: "Beats Water",
+    void_desc: "Beats all! (1×)",
+  },
+  fr: {
+    back: "Retour aux jeux",
+    title: "Duel de Sorts",
+    subtitle: "Entrez vos noms et entrez dans le duel magique ! Chaque tour, choisissez secrètement un sort. La roue élémentale décide qui survit.",
+    player1: "Joueur 1 (Feu)", player2: "Joueur 2 (Eau)",
+    startDuel: "⚔️ Commencer le duel!",
+    wheelHint: "Roue élémentale : 🔥 bat 🌿 · 🌿 bat 💧 · 💧 bat ⚡ · ⚡ bat 🔥 · ☄️ Void bat tout (une fois!)",
+    imReady: "✅ Je suis prêt !",
+    chooseSpell: "Choisissez votre sort (l'adversaire regarde ailleurs !)",
+    castSpell: "✨ Lancer le sort",
+    voidNote: "☄️ Void : bat tout, 25 dégâts — mais une seule fois par duel !",
+    clash: "⚔️ Clash!",
+    nextRound: "🔄 Tour suivant",
+    beginRound: "⚔️ Commencer le tour",
+    available: "disponible",
+    used: "utilisé",
+    hpLeft: "PV restants",
+    rematch: "🔁 Revanche!",
+    newGame: "🏠 Nouveaux joueurs",
+    round: "Tour",
+    handoffMsg: "Passez l'appareil à {name} !",
+    handoffPickMsg: "🧙 C'est le tour de {name} ! L'adversaire regarde ailleurs.",
+    drawMsg: "⚡ Égalité ! Les deux prennent 5 dégâts",
+    winMsg: "🏆 {name} gagne ce tour !",
+    p1Wins: "🏆 {name} gagne !",
+    p2Wins: "🏆 {name} gagne !",
+    drawGame: "🤝 Match nul !",
+    noDmg: "pas de dégâts",
+    dmgTaken: "{dmg} dégâts",
+    fire: "Feu", water: "Eau", lightning: "Foudre", nature: "Nature", void: "Vide",
+    fire_desc: "Bat Nature", water_desc: "Bat Foudre",
+    lightning_desc: "Bat Feu", nature_desc: "Bat Eau",
+    void_desc: "Bat tout ! (1×)",
+  },
+  it: {
+    back: "Torna ai giochi",
+    title: "Duello di Magie",
+    subtitle: "Inserite i nomi e entrate nel duello magico! Ogni turno scegliete segretamente un incantesimo. La ruota elementale decide chi sopravvive.",
+    player1: "Giocatore 1 (Fuoco)", player2: "Giocatore 2 (Acqua)",
+    startDuel: "⚔️ Inizia il duello!",
+    wheelHint: "Ruota elementale: 🔥 batte 🌿 · 🌿 batte 💧 · 💧 batte ⚡ · ⚡ batte 🔥 · ☄️ Vuoto batte tutto (una volta!)",
+    imReady: "✅ Sono pronto!",
+    chooseSpell: "Scegli il tuo incantesimo (l'avversario guarda altrove!)",
+    castSpell: "✨ Lancia incantesimo",
+    voidNote: "☄️ Vuoto: batte tutto, 25 danni — ma solo una volta per duello!",
+    clash: "⚔️ Scontro!",
+    nextRound: "🔄 Prossimo turno",
+    beginRound: "⚔️ Inizia il turno",
+    available: "disponibile",
+    used: "usato",
+    hpLeft: "PV rimasti",
+    rematch: "🔁 Rivincita!",
+    newGame: "🏠 Nuovi giocatori",
+    round: "Turno",
+    handoffMsg: "Passa il dispositivo a {name}!",
+    handoffPickMsg: "🧙 È il turno di {name}! L'avversario guarda altrove.",
+    drawMsg: "⚡ Pareggio! Entrambi prendono 5 danni",
+    winMsg: "🏆 {name} vince questo turno!",
+    p1Wins: "🏆 {name} vince!",
+    p2Wins: "🏆 {name} vince!",
+    drawGame: "🤝 Pareggio!",
+    noDmg: "nessun danno",
+    dmgTaken: "{dmg} danni",
+    fire: "Fuoco", water: "Acqua", lightning: "Fulmine", nature: "Natura", void: "Vuoto",
+    fire_desc: "Batte Natura", water_desc: "Batte Fulmine",
+    lightning_desc: "Batte Fuoco", nature_desc: "Batte Acqua",
+    void_desc: "Batte tutto! (1×)",
+  },
+  es: {
+    back: "Volver a juegos",
+    title: "Duelo de Hechizos",
+    subtitle: "Introducid vuestros nombres y entrad en el duelo mágico. Cada ronda elegís un hechizo en secreto. La rueda elemental decide quién sobrevive.",
+    player1: "Jugador 1 (Fuego)", player2: "Jugador 2 (Agua)",
+    startDuel: "⚔️ ¡Comenzar duelo!",
+    wheelHint: "Rueda elemental: 🔥 vence 🌿 · 🌿 vence 💧 · 💧 vence ⚡ · ⚡ vence 🔥 · ☄️ Vacío vence todo (¡una vez!)",
+    imReady: "✅ ¡Estoy listo!",
+    chooseSpell: "¡Elige tu hechizo! (el rival mira hacia otro lado)",
+    castSpell: "✨ Lanzar hechizo",
+    voidNote: "☄️ Vacío: vence todo, 25 daño — ¡pero solo una vez por duelo!",
+    clash: "⚔️ ¡Choque!",
+    nextRound: "🔄 Siguiente ronda",
+    beginRound: "⚔️ Comenzar ronda",
+    available: "disponible",
+    used: "usado",
+    hpLeft: "PV restantes",
+    rematch: "🔁 ¡Revancha!",
+    newGame: "🏠 Nuevos jugadores",
+    round: "Ronda",
+    handoffMsg: "¡Pasa el dispositivo a {name}!",
+    handoffPickMsg: "🧙 ¡Turno de {name}! El rival mira hacia otro lado.",
+    drawMsg: "⚡ ¡Empate! Ambos reciben 5 de daño",
+    winMsg: "🏆 ¡{name} gana esta ronda!",
+    p1Wins: "🏆 ¡{name} gana!",
+    p2Wins: "🏆 ¡{name} gana!",
+    drawGame: "🤝 ¡Empate!",
+    noDmg: "sin daño",
+    dmgTaken: "{dmg} de daño",
+    fire: "Fuego", water: "Agua", lightning: "Rayo", nature: "Naturaleza", void: "Vacío",
+    fire_desc: "Vence Naturaleza", water_desc: "Vence Rayo",
+    lightning_desc: "Vence Fuego", nature_desc: "Vence Agua",
+    void_desc: "¡Vence todo! (1×)",
+  },
+};
+
+const { t, translatePage, onLangChange } = initI18n(TRANSLATIONS);
+
+// ===== GAME STATE =====
+let state = {};
+
+function freshState() {
+  return {
+    names: ["", ""],
+    hp: [100, 100],
+    voidUsed: [false, false],
+    round: 0,
+    phase: "setup",   // setup | battle | pick1 | pick2 | reveal | gameover
+    picks: [null, null],
+    currentPicker: 0,
+  };
+}
+
+state = freshState();
+
+// ===== DOM HELPERS =====
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function fmt(key, vars = {}) {
+  let s = t(key);
+  for (const [k, v] of Object.entries(vars)) s = s.replace(`{${k}}`, v);
+  return s;
+}
+
+function spellData(id) {
+  return SPELLS.find(s => s.id === id);
+}
+
+// ===== SETUP =====
+document.getElementById('btn-start').addEventListener('click', startGame);
+document.getElementById('name-p1').addEventListener('input', updateStartBtn);
+document.getElementById('name-p2').addEventListener('input', updateStartBtn);
+
+function updateStartBtn() {
+  const v1 = document.getElementById('name-p1').value.trim();
+  const v2 = document.getElementById('name-p2').value.trim();
+  document.getElementById('btn-start').disabled = !v1 || !v2;
+}
+document.getElementById('btn-start').disabled = true;
+
+// allow pressing Enter to start
+[document.getElementById('name-p1'), document.getElementById('name-p2')].forEach(inp => {
+  inp.addEventListener('keydown', e => { if (e.key === 'Enter') startGame(); });
+});
+
+function startGame() {
+  const n1 = document.getElementById('name-p1').value.trim() || t('player1');
+  const n2 = document.getElementById('name-p2').value.trim() || t('player2');
+  state = freshState();
+  state.names = [n1, n2];
+  showBattleHud();
+}
+
+// ===== HUD =====
+function showBattleHud() {
+  updateHud();
+  state.phase = "battle";
+  state.round++;
+  document.getElementById('round-indicator').textContent = `${t('round')} ${state.round}`;
+  showScreen('screen-battle');
+}
+
+function updateHud() {
+  const [n1, n2] = state.names;
+  const [hp1, hp2] = state.hp;
+  document.getElementById('hud-p1-name').textContent = n1;
+  document.getElementById('hud-p2-name').textContent = n2;
+  document.getElementById('hud-p1-hp').textContent = Math.max(0, hp1);
+  document.getElementById('hud-p2-hp').textContent = Math.max(0, hp2);
+  document.getElementById('bar-p1').style.width = Math.max(0, hp1) + '%';
+  document.getElementById('bar-p2').style.width = Math.max(0, hp2) + '%';
+  const v1 = document.getElementById('void-p1');
+  const v2 = document.getElementById('void-p2');
+  v1.innerHTML = `☄️ ${n1}: <span data-i18n="${state.voidUsed[0] ? 'used' : 'available'}"></span>`;
+  v2.innerHTML = `☄️ ${n2}: <span data-i18n="${state.voidUsed[1] ? 'used' : 'available'}"></span>`;
+  v1.classList.toggle('used', state.voidUsed[0]);
+  v2.classList.toggle('used', state.voidUsed[1]);
+  translatePage();
+}
+
+document.getElementById('btn-begin-pick').addEventListener('click', () => {
+  startPick(0);
+});
+
+// ===== PICK PHASE =====
+function startPick(playerIdx) {
+  state.currentPicker = playerIdx;
+  state.picks[playerIdx] = null;
+  const name = state.names[playerIdx];
+
+  if (playerIdx === 0) {
+    // First player picks directly
+    renderPickScreen(playerIdx);
+  } else {
+    // Handoff screen before player 2 picks
+    document.getElementById('handoff-msg').textContent =
+      fmt('handoffPickMsg', { name });
+    document.getElementById('btn-handoff-ok').onclick = () => renderPickScreen(playerIdx);
+    showScreen('screen-handoff');
+  }
+}
+
+function renderPickScreen(playerIdx) {
+  const name = state.names[playerIdx];
+  document.getElementById('pick-name').textContent = `🧙 ${name}`;
+
+  const grid = document.getElementById('spell-grid');
+  grid.innerHTML = '';
+  let selected = null;
+
+  SPELLS.forEach(spell => {
+    const btn = document.createElement('button');
+    btn.className = `spell-btn c-${spell.id}`;
+    if (spell.id === 'void') btn.className += ' void-btn';
+    const isVoidUsed = spell.id === 'void' && state.voidUsed[playerIdx];
+    if (isVoidUsed) btn.classList.add('disabled');
+    btn.disabled = isVoidUsed;
+
+    btn.innerHTML = `
+      <span class="spell-emoji">${spell.emoji}</span>
+      <span class="spell-name">${t(spell.id)}</span>
+      <span class="spell-desc">${t(spell.id + '_desc')}</span>
+    `;
+
+    btn.addEventListener('click', () => {
+      if (isVoidUsed) return;
+      selected = spell.id;
+      document.querySelectorAll('.spell-btn').forEach(b => {
+        b.classList.remove('selected', `bg-${spell.id}`);
+        SPELLS.forEach(s => b.classList.remove(`bg-${s.id}`));
+      });
+      btn.classList.add('selected', `bg-${spell.id}`);
+      document.getElementById('btn-confirm-pick').disabled = false;
+    });
+    grid.appendChild(btn);
+  });
+
+  document.getElementById('btn-confirm-pick').disabled = true;
+  document.getElementById('btn-confirm-pick').onclick = () => {
+    if (!selected) return;
+    state.picks[playerIdx] = selected;
+    if (spell => spell.id === 'void') {
+      // handled below
+    }
+    if (playerIdx === 0) {
+      // Now player 2 picks
+      startPick(1);
+    } else {
+      // Both picked, reveal
+      showReveal();
+    }
+  };
+
+  showScreen('screen-pick');
+}
+
+// ===== REVEAL =====
+function showReveal() {
+  const [s1, s2] = state.picks;
+  const [n1, n2] = state.names;
+
+  // Mark void as used
+  if (s1 === 'void') state.voidUsed[0] = true;
+  if (s2 === 'void') state.voidUsed[1] = true;
+
+  const sp1 = spellData(s1);
+  const sp2 = spellData(s2);
+
+  document.getElementById('reveal-p1-name').textContent = n1;
+  document.getElementById('reveal-p1-emoji').textContent = sp1.emoji;
+  document.getElementById('reveal-p1-spell').textContent = t(s1);
+  document.getElementById('reveal-p2-name').textContent = n2;
+  document.getElementById('reveal-p2-emoji').textContent = sp2.emoji;
+  document.getElementById('reveal-p2-spell').textContent = t(s2);
+
+  // Style clash cards
+  document.getElementById('reveal-p1').className = `clash-card c-${s1}`;
+  document.getElementById('reveal-p2').className = `clash-card c-${s2}`;
+
+  const result = resolveClash(s1, s2);
+  const { p1Dmg, p2Dmg } = calcDamage(s1, s2);
+
+  // Result banner
+  const banner = document.getElementById('result-banner');
+  if (result === 'draw') {
+    banner.textContent = fmt('drawMsg');
+    banner.className = 'result-banner draw';
+  } else {
+    const winName = result === 'p1' ? n1 : n2;
+    banner.textContent = fmt('winMsg', { name: winName });
+    banner.className = 'result-banner win';
+  }
+
+  // Damage labels
+  const dmgP1 = document.getElementById('dmg-p1');
+  const dmgP2 = document.getElementById('dmg-p2');
+  dmgP1.textContent = p1Dmg > 0 ? `-${p1Dmg}` : '✅';
+  dmgP1.className = `dmg ${p1Dmg > 0 ? 'hit' : 'miss'}`;
+  dmgP2.textContent = p2Dmg > 0 ? `-${p2Dmg}` : '✅';
+  dmgP2.className = `dmg ${p2Dmg > 0 ? 'hit' : 'miss'}`;
+  document.getElementById('dmg-p1-name').textContent = n1;
+  document.getElementById('dmg-p2-name').textContent = n2;
+
+  // Apply damage
+  state.hp[0] -= p1Dmg;
+  state.hp[1] -= p2Dmg;
+
+  const over = isGameOver(state.hp[0], state.hp[1]);
+  document.getElementById('btn-next-round').textContent =
+    over ? '🏁 ' + t('hpLeft').replace('HP', '') + '→ Ende' : t('nextRound');
+  document.getElementById('btn-next-round').onclick = over ? showGameOver : showBattleHud;
+
+  showScreen('screen-reveal');
+}
+
+// ===== GAME OVER =====
+function showGameOver() {
+  const winner = getWinner(state.hp[0], state.hp[1]);
+  const [n1, n2] = state.names;
+  const [hp1, hp2] = state.hp;
+
+  const banner = document.getElementById('winner-banner');
+  if (winner === 'draw') {
+    banner.textContent = t('drawGame');
+  } else {
+    const winName = winner === 'p1' ? n1 : n2;
+    banner.textContent = fmt('p1Wins', { name: winName });
+  }
+
+  document.getElementById('go-p1-name').textContent = n1;
+  document.getElementById('go-p2-name').textContent = n2;
+  document.getElementById('go-p1-hp').textContent = Math.max(0, hp1);
+  document.getElementById('go-p2-hp').textContent = Math.max(0, hp2);
+
+  document.getElementById('btn-rematch').onclick = () => {
+    state = freshState();
+    state.names = [n1, n2];
+    showBattleHud();
+  };
+  document.getElementById('btn-newgame').onclick = () => {
+    state = freshState();
+    document.getElementById('name-p1').value = '';
+    document.getElementById('name-p2').value = '';
+    document.getElementById('btn-start').disabled = true;
+    showScreen('screen-setup');
+    translatePage();
+  };
+
+  state.phase = 'gameover';
+  showScreen('screen-gameover');
+}
+
+// Language change: re-render if needed
+onLangChange(() => {
+  if (state.phase === 'battle') updateHud();
+  translatePage();
+});
+
+// Set default names as placeholders only, not values
+translatePage();
+</script>
+</body>
+</html>
