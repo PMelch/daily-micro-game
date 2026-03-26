@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+  <title>Sort Lab 🧪</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #050510;
+      color: #e0e0ff;
+      font-family: system-ui, -apple-system, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .back-bar {
+      width: 100%;
+      background: #0a0a1a;
+      padding: 0.5rem 1rem;
+      border-bottom: 1px solid #333;
+    }
+    .back-bar a {
+      color: #ffcc00;
+      text-decoration: none;
+      font-size: 0.9rem;
+    }
+    .back-bar a:hover { text-decoration: underline; }
+
+    #game-wrap {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 12px 8px 20px;
+    }
+
+    /* ── Header ── */
+    .game-header {
+      width: 100%;
+      max-width: 520px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+    .game-title {
+      font-size: 1.3rem;
+      font-weight: 700;
+      letter-spacing: 1px;
+      color: #c0d0ff;
+    }
+    .level-info {
+      font-size: 0.9rem;
+      color: #8890cc;
+    }
+
+    /* ── Move counter ── */
+    .move-bar {
+      width: 100%;
+      max-width: 520px;
+      display: flex;
+      justify-content: center;
+      gap: 24px;
+      margin-bottom: 12px;
+      font-size: 0.9rem;
+      color: #8890cc;
+    }
+    .move-count { color: #c0d0ff; font-weight: 600; font-size: 1rem; }
+
+    /* ── Instruction text ── */
+    .instruction {
+      font-size: 0.85rem;
+      color: #6068aa;
+      margin-bottom: 10px;
+      text-align: center;
+      min-height: 1.2em;
+      transition: color 0.2s;
+    }
+    .instruction.hint { color: #ffcc00; }
+
+    /* ── Tubes area ── */
+    #tubes-container {
+      width: 100%;
+      max-width: 520px;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .tube-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      cursor: pointer;
+      position: relative;
+    }
+
+    .tube {
+      width: 44px;
+      height: 176px; /* 4 × 44px */
+      border: 2px solid #334;
+      border-top: none;
+      border-radius: 0 0 22px 22px;
+      display: flex;
+      flex-direction: column-reverse; /* bottom-first */
+      overflow: hidden;
+      position: relative;
+      transition: border-color 0.15s, box-shadow 0.15s;
+      background: rgba(10,10,30,0.8);
+    }
+    .tube.selected {
+      border-color: #ffcc00;
+      box-shadow: 0 0 12px rgba(255, 204, 0, 0.5);
+    }
+    .tube.valid-dest {
+      border-color: #44ff88;
+      box-shadow: 0 0 8px rgba(68,255,136,0.35);
+    }
+
+    /* Top cap */
+    .tube::before {
+      content: '';
+      position: absolute;
+      top: -10px;
+      left: -2px;
+      right: -2px;
+      height: 10px;
+      border: 2px solid #334;
+      border-bottom: none;
+      border-radius: 4px 4px 0 0;
+      background: transparent;
+      transition: border-color 0.15s;
+    }
+    .tube.selected::before { border-color: #ffcc00; }
+    .tube.valid-dest::before { border-color: #44ff88; }
+
+    .ball {
+      width: 100%;
+      height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+      transition: transform 0.12s;
+      position: relative;
+    }
+    .ball-inner {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      box-shadow: inset -4px -4px 8px rgba(0,0,0,0.4), inset 2px 2px 6px rgba(255,255,255,0.2);
+    }
+
+    /* Color map */
+    .color-r .ball-inner { background: radial-gradient(circle at 35% 35%, #ff6666, #cc0000); }
+    .color-g .ball-inner { background: radial-gradient(circle at 35% 35%, #55ff88, #00aa44); }
+    .color-b .ball-inner { background: radial-gradient(circle at 35% 35%, #4499ff, #0055cc); }
+    .color-y .ball-inner { background: radial-gradient(circle at 35% 35%, #ffee55, #ccaa00); }
+    .color-p .ball-inner { background: radial-gradient(circle at 35% 35%, #cc66ff, #8800cc); }
+    .color-o .ball-inner { background: radial-gradient(circle at 35% 35%, #ffaa44, #cc5500); }
+    .color-c .ball-inner { background: radial-gradient(circle at 35% 35%, #44eeff, #0088bb); }
+    .color-m .ball-inner { background: radial-gradient(circle at 35% 35%, #ff55cc, #aa0077); }
+
+    /* Flying ball animation */
+    @keyframes ballFly {
+      0%   { transform: translateY(0) scale(1); }
+      40%  { transform: translateY(-30px) scale(1.15); }
+      100% { transform: translateY(0) scale(1); }
+    }
+    .ball.flying { animation: ballFly 0.3s ease; }
+
+    /* ── Buttons ── */
+    .btn-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-bottom: 8px;
+    }
+    button {
+      background: #1a1a3a;
+      border: 1px solid #334;
+      color: #c0d0ff;
+      border-radius: 8px;
+      padding: 8px 16px;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    button:hover { background: #2a2a4a; border-color: #556; }
+    button.primary {
+      background: #2a2a6a;
+      border-color: #7788ff;
+      color: #aabbff;
+    }
+    button.primary:hover { background: #3a3a8a; }
+
+    /* ── Overlay screens ── */
+    .overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(5,5,20,0.92);
+      z-index: 100;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 24px;
+    }
+    .overlay.visible { display: flex; }
+    .overlay h2 { font-size: 2rem; margin-bottom: 12px; color: #ffcc00; }
+    .overlay p { color: #8890cc; font-size: 1rem; margin-bottom: 20px; max-width: 320px; }
+    .overlay .big-emoji { font-size: 3.5rem; margin-bottom: 10px; }
+    .overlay .score-grid {
+      display: grid;
+      grid-template-columns: auto auto;
+      gap: 6px 20px;
+      color: #c0d0ff;
+      font-size: 1rem;
+      margin-bottom: 20px;
+      text-align: left;
+    }
+    .overlay .score-label { color: #8890cc; }
+    .overlay .score-val { font-weight: 700; color: #ffcc00; }
+
+    /* ── Level progress ── */
+    .progress-wrap {
+      width: 100%;
+      max-width: 520px;
+      display: flex;
+      gap: 5px;
+      margin-bottom: 14px;
+    }
+    .progress-pip {
+      flex: 1;
+      height: 5px;
+      border-radius: 3px;
+      background: #1a1a3a;
+      transition: background 0.3s;
+    }
+    .progress-pip.done { background: #44ff88; }
+    .progress-pip.current { background: #ffcc00; }
+
+    /* ── Stuck banner ── */
+    .stuck-banner {
+      display: none;
+      background: rgba(255,80,80,0.12);
+      border: 1px solid #ff4444;
+      color: #ff8888;
+      border-radius: 8px;
+      padding: 8px 16px;
+      font-size: 0.85rem;
+      margin-bottom: 10px;
+      text-align: center;
+    }
+    .stuck-banner.visible { display: block; }
+  </style>
+</head>
+<body>
+<div class="back-bar"><a href="/">← <span data-i18n="backLink">Back to Games</span></a></div>
+
+<div id="game-wrap">
+  <div class="game-header">
+    <span class="game-title">🧪 Sort Lab</span>
+    <span class="level-info" id="level-label">Level 1 / 8</span>
+  </div>
+
+  <div class="progress-wrap" id="progress-pips"></div>
+
+  <div class="move-bar">
+    <span data-i18n="movesLabel">Moves:</span>
+    <span class="move-count" id="move-count">0</span>
+  </div>
+
+  <div class="instruction" id="instruction" data-i18n="instrSelect">Tap a tube to select</div>
+
+  <div class="stuck-banner" id="stuck-banner" data-i18n="stuckBanner">No more moves — restart or undo!</div>
+
+  <div id="tubes-container"></div>
+
+  <div class="btn-row">
+    <button id="btn-undo" data-i18n="btnUndo">↩ Undo</button>
+    <button id="btn-restart" data-i18n="btnRestart">🔄 Restart</button>
+    <button id="btn-hint" data-i18n="btnHint">💡 Hint</button>
+  </div>
+</div>
+
+<!-- Level Complete Overlay -->
+<div class="overlay" id="overlay-level">
+  <div class="big-emoji" id="level-emoji">✅</div>
+  <h2 data-i18n="levelClearTitle">Level Clear!</h2>
+  <div class="score-grid">
+    <span class="score-label" data-i18n="movesUsed">Moves used:</span>
+    <span class="score-val" id="lc-moves">0</span>
+    <span class="score-label" data-i18n="parLabel">Par:</span>
+    <span class="score-val" id="lc-par">—</span>
+  </div>
+  <div class="btn-row">
+    <button class="primary" id="btn-next-level" data-i18n="btnNextLevel">Next Level →</button>
+  </div>
+</div>
+
+<!-- Game Complete Overlay -->
+<div class="overlay" id="overlay-win">
+  <div class="big-emoji">🏆</div>
+  <h2 data-i18n="winTitle">Lab Complete!</h2>
+  <p data-i18n="winDesc">You sorted all 8 levels. Impressive!!</p>
+  <div class="score-grid">
+    <span class="score-label" data-i18n="totalMoves">Total moves:</span>
+    <span class="score-val" id="win-moves">0</span>
+  </div>
+  <div class="btn-row">
+    <button class="primary" id="btn-play-again" data-i18n="btnPlayAgain">Play Again</button>
+  </div>
+</div>
+
+<script src="/shared/i18n.js"></script>
+<script>
+const TRANSLATIONS = {
+  de: {
+    backLink: 'Zurück',
+    movesLabel: 'Züge:',
+    instrSelect: 'Tippe ein Reagenzglas aus',
+    instrPour: 'Jetzt Zielglas wählen',
+    instrCancel: 'Erneut tippen zum Abbrechen',
+    stuckBanner: 'Keine Züge mehr – Undo oder Neustart!',
+    btnUndo: '↩ Rückgängig',
+    btnRestart: '🔄 Neustart',
+    btnHint: '💡 Tipp',
+    levelClearTitle: 'Level geschafft!',
+    movesUsed: 'Züge benutzt:',
+    parLabel: 'Par:',
+    btnNextLevel: 'Nächstes Level →',
+    winTitle: 'Labor abgeschlossen!',
+    winDesc: 'Alle 8 Level sortiert. Beeindruckend!',
+    totalMoves: 'Gesamtzüge:',
+    btnPlayAgain: 'Nochmal spielen',
+    hintFlash: '💡 Versuch dieses Glas!',
+    levelLabel: 'Level',
+  },
+  en: {
+    backLink: 'Back to Games',
+    movesLabel: 'Moves:',
+    instrSelect: 'Tap a tube to select',
+    instrPour: 'Now tap destination tube',
+    instrCancel: 'Tap again to deselect',
+    stuckBanner: 'No more moves — undo or restart!',
+    btnUndo: '↩ Undo',
+    btnRestart: '🔄 Restart',
+    btnHint: '💡 Hint',
+    levelClearTitle: 'Level Clear!',
+    movesUsed: 'Moves used:',
+    parLabel: 'Par:',
+    btnNextLevel: 'Next Level →',
+    winTitle: 'Lab Complete!',
+    winDesc: 'You sorted all 8 levels. Impressive!',
+    totalMoves: 'Total moves:',
+    btnPlayAgain: 'Play Again',
+    hintFlash: '💡 Try this tube!',
+    levelLabel: 'Level',
+  },
+  fr: {
+    backLink: 'Retour',
+    movesLabel: 'Coups :',
+    instrSelect: 'Touche un tube pour le sélectionner',
+    instrPour: 'Choisis le tube de destination',
+    instrCancel: 'Touche à nouveau pour annuler',
+    stuckBanner: 'Plus de coups — annule ou recommence !',
+    btnUndo: '↩ Annuler',
+    btnRestart: '🔄 Recommencer',
+    btnHint: '💡 Indice',
+    levelClearTitle: 'Niveau réussi !',
+    movesUsed: 'Coups utilisés :',
+    parLabel: 'Par :',
+    btnNextLevel: 'Niveau suivant →',
+    winTitle: 'Labo terminé !',
+    winDesc: 'Vous avez trié les 8 niveaux. Impressionnant !',
+    totalMoves: 'Total de coups :',
+    btnPlayAgain: 'Rejouer',
+    hintFlash: '💡 Essaie ce tube !',
+    levelLabel: 'Niveau',
+  },
+  it: {
+    backLink: 'Indietro',
+    movesLabel: 'Mosse:',
+    instrSelect: 'Tocca un tubo per selezionarlo',
+    instrPour: 'Scegli il tubo di destinazione',
+    instrCancel: 'Tocca di nuovo per deselezionare',
+    stuckBanner: 'Nessuna mossa — annulla o ricomincia!',
+    btnUndo: '↩ Annulla',
+    btnRestart: '🔄 Ricomincia',
+    btnHint: '💡 Suggerimento',
+    levelClearTitle: 'Livello completato!',
+    movesUsed: 'Mosse usate:',
+    parLabel: 'Par:',
+    btnNextLevel: 'Livello successivo →',
+    winTitle: 'Laboratorio completato!',
+    winDesc: 'Hai ordinato tutti gli 8 livelli. Impressionante!',
+    totalMoves: 'Mosse totali:',
+    btnPlayAgain: 'Gioca ancora',
+    hintFlash: '💡 Prova questo tubo!',
+    levelLabel: 'Livello',
+  },
+  es: {
+    backLink: 'Volver',
+    movesLabel: 'Movimientos:',
+    instrSelect: 'Toca un tubo para seleccionarlo',
+    instrPour: 'Ahora elige el tubo destino',
+    instrCancel: 'Toca de nuevo para deseleccionar',
+    stuckBanner: '¡Sin movimientos — deshacer o reiniciar!',
+    btnUndo: '↩ Deshacer',
+    btnRestart: '🔄 Reiniciar',
+    btnHint: '💡 Pista',
+    levelClearTitle: '¡Nivel completado!',
+    movesUsed: 'Movimientos usados:',
+    parLabel: 'Par:',
+    btnNextLevel: 'Siguiente nivel →',
+    winTitle: '¡Laboratorio completado!',
+    winDesc: '¡Has ordenado los 8 niveles. ¡Impresionante!',
+    totalMoves: 'Movimientos totales:',
+    btnPlayAgain: 'Jugar de nuevo',
+    hintFlash: '💡 ¡Prueba este tubo!',
+    levelLabel: 'Nivel',
+  },
+};
+
+const { t, onLangChange, translatePage } = initI18n(TRANSLATIONS);
+onLangChange(() => { translatePage(); updateInstruction(); });
+
+// ─── Game logic (inline copy, same as sortlab.js) ───────────────────────────
+const TUBE_CAPACITY = 4;
+
+function topColor(tube) {
+  if (!tube || tube.length === 0) return null;
+  return tube[tube.length - 1];
+}
+function canMove(tubes, fromIdx, toIdx) {
+  if (fromIdx === toIdx) return false;
+  const from = tubes[fromIdx], to = tubes[toIdx];
+  if (!from || from.length === 0) return false;
+  if (to.length >= TUBE_CAPACITY) return false;
+  if (to.length === 0) return true;
+  return topColor(from) === topColor(to);
+}
+function applyMove(tubes, fromIdx, toIdx) {
+  if (!canMove(tubes, fromIdx, toIdx)) throw new Error('Invalid move');
+  const next = tubes.map(t => [...t]);
+  const from = next[fromIdx], to = next[toIdx];
+  const color = topColor(from);
+  while (from.length > 0 && topColor(from) === color && to.length < TUBE_CAPACITY) {
+    to.push(from.pop());
+  }
+  return next;
+}
+function isSolved(tubes) {
+  return tubes.every(tube => {
+    if (tube.length === 0) return true;
+    if (tube.length !== TUBE_CAPACITY) return false;
+    return tube.every(c => c === tube[0]);
+  });
+}
+function isStuck(tubes) {
+  for (let i = 0; i < tubes.length; i++)
+    for (let j = 0; j < tubes.length; j++)
+      if (canMove(tubes, i, j)) return false;
+  return true;
+}
+function getLevel(n) {
+  const levels = [
+    [['r','g','r','g'], ['g','r','g','r'], [], []],
+    [['b','r','g','b'], ['g','b','r','r'], ['r','g','b','g'], [], []],
+    [['g','y','r','b'], ['r','b','g','y'], ['y','r','b','r'], ['b','g','y','g'], [], []],
+    [['r','g','b','r'], ['b','y','r','g'], ['g','r','y','b'], ['y','b','g','y'], [], []],
+    [['r','g','b','y'], ['p','r','g','b'], ['y','p','r','g'], ['b','y','p','r'], ['g','b','y','p'], [], []],
+    [['r','p','b','g'], ['b','y','r','p'], ['g','r','y','b'], ['p','g','r','y'], ['y','b','g','p'], []],
+    [['r','g','o','b'], ['y','p','r','g'], ['b','o','y','p'], ['g','r','b','o'], ['p','y','g','r'], ['o','b','p','y'], [], []],
+    [['r','g','o','b'], ['y','p','r','g'], ['b','o','y','p'], ['g','r','b','o'], ['p','y','g','r'], ['o','b','p','y'], []],
+  ];
+  const idx = Math.min(Math.max(n - 1, 0), levels.length - 1);
+  return levels[idx].map(t => [...t]);
+}
+// Par moves per level (rough targets)
+const PAR = [6, 8, 12, 14, 18, 20, 24, 28];
+
+// ─── Game state ──────────────────────────────────────────────────────────────
+let currentLevel = 1;
+let tubes = [];
+let selectedIdx = null;
+let history = []; // stack of tube snapshots
+let moves = 0;
+let totalMoves = 0;
+let hintFromIdx = null;
+let hintToIdx = null;
+
+function initLevel(lvl) {
+  currentLevel = lvl;
+  tubes = getLevel(lvl);
+  selectedIdx = null;
+  history = [];
+  moves = 0;
+  updateLevelLabel();
+  buildProgressPips();
+  render();
+  hideOverlays();
+  setInstruction('instrSelect');
+  updateStuckBanner();
+}
+
+function updateLevelLabel() {
+  document.getElementById('level-label').textContent =
+    `${t('levelLabel')} ${currentLevel} / 8`;
+  document.getElementById('move-count').textContent = moves;
+}
+
+function buildProgressPips() {
+  const wrap = document.getElementById('progress-pips');
+  wrap.innerHTML = '';
+  for (let i = 1; i <= 8; i++) {
+    const pip = document.createElement('div');
+    pip.className = 'progress-pip' +
+      (i < currentLevel ? ' done' : i === currentLevel ? ' current' : '');
+    wrap.appendChild(pip);
+  }
+}
+
+// ─── Rendering ───────────────────────────────────────────────────────────────
+function render() {
+  const container = document.getElementById('tubes-container');
+  container.innerHTML = '';
+
+  tubes.forEach((tube, idx) => {
+    const wrap = document.createElement('div');
+    wrap.className = 'tube-wrap';
+    wrap.dataset.idx = idx;
+    wrap.addEventListener('click', () => handleTubeClick(idx));
+
+    const el = document.createElement('div');
+    el.className = 'tube' +
+      (selectedIdx === idx ? ' selected' : '') +
+      (selectedIdx !== null && selectedIdx !== idx && canMove(tubes, selectedIdx, idx) ? ' valid-dest' : '');
+
+    // balls (bottom-first in data, so index 0 = bottom visual)
+    for (let i = 0; i < tube.length; i++) {
+      const ball = document.createElement('div');
+      ball.className = `ball color-${tube[i]}`;
+      ball.innerHTML = `<div class="ball-inner"></div>`;
+      el.appendChild(ball);
+    }
+
+    wrap.appendChild(el);
+    container.appendChild(wrap);
+  });
+
+  document.getElementById('move-count').textContent = moves;
+}
+
+function animatePour(fromIdx, toIdx) {
+  // Quick visual: flash top ball of dest tube
+  const container = document.getElementById('tubes-container');
+  const destWrap = container.children[toIdx];
+  const destTube = destWrap?.querySelector('.tube');
+  if (!destTube) return;
+  const balls = destTube.querySelectorAll('.ball');
+  const topBall = balls[balls.length - 1];
+  if (topBall) {
+    topBall.classList.add('flying');
+    topBall.addEventListener('animationend', () => topBall.classList.remove('flying'), { once: true });
+  }
+}
+
+// ─── Interaction ──────────────────────────────────────────────────────────────
+function handleTubeClick(idx) {
+  clearHint();
+
+  if (selectedIdx === null) {
+    // Select if tube has balls
+    if (tubes[idx].length === 0) return;
+    selectedIdx = idx;
+    setInstruction('instrPour');
+    render();
+    return;
+  }
+
+  if (selectedIdx === idx) {
+    // Deselect
+    selectedIdx = null;
+    setInstruction('instrSelect');
+    render();
+    return;
+  }
+
+  if (!canMove(tubes, selectedIdx, idx)) {
+    // Try to re-select clicked tube instead
+    if (tubes[idx].length > 0) {
+      selectedIdx = idx;
+      setInstruction('instrPour');
+      render();
+    }
+    return;
+  }
+
+  // Perform move
+  history.push(tubes.map(t => [...t]));
+  tubes = applyMove(tubes, selectedIdx, idx);
+  moves++;
+  totalMoves++;
+  const fromIdx = selectedIdx;
+  selectedIdx = null;
+  render();
+  animatePour(fromIdx, idx);
+  setInstruction('instrSelect');
+  updateStuckBanner();
+
+  if (isSolved(tubes)) {
+    setTimeout(() => showLevelClear(), 350);
+    return;
+  }
+  if (isStuck(tubes)) {
+    document.getElementById('stuck-banner').classList.add('visible');
+  }
+}
+
+function updateInstruction() {
+  const key = selectedIdx !== null ? 'instrPour' : 'instrSelect';
+  setInstruction(key);
+}
+function setInstruction(key) {
+  const el = document.getElementById('instruction');
+  el.textContent = t(key);
+  el.className = 'instruction';
+}
+function updateStuckBanner() {
+  const banner = document.getElementById('stuck-banner');
+  if (!isSolved(tubes) && isStuck(tubes)) {
+    banner.classList.add('visible');
+  } else {
+    banner.classList.remove('visible');
+  }
+}
+
+// ─── Undo ──────────────────────────────────────────────────────────────────
+document.getElementById('btn-undo').addEventListener('click', () => {
+  if (history.length === 0) return;
+  tubes = history.pop();
+  moves = Math.max(0, moves - 1);
+  totalMoves = Math.max(0, totalMoves - 1);
+  selectedIdx = null;
+  clearHint();
+  render();
+  setInstruction('instrSelect');
+  updateStuckBanner();
+});
+
+// ─── Restart ──────────────────────────────────────────────────────────────────
+document.getElementById('btn-restart').addEventListener('click', () => {
+  totalMoves -= moves;
+  initLevel(currentLevel);
+});
+
+// ─── Hint ──────────────────────────────────────────────────────────────────
+document.getElementById('btn-hint').addEventListener('click', () => {
+  const hint = findHint();
+  if (!hint) return;
+  hintFromIdx = hint.from;
+  hintToIdx = hint.to;
+  // Highlight from-tube
+  const container = document.getElementById('tubes-container');
+  const wrap = container.children[hint.from];
+  const tube = wrap?.querySelector('.tube');
+  if (tube) {
+    tube.style.borderColor = '#ff88ff';
+    tube.style.boxShadow = '0 0 14px rgba(255,136,255,0.6)';
+  }
+  const instrEl = document.getElementById('instruction');
+  instrEl.textContent = t('hintFlash');
+  instrEl.className = 'instruction hint';
+  setTimeout(clearHint, 2500);
+});
+
+function clearHint() {
+  if (hintFromIdx !== null) {
+    const container = document.getElementById('tubes-container');
+    const wrap = container.children[hintFromIdx];
+    const tube = wrap?.querySelector('.tube');
+    if (tube && !tube.classList.contains('selected')) {
+      tube.style.borderColor = '';
+      tube.style.boxShadow = '';
+    }
+    hintFromIdx = null;
+    hintToIdx = null;
+  }
+}
+
+function findHint() {
+  // Find a move that makes progress: prefer pouring into a matching non-empty tube
+  for (let f = 0; f < tubes.length; f++) {
+    for (let t2 = 0; t2 < tubes.length; t2++) {
+      if (canMove(tubes, f, t2) && tubes[t2].length > 0) {
+        return { from: f, to: t2 };
+      }
+    }
+  }
+  // Fallback: any valid move
+  for (let f = 0; f < tubes.length; f++) {
+    for (let t2 = 0; t2 < tubes.length; t2++) {
+      if (canMove(tubes, f, t2)) return { from: f, to: t2 };
+    }
+  }
+  return null;
+}
+
+// ─── Level clear overlay ──────────────────────────────────────────────────────
+function showLevelClear() {
+  const par = PAR[currentLevel - 1];
+  const emoji = moves <= par ? '🌟' : moves <= par * 1.5 ? '✅' : '👍';
+  document.getElementById('level-emoji').textContent = emoji;
+  document.getElementById('lc-moves').textContent = moves;
+  document.getElementById('lc-par').textContent = par;
+  document.getElementById('overlay-level').classList.add('visible');
+}
+
+document.getElementById('btn-next-level').addEventListener('click', () => {
+  if (currentLevel >= 8) {
+    showWin();
+    return;
+  }
+  initLevel(currentLevel + 1);
+});
+
+function showWin() {
+  document.getElementById('win-moves').textContent = totalMoves;
+  document.getElementById('overlay-level').classList.remove('visible');
+  document.getElementById('overlay-win').classList.add('visible');
+}
+
+document.getElementById('btn-play-again').addEventListener('click', () => {
+  totalMoves = 0;
+  initLevel(1);
+});
+
+function hideOverlays() {
+  document.querySelectorAll('.overlay').forEach(o => o.classList.remove('visible'));
+}
+
+// ─── Start! ──────────────────────────────────────────────────────────────────
+initLevel(1);
+</script>
+</body>
+</html>
