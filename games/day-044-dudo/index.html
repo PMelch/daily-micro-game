@@ -1,0 +1,1041 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dudo! – Würfelbluff</title>
+<style>
+  :root {
+    --bg: #0d0d1a;
+    --surface: #1a1a2e;
+    --surface2: #16213e;
+    --accent: #e94560;
+    --gold: #ffd700;
+    --teal: #0f3460;
+    --text: #e8e8f0;
+    --muted: #888;
+    --green: #22c55e;
+    --red: #ef4444;
+    --font: 'Segoe UI', system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  /* Back bar */
+  .back-bar { width: 100%; background: #0a0a1a; padding: 0.5rem 1rem; border-bottom: 1px solid #333; }
+  .back-bar a { color: #ffcc00; text-decoration: none; font-size: 0.9rem; font-family: system-ui, sans-serif; }
+  .back-bar a:hover { text-decoration: underline; }
+
+  /* ── SCREENS ── */
+  .screen { display: none; width: 100%; max-width: 480px; padding: 1rem; flex-direction: column; align-items: center; gap: 1rem; }
+  .screen.active { display: flex; }
+
+  h1 { font-size: 2.4rem; color: var(--gold); text-shadow: 0 0 20px rgba(255,215,0,0.4); }
+  h2 { font-size: 1.4rem; color: var(--gold); }
+  p.subtitle { color: var(--muted); font-size: 0.95rem; text-align: center; }
+
+  /* ── SETUP ── */
+  .setup-card { background: var(--surface); border-radius: 12px; padding: 1.2rem; width: 100%; }
+  .setup-card h3 { font-size: 0.85rem; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.8rem; }
+  .player-count-row { display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap; }
+  .cnt-btn { background: var(--teal); border: 2px solid transparent; border-radius: 8px; color: var(--text); font-size: 1rem; padding: 0.5rem 1rem; cursor: pointer; transition: all 0.15s; }
+  .cnt-btn.active { border-color: var(--gold); color: var(--gold); background: #1a3060; }
+  .player-rows { display: flex; flex-direction: column; gap: 0.5rem; }
+  .player-row { display: flex; align-items: center; gap: 0.6rem; }
+  .player-row input { flex: 1; background: var(--bg); border: 1px solid #333; border-radius: 8px; color: var(--text); padding: 0.5rem 0.8rem; font-size: 0.95rem; }
+  .player-row .dice-icon { font-size: 1.2rem; }
+
+  .btn { padding: 0.8rem 2rem; border-radius: 10px; border: none; cursor: pointer; font-size: 1rem; font-weight: 600; transition: all 0.15s; }
+  .btn-primary { background: var(--accent); color: white; }
+  .btn-primary:hover { filter: brightness(1.15); }
+  .btn-secondary { background: var(--surface); color: var(--text); border: 1px solid #444; }
+  .btn-secondary:hover { background: var(--surface2); }
+  .btn-gold { background: var(--gold); color: #0d0d1a; }
+  .btn-gold:hover { filter: brightness(1.1); }
+  .btn-danger { background: var(--red); color: white; }
+  .btn-danger:hover { filter: brightness(1.15); }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* ── HANDOFF ── */
+  .handoff-box {
+    background: var(--surface);
+    border-radius: 16px;
+    padding: 2rem;
+    text-align: center;
+    width: 100%;
+    gap: 1rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .handoff-name { font-size: 2rem; font-weight: 700; color: var(--gold); }
+  .handoff-dice-count { font-size: 1rem; color: var(--muted); }
+  .handoff-instruction { font-size: 0.95rem; line-height: 1.5; color: var(--text); }
+
+  /* ── GAME SCREEN ── */
+  .game-header { width: 100%; display: flex; flex-direction: column; gap: 0.5rem; }
+  .player-status-row { display: flex; gap: 0.4rem; flex-wrap: wrap; justify-content: center; }
+  .player-chip {
+    display: flex; align-items: center; gap: 0.3rem;
+    background: var(--surface); border: 1px solid #333;
+    border-radius: 20px; padding: 0.25rem 0.6rem;
+    font-size: 0.85rem;
+  }
+  .player-chip.active { border-color: var(--gold); color: var(--gold); }
+  .player-chip.eliminated { opacity: 0.3; text-decoration: line-through; }
+  .player-chip .dice-pip { font-size: 0.9rem; }
+
+  /* Current bid display */
+  .bid-display {
+    background: var(--surface2);
+    border: 1px solid #444;
+    border-radius: 12px;
+    padding: 1rem;
+    width: 100%;
+    text-align: center;
+  }
+  .bid-display .bid-label { font-size: 0.8rem; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.4rem; }
+  .bid-display .bid-value { font-size: 2rem; font-weight: 700; }
+  .bid-display .bid-who { font-size: 0.8rem; color: var(--muted); margin-top: 0.3rem; }
+  .dice-face { font-size: 2rem; }
+
+  /* Dice in cup */
+  .my-cup {
+    background: var(--surface);
+    border-radius: 12px;
+    padding: 1rem;
+    width: 100%;
+    text-align: center;
+  }
+  .my-cup .cup-label { font-size: 0.8rem; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.6rem; }
+  .dice-row { display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap; }
+  .die {
+    width: 52px; height: 52px;
+    background: white;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 2rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+    transition: transform 0.2s;
+  }
+  .die.wild { border: 2px solid var(--gold); }
+
+  /* Bidding controls */
+  .bid-controls {
+    background: var(--surface);
+    border-radius: 12px;
+    padding: 1rem;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+  }
+  .bid-row { display: flex; gap: 0.6rem; align-items: center; }
+  .bid-row label { font-size: 0.8rem; color: var(--muted); width: 70px; }
+  .bid-stepper { display: flex; align-items: center; gap: 0.4rem; }
+  .stepper-btn {
+    width: 36px; height: 36px;
+    background: var(--teal);
+    border: none; border-radius: 8px;
+    color: var(--text); font-size: 1.3rem;
+    cursor: pointer; transition: background 0.15s;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .stepper-btn:hover { background: #1a4a80; }
+  .stepper-val {
+    min-width: 50px;
+    text-align: center;
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--gold);
+  }
+  .face-selector { display: flex; gap: 0.3rem; flex-wrap: wrap; }
+  .face-btn {
+    width: 42px; height: 42px;
+    background: var(--teal); border: 2px solid transparent;
+    border-radius: 8px; cursor: pointer;
+    font-size: 1.5rem; display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s;
+  }
+  .face-btn.selected { border-color: var(--gold); background: #1a3060; }
+  .face-btn:hover { background: #1a4a80; }
+
+  .action-row { display: flex; gap: 0.6rem; }
+  .action-row .btn { flex: 1; }
+
+  /* ── REVEAL SCREEN ── */
+  .reveal-card {
+    background: var(--surface);
+    border-radius: 16px;
+    padding: 1.5rem;
+    width: 100%;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+  .reveal-result { font-size: 1.6rem; font-weight: 700; }
+  .reveal-result.win { color: var(--green); }
+  .reveal-result.lose { color: var(--red); }
+  .reveal-detail { font-size: 0.95rem; color: var(--muted); line-height: 1.5; }
+
+  .all-cups { display: flex; flex-direction: column; gap: 0.6rem; width: 100%; }
+  .cup-row { display: flex; align-items: center; gap: 0.6rem; background: var(--surface2); border-radius: 10px; padding: 0.5rem 0.8rem; }
+  .cup-name { font-size: 0.85rem; width: 90px; color: var(--muted); }
+  .cup-dice { display: flex; gap: 0.3rem; flex-wrap: wrap; }
+  .die-sm {
+    width: 34px; height: 34px;
+    background: white;
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.2rem;
+  }
+  .die-sm.highlight { border: 2px solid var(--gold); }
+  .die-sm.wild-match { border: 2px solid var(--accent); }
+
+  .highlight-count { font-size: 1.3rem; font-weight: 700; color: var(--gold); }
+
+  /* ── WIN SCREEN ── */
+  .win-screen { text-align: center; }
+  .trophy { font-size: 5rem; animation: pulse 1s ease-in-out infinite alternate; }
+  @keyframes pulse { from { transform: scale(1); } to { transform: scale(1.1); } }
+  .winner-name { font-size: 2.5rem; font-weight: 700; color: var(--gold); }
+
+  /* ── History log ── */
+  .history { width: 100%; max-height: 120px; overflow-y: auto; }
+  .history-item { font-size: 0.78rem; color: var(--muted); padding: 0.15rem 0; border-bottom: 1px solid #222; }
+
+  /* ── Transition overlay ── */
+  .overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.85);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 1rem; padding: 2rem;
+    z-index: 100;
+    text-align: center;
+  }
+  .overlay h2 { color: var(--gold); font-size: 1.8rem; }
+  .overlay p { color: var(--muted); }
+  .overlay.hidden { display: none; }
+
+  .round-info { font-size: 0.85rem; color: var(--muted); }
+</style>
+</head>
+<body>
+
+<div class="back-bar"><a href="/">← <span data-i18n="back">Zurück zu den Spielen</span></a></div>
+
+<!-- ═══════════════════════════════════════════════════════ SETUP SCREEN -->
+<div class="screen active" id="screen-setup">
+  <h1>🎲 Dudo!</h1>
+  <p class="subtitle" data-i18n="tagline">Bluff, challenge, survive. Klassisches Liar's Dice.</p>
+
+  <div class="setup-card">
+    <h3 data-i18n="numPlayers">Anzahl Spieler</h3>
+    <div class="player-count-row" id="cnt-row">
+      <button class="cnt-btn active" data-n="2">2</button>
+      <button class="cnt-btn" data-n="3">3</button>
+      <button class="cnt-btn" data-n="4">4</button>
+    </div>
+  </div>
+
+  <div class="setup-card">
+    <h3 data-i18n="playerNames">Spielernamen</h3>
+    <div class="player-rows" id="name-rows"></div>
+  </div>
+
+  <button class="btn btn-primary" id="btn-start" data-i18n="startGame">Spiel starten!</button>
+
+  <details style="width:100%;margin-top:0.5rem;">
+    <summary style="color:var(--muted);font-size:0.85rem;cursor:pointer;padding:0.3rem;" data-i18n="howToPlayTitle">Wie spielt man?</summary>
+    <div style="background:var(--surface);border-radius:8px;padding:0.8rem;margin-top:0.4rem;font-size:0.85rem;color:var(--muted);line-height:1.6;" data-i18n-html="howToPlayText"></div>
+  </details>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ HANDOFF SCREEN -->
+<div class="screen" id="screen-handoff">
+  <div class="handoff-box">
+    <div style="font-size:3rem;">🎲</div>
+    <div class="handoff-name" id="handoff-name">Spieler 1</div>
+    <div class="handoff-dice-count" id="handoff-dice-info"></div>
+    <div class="handoff-instruction" data-i18n="handoffInstruction">Nimm das Gerät und schau dir deine Würfel an.<br>Gib es dann zurück.</div>
+    <button class="btn btn-gold" id="btn-show-dice" data-i18n="showMyDice">Meine Würfel zeigen</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ GAME SCREEN -->
+<div class="screen" id="screen-game">
+  <div class="game-header">
+    <div class="player-status-row" id="player-chips"></div>
+    <div class="round-info" id="round-info"></div>
+  </div>
+
+  <div class="bid-display" id="bid-display">
+    <div class="bid-label" data-i18n="currentBid">Aktuelles Gebot</div>
+    <div class="bid-value" id="bid-value" data-i18n="noBid">— Kein Gebot —</div>
+    <div class="bid-who" id="bid-who"></div>
+  </div>
+
+  <div class="my-cup" id="cup-container">
+    <div class="cup-label" id="cup-label-text"></div>
+    <div class="dice-row" id="dice-display"></div>
+  </div>
+
+  <div class="bid-controls">
+    <div class="bid-row">
+      <label data-i18n="quantity">Anzahl</label>
+      <div class="bid-stepper">
+        <button class="stepper-btn" id="qty-down">−</button>
+        <div class="stepper-val" id="qty-val">1</div>
+        <button class="stepper-btn" id="qty-up">+</button>
+      </div>
+    </div>
+    <div class="bid-row">
+      <label data-i18n="face">Augenzahl</label>
+      <div class="face-selector" id="face-selector"></div>
+    </div>
+    <div class="action-row">
+      <button class="btn btn-primary" id="btn-bid" data-i18n="bid">Setzen</button>
+      <button class="btn btn-danger" id="btn-dudo" data-i18n="dudo" style="display:none">Dudo!</button>
+    </div>
+  </div>
+
+  <div class="history" id="history"></div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ REVEAL SCREEN -->
+<div class="screen" id="screen-reveal">
+  <h2 data-i18n="revealTitle">Aufdecken!</h2>
+  <div class="reveal-card">
+    <div class="reveal-result" id="reveal-result"></div>
+    <div class="reveal-detail" id="reveal-detail"></div>
+    <div class="all-cups" id="all-cups-display"></div>
+    <div class="highlight-count" id="highlight-count"></div>
+    <button class="btn btn-primary" id="btn-continue" data-i18n="continue">Weiter</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ WIN SCREEN -->
+<div class="screen" id="screen-win">
+  <div class="win-screen">
+    <div class="trophy">🏆</div>
+    <div class="winner-name" id="winner-name"></div>
+    <p data-i18n="winText">gewinnt das Spiel!</p>
+    <br>
+    <button class="btn btn-gold" id="btn-newgame" data-i18n="playAgain">Nochmal spielen!</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ OVERLAY -->
+<div class="overlay hidden" id="overlay">
+  <h2 id="overlay-title"></h2>
+  <p id="overlay-msg"></p>
+  <button class="btn btn-gold" id="overlay-btn" data-i18n="ready">Bereit!</button>
+</div>
+
+<script src="/shared/i18n.js"></script>
+<script>
+// ──────────────────────────────────────────────
+// TRANSLATIONS
+// ──────────────────────────────────────────────
+const TRANSLATIONS = {
+  de: {
+    back: "Zurück zu den Spielen",
+    tagline: "Bluff, challange, überlebe. Klassisches Liar's Dice.",
+    numPlayers: "Anzahl Spieler",
+    playerNames: "Spielernamen",
+    startGame: "Spiel starten!",
+    howToPlayTitle: "Wie spielt man?",
+    howToPlayText: `<b>Dudo!</b> ist das klassische Würfelbluff-Spiel (auch: Perudo).<br><br>
+      <b>Setup:</b> Jeder Spieler würfelt verdeckt 5 Würfel.<br>
+      <b>Gebot:</b> Der aktive Spieler behauptet, wie viele Würfel mit einer bestimmten Augenzahl <i>insgesamt</i> auf dem Tisch liegen. Jedes Gebot muss das vorherige überbieten.<br>
+      <b>Wilds:</b> Einser (🎲1) zählen als jede Augenzahl mit!<br>
+      <b>Dudo!</b> Glaubst du dem Gebot nicht? Ruf Dudo! – alle decken auf. Ist das Gebot zu hoch → Bieter verliert einen Würfel. Ist es korrekt → Du verlierst einen Würfel.<br>
+      <b>Sieg:</b> Wer als letzter noch Würfel hat, gewinnt!`,
+    handoffInstruction: "Nimm das Gerät und schau dir deine Würfel an.\nDann zurückgeben.",
+    showMyDice: "Meine Würfel zeigen",
+    currentBid: "Aktuelles Gebot",
+    noBid: "— Noch kein Gebot —",
+    quantity: "Anzahl",
+    face: "Augenzahl",
+    bid: "Setzen",
+    dudo: "Dudo!",
+    revealTitle: "Aufdecken!",
+    continue: "Weiter",
+    winText: "gewinnt das Spiel!",
+    playAgain: "Nochmal spielen!",
+    ready: "Bereit!",
+    yourTurn: "Du bist dran",
+    diceLeft: "Würfel übrig",
+    totalDice: "Würfel insgesamt",
+    callDudo: "Dudo gerufen von",
+    against: "gegen das Gebot von",
+    actualCount: "Tatsächliche Anzahl",
+    bidSurvived: "Das Gebot steht!",
+    bidFailed: "Das Gebot war zu hoch!",
+    loses: "verliert einen Würfel",
+    lostDie: "−1 Würfel",
+    handoff: "Gib das Gerät an",
+    eliminated: "ist ausgeschieden!",
+    passDevice: "Gib das Gerät weiter an",
+    passFor: "für die nächste Runde.",
+    wildcardNote: "💡 Einser (⚀) zählen bei Nicht-Eins-Geboten als Joker!",
+    makeBid: "Mach ein Gebot",
+    challengeBid: "oder fordere heraus",
+    roundNum: "Runde",
+    bidHistory: "Gebotshistorie",
+    bidMadeBy: "gesetzt von",
+  },
+  en: {
+    back: "Back to Games",
+    tagline: "Bluff, challenge, survive. Classic Liar's Dice.",
+    numPlayers: "Number of Players",
+    playerNames: "Player Names",
+    startGame: "Start Game!",
+    howToPlayTitle: "How to Play?",
+    howToPlayText: `<b>Dudo!</b> is the classic liar's dice game (also: Perudo).<br><br>
+      <b>Setup:</b> Each player secretly rolls 5 dice.<br>
+      <b>Bid:</b> The active player claims how many dice of a given face exist <i>total</i> across all cups. Each bid must beat the previous one.<br>
+      <b>Wilds:</b> Ones (⚀) count as any face!<br>
+      <b>Dudo!</b> Don't believe the bid? Call Dudo! – everyone reveals. Bid too high → bidder loses a die. Bid correct → you lose a die.<br>
+      <b>Win:</b> Last player with dice wins!`,
+    handoffInstruction: "Take the device and look at your dice.\nThen hand it back.",
+    showMyDice: "Show My Dice",
+    currentBid: "Current Bid",
+    noBid: "— No bid yet —",
+    quantity: "Quantity",
+    face: "Face",
+    bid: "Bid",
+    dudo: "Dudo!",
+    revealTitle: "Reveal!",
+    continue: "Continue",
+    winText: "wins the game!",
+    playAgain: "Play Again!",
+    ready: "Ready!",
+    yourTurn: "Your Turn",
+    diceLeft: "dice left",
+    totalDice: "dice total",
+    callDudo: "Dudo called by",
+    against: "vs. bid of",
+    actualCount: "Actual count",
+    bidSurvived: "Bid survives!",
+    bidFailed: "Bid was too high!",
+    loses: "loses a die",
+    lostDie: "−1 die",
+    handoff: "Pass the device to",
+    eliminated: "is eliminated!",
+    passDevice: "Pass the device to",
+    passFor: "for the next round.",
+    wildcardNote: "💡 Ones (⚀) count as wildcards for non-1 bids!",
+    makeBid: "Place a bid",
+    challengeBid: "or challenge",
+    roundNum: "Round",
+    bidHistory: "Bid History",
+    bidMadeBy: "bid by",
+  },
+  fr: {
+    back: "Retour aux Jeux",
+    tagline: "Bluff, défiez, survivez. Liar's Dice classique.",
+    numPlayers: "Nombre de joueurs",
+    playerNames: "Noms des joueurs",
+    startGame: "Lancer le jeu !",
+    howToPlayTitle: "Comment jouer ?",
+    howToPlayText: `<b>Dudo!</b> est le jeu classique des dés menteurs (aussi: Perudo).<br><br>
+      <b>Mise en place :</b> Chaque joueur lance secrètement 5 dés.<br>
+      <b>Mise :</b> Le joueur actif revendique combien de dés d'une face donnée existent <i>au total</i>. Chaque mise doit dépasser la précédente.<br>
+      <b>Jokers :</b> Les uns (⚀) comptent comme n'importe quelle face!<br>
+      <b>Dudo!</b> Vous ne croyez pas la mise? Criez Dudo! – tout le monde révèle. Trop haut → le miseur perd un dé. Correct → vous perdez un dé.<br>
+      <b>Victoire :</b> Le dernier avec des dés gagne!`,
+    handoffInstruction: "Prends l'appareil et regarde tes dés.\nPuis repasse-le.",
+    showMyDice: "Voir mes dés",
+    currentBid: "Mise actuelle",
+    noBid: "— Pas encore de mise —",
+    quantity: "Quantité",
+    face: "Face",
+    bid: "Miser",
+    dudo: "Dudo !",
+    revealTitle: "Révéler !",
+    continue: "Continuer",
+    winText: "remporte la partie !",
+    playAgain: "Rejouer !",
+    ready: "Prêt !",
+    yourTurn: "C'est ton tour",
+    diceLeft: "dés restants",
+    totalDice: "dés au total",
+    callDudo: "Dudo crié par",
+    against: "contre la mise de",
+    actualCount: "Nombre réel",
+    bidSurvived: "La mise tient !",
+    bidFailed: "La mise était trop haute !",
+    loses: "perd un dé",
+    lostDie: "−1 dé",
+    handoff: "Passe l'appareil à",
+    eliminated: "est éliminé !",
+    passDevice: "Passe l'appareil à",
+    passFor: "pour le prochain tour.",
+    wildcardNote: "💡 Les uns (⚀) comptent comme jokers pour les mises non-1 !",
+    makeBid: "Fais une mise",
+    challengeBid: "ou défie",
+    roundNum: "Tour",
+    bidHistory: "Historique",
+    bidMadeBy: "misé par",
+  },
+  it: {
+    back: "Torna ai Giochi",
+    tagline: "Bluffa, sfida, sopravvivi. Il classico Liar's Dice.",
+    numPlayers: "Numero di giocatori",
+    playerNames: "Nomi dei giocatori",
+    startGame: "Inizia il gioco!",
+    howToPlayTitle: "Come si gioca?",
+    howToPlayText: `<b>Dudo!</b> è il classico gioco dei dadi bugiardi (anche: Perudo).<br><br>
+      <b>Setup:</b> Ogni giocatore lancia segretamente 5 dadi.<br>
+      <b>Offerta:</b> Il giocatore attivo dichiara quanti dadi di una data faccia esistono <i>in totale</i>. Ogni offerta deve superare la precedente.<br>
+      <b>Jolly:</b> Gli uni (⚀) contano come qualsiasi faccia!<br>
+      <b>Dudo!</b> Non credi all'offerta? Grida Dudo! – tutti rivelano. Troppo alta → il offerente perde un dado. Corretta → tu perdi un dado.<br>
+      <b>Vittoria:</b> L'ultimo con dadi vince!`,
+    handoffInstruction: "Prendi il dispositivo e guarda i tuoi dadi.\nPoi ridallo.",
+    showMyDice: "Mostra i miei dadi",
+    currentBid: "Offerta attuale",
+    noBid: "— Nessuna offerta —",
+    quantity: "Quantità",
+    face: "Faccia",
+    bid: "Offrire",
+    dudo: "Dudo!",
+    revealTitle: "Rivela!",
+    continue: "Continua",
+    winText: "vince il gioco!",
+    playAgain: "Giocare ancora!",
+    ready: "Pronto!",
+    yourTurn: "È il tuo turno",
+    diceLeft: "dadi rimasti",
+    totalDice: "dadi in totale",
+    callDudo: "Dudo chiamato da",
+    against: "contro l'offerta di",
+    actualCount: "Conteggio reale",
+    bidSurvived: "L'offerta regge!",
+    bidFailed: "L'offerta era troppo alta!",
+    loses: "perde un dado",
+    lostDie: "−1 dado",
+    handoff: "Passa il dispositivo a",
+    eliminated: "è eliminato!",
+    passDevice: "Passa il dispositivo a",
+    passFor: "per il prossimo round.",
+    wildcardNote: "💡 Gli uni (⚀) contano come jolly per le offerte non-1!",
+    makeBid: "Fai un'offerta",
+    challengeBid: "o sfida",
+    roundNum: "Round",
+    bidHistory: "Storico",
+    bidMadeBy: "offerto da",
+  },
+  es: {
+    back: "Volver a los Juegos",
+    tagline: "Farolea, desafía, sobrevive. El clásico Liar's Dice.",
+    numPlayers: "Número de jugadores",
+    playerNames: "Nombres de jugadores",
+    startGame: "¡Iniciar juego!",
+    howToPlayTitle: "¿Cómo se juega?",
+    howToPlayText: `<b>Dudo!</b> es el clásico juego de dados mentirosos (también: Perudo).<br><br>
+      <b>Preparación:</b> Cada jugador lanza en secreto 5 dados.<br>
+      <b>Apuesta:</b> El jugador activo afirma cuántos dados de una cara existen <i>en total</i>. Cada apuesta debe superar la anterior.<br>
+      <b>Comodines:</b> Los unos (⚀) cuentan como cualquier cara!<br>
+      <b>¡Dudo!</b> ¿No crees la apuesta? ¡Llama Dudo! – todos revelan. Demasiado alta → el apostante pierde un dado. Correcta → tú pierdes un dado.<br>
+      <b>Victoria:</b> ¡El último con dados gana!`,
+    handoffInstruction: "Toma el dispositivo y mira tus dados.\nLuego devuélvelo.",
+    showMyDice: "Ver mis dados",
+    currentBid: "Apuesta actual",
+    noBid: "— Sin apuesta aún —",
+    quantity: "Cantidad",
+    face: "Cara",
+    bid: "Apostar",
+    dudo: "¡Dudo!",
+    revealTitle: "¡Revelar!",
+    continue: "Continuar",
+    winText: "¡gana el juego!",
+    playAgain: "¡Jugar de nuevo!",
+    ready: "¡Listo!",
+    yourTurn: "Es tu turno",
+    diceLeft: "dados restantes",
+    totalDice: "dados en total",
+    callDudo: "Dudo llamado por",
+    against: "contra la apuesta de",
+    actualCount: "Conteo real",
+    bidSurvived: "¡La apuesta sobrevive!",
+    bidFailed: "¡La apuesta era demasiado alta!",
+    loses: "pierde un dado",
+    lostDie: "−1 dado",
+    handoff: "Pasa el dispositivo a",
+    eliminated: "¡está eliminado!",
+    passDevice: "Pasa el dispositivo a",
+    passFor: "para la siguiente ronda.",
+    wildcardNote: "💡 ¡Los unos (⚀) cuentan como comodines para apuestas no-1!",
+    makeBid: "Haz una apuesta",
+    challengeBid: "o desafía",
+    roundNum: "Ronda",
+    bidHistory: "Historial",
+    bidMadeBy: "apostado por",
+  },
+};
+
+const { t, onLangChange, translatePage } = initI18n(TRANSLATIONS);
+onLangChange(() => translatePage());
+
+// ──────────────────────────────────────────────
+// DICE FACES (Unicode)
+// ──────────────────────────────────────────────
+const DICE_UNICODE = ['⚀','⚁','⚂','⚃','⚄','⚅'];
+function dieFace(n) { return DICE_UNICODE[n - 1] || '?'; }
+
+// ──────────────────────────────────────────────
+// GAME LOGIC (inline, mirroring dudo-logic.js)
+// ──────────────────────────────────────────────
+function rollDice(n) {
+  return Array.from({length: n}, () => Math.floor(Math.random() * 6) + 1);
+}
+function countFace(cups, face) {
+  return cups.reduce((sum, cup) => sum + cup.filter(d => d === face).length, 0);
+}
+function countFaceWithWilds(cups, face) {
+  if (face === 1) return countFace(cups, 1);
+  return countFace(cups, face) + countFace(cups, 1);
+}
+function isValidBid(bid, prevBid, totalDice) {
+  const {quantity, face} = bid;
+  if (quantity < 1 || quantity > totalDice) return false;
+  if (face < 1 || face > 6) return false;
+  if (!prevBid) return true;
+  if (quantity > prevBid.quantity) return true;
+  if (quantity === prevBid.quantity && face > prevBid.face) return true;
+  return false;
+}
+function resolveDudo(cups, bid, bidderId, challengerId) {
+  const actualCount = countFaceWithWilds(cups, bid.face);
+  const bidSurvived = actualCount >= bid.quantity;
+  const loser = bidSurvived ? challengerId : bidderId;
+  return { loser, actualCount, bidSurvived };
+}
+
+// ──────────────────────────────────────────────
+// GAME STATE
+// ──────────────────────────────────────────────
+let G = {};
+
+function initGame(names) {
+  G = {
+    players: names.map((name, i) => ({
+      id: i,
+      name,
+      dice: [],
+      diceCount: 5,
+    })),
+    currentBid: null,
+    currentBidder: null,
+    activePlayer: 0,
+    round: 1,
+    history: [],
+    phase: 'handoff', // handoff | game | reveal | win
+    pendingReveal: null,
+  };
+  rollAllDice();
+  G.activePlayer = 0;
+  G.phase = 'handoff';
+}
+
+function rollAllDice() {
+  G.players.forEach(p => {
+    if (p.diceCount > 0) {
+      p.dice = rollDice(p.diceCount);
+    } else {
+      p.dice = [];
+    }
+  });
+}
+
+function activePlayers() {
+  return G.players.filter(p => p.diceCount > 0);
+}
+
+function totalDice() {
+  return G.players.reduce((sum, p) => sum + p.diceCount, 0);
+}
+
+function nextActivePlayer(from) {
+  const active = activePlayers().map(p => p.id);
+  const idx = active.indexOf(from);
+  return active[(idx + 1) % active.length];
+}
+
+// ──────────────────────────────────────────────
+// UI HELPERS
+// ──────────────────────────────────────────────
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + id).classList.add('active');
+}
+
+function updatePlayerChips() {
+  const row = document.getElementById('player-chips');
+  row.innerHTML = '';
+  G.players.forEach(p => {
+    const chip = document.createElement('div');
+    chip.className = 'player-chip' +
+      (p.id === G.activePlayer ? ' active' : '') +
+      (p.diceCount === 0 ? ' eliminated' : '');
+    chip.innerHTML = `<span>${p.name}</span><span class="dice-pip">${'🎲'.repeat(Math.min(p.diceCount, 5))}</span>`;
+    row.appendChild(chip);
+  });
+  document.getElementById('round-info').textContent = `${t('roundNum')} ${G.round} · ${totalDice()} ${t('totalDice')}`;
+}
+
+function updateBidDisplay() {
+  const val = document.getElementById('bid-value');
+  const who = document.getElementById('bid-who');
+  if (!G.currentBid) {
+    val.setAttribute('data-i18n', 'noBid');
+    val.textContent = t('noBid');
+    who.textContent = '';
+  } else {
+    val.removeAttribute('data-i18n');
+    val.textContent = `${G.currentBid.quantity}× ${dieFace(G.currentBid.face)}`;
+    who.textContent = `${t('bidMadeBy')} ${G.players[G.currentBidder].name}`;
+  }
+}
+
+function updateBidControls() {
+  document.getElementById('qty-val').textContent = bidState.quantity;
+  document.querySelectorAll('.face-btn').forEach(btn => {
+    btn.classList.toggle('selected', parseInt(btn.dataset.face) === bidState.face);
+  });
+  const valid = isValidBid(bidState, G.currentBid, totalDice());
+  document.getElementById('btn-bid').disabled = !valid;
+}
+
+let bidState = { quantity: 1, face: 1 };
+
+function initBidControls() {
+  // Set minimum valid bid
+  if (G.currentBid) {
+    if (G.currentBid.face < 6) {
+      bidState = { quantity: G.currentBid.quantity, face: G.currentBid.face + 1 };
+    } else {
+      bidState = { quantity: G.currentBid.quantity + 1, face: 1 };
+    }
+  } else {
+    bidState = { quantity: 1, face: 1 };
+  }
+  updateBidControls();
+}
+
+function renderDiceInCup(dice) {
+  const row = document.getElementById('dice-display');
+  row.innerHTML = '';
+  dice.forEach(d => {
+    const die = document.createElement('div');
+    die.className = 'die' + (d === 1 ? ' wild' : '');
+    die.textContent = dieFace(d);
+    row.appendChild(die);
+  });
+}
+
+// ──────────────────────────────────────────────
+// HANDOFF FLOW
+// ──────────────────────────────────────────────
+let handoffShowing = false;
+
+function showHandoff(playerId, afterCallback) {
+  handoffShowing = false;
+  const player = G.players[playerId];
+  document.getElementById('handoff-name').textContent = player.name;
+  document.getElementById('handoff-dice-info').textContent = `${player.diceCount} ${t('diceLeft')}`;
+  document.getElementById('btn-show-dice').textContent = t('showMyDice');
+
+  // Wire up button
+  const btn = document.getElementById('btn-show-dice');
+  const newBtn = btn.cloneNode(true);
+  btn.parentNode.replaceChild(newBtn, btn);
+  newBtn.textContent = t('showMyDice');
+
+  // Phase 1: Show dice
+  newBtn.onclick = () => {
+    if (!handoffShowing) {
+      handoffShowing = true;
+      renderDiceInCup(player.dice);
+      // Temporarily show dice
+      const diceRow = document.createElement('div');
+      diceRow.className = 'dice-row';
+      player.dice.forEach(d => {
+        const die = document.createElement('div');
+        die.className = 'die' + (d === 1 ? ' wild' : '');
+        die.textContent = dieFace(d);
+        diceRow.appendChild(die);
+      });
+      const existing = document.querySelector('#screen-handoff .dice-row');
+      if (existing) existing.remove();
+      document.querySelector('.handoff-box').insertBefore(diceRow, newBtn);
+      newBtn.textContent = t('ready');
+      newBtn.onclick = () => {
+        // Remove dice display
+        const dr = document.querySelector('#screen-handoff .dice-row');
+        if (dr) dr.remove();
+        afterCallback();
+      };
+    }
+  };
+  showScreen('handoff');
+}
+
+// ──────────────────────────────────────────────
+// GAME SCREEN
+// ──────────────────────────────────────────────
+function showGameScreen() {
+  const player = G.players[G.activePlayer];
+  document.getElementById('cup-label-text').textContent = `${player.name} – ${t('yourTurn')}`;
+
+  renderDiceInCup(player.dice);
+  updatePlayerChips();
+  updateBidDisplay();
+  initBidControls();
+
+  // Show/hide Dudo button
+  const btnDudo = document.getElementById('btn-dudo');
+  btnDudo.style.display = G.currentBid ? '' : 'none';
+
+  // History
+  renderHistory();
+
+  showScreen('game');
+}
+
+function renderHistory() {
+  const el = document.getElementById('history');
+  el.innerHTML = '';
+  G.history.slice(-8).forEach(item => {
+    const div = document.createElement('div');
+    div.className = 'history-item';
+    div.textContent = item;
+    el.appendChild(div);
+  });
+}
+
+// ──────────────────────────────────────────────
+// BID CONTROLS
+// ──────────────────────────────────────────────
+function buildFaceSelector() {
+  const sel = document.getElementById('face-selector');
+  sel.innerHTML = '';
+  for (let f = 1; f <= 6; f++) {
+    const btn = document.createElement('button');
+    btn.className = 'face-btn' + (f === bidState.face ? ' selected' : '');
+    btn.dataset.face = f;
+    btn.textContent = dieFace(f);
+    btn.onclick = () => {
+      bidState.face = f;
+      updateBidControls();
+    };
+    sel.appendChild(btn);
+  }
+}
+
+document.getElementById('qty-down').onclick = () => {
+  bidState.quantity = Math.max(1, bidState.quantity - 1);
+  updateBidControls();
+};
+document.getElementById('qty-up').onclick = () => {
+  bidState.quantity = Math.min(totalDice(), bidState.quantity + 1);
+  updateBidControls();
+};
+
+document.getElementById('btn-bid').onclick = () => {
+  if (!isValidBid(bidState, G.currentBid, totalDice())) return;
+  const prevBidder = G.currentBidder;
+  G.currentBid = { ...bidState };
+  G.currentBidder = G.activePlayer;
+  G.history.push(`${G.players[G.activePlayer].name}: ${bidState.quantity}× ${dieFace(bidState.face)}`);
+
+  // Pass to next player
+  const nextPlayer = nextActivePlayer(G.activePlayer);
+  G.activePlayer = nextPlayer;
+  showHandoff(G.activePlayer, showGameScreen);
+};
+
+document.getElementById('btn-dudo').onclick = () => {
+  // Resolve
+  const cups = G.players.filter(p => p.diceCount > 0).map(p => p.dice);
+  const allCups = G.players.map(p => p.dice); // indexed by player id
+  const challengerId = G.activePlayer;
+  const bidderId = G.currentBidder;
+  const result = resolveDudo(allCups, G.currentBid, bidderId, challengerId);
+  G.pendingReveal = { result, bidderId, challengerId, bid: G.currentBid };
+  showReveal();
+};
+
+// ──────────────────────────────────────────────
+// REVEAL SCREEN
+// ──────────────────────────────────────────────
+function showReveal() {
+  const { result, bidderId, challengerId, bid } = G.pendingReveal;
+  const loser = G.players[result.loser];
+  const bidder = G.players[bidderId];
+  const challenger = G.players[challengerId];
+
+  // Result text
+  const resEl = document.getElementById('reveal-result');
+  if (result.bidSurvived) {
+    resEl.className = 'reveal-result win';
+    resEl.textContent = `✅ ${t('bidSurvived')}`;
+  } else {
+    resEl.className = 'reveal-result lose';
+    resEl.textContent = `❌ ${t('bidFailed')}`;
+  }
+
+  // Detail
+  document.getElementById('reveal-detail').innerHTML =
+    `${t('callDudo')}: <b>${challenger.name}</b><br>` +
+    `${t('against')}: <b>${bid.quantity}× ${dieFace(bid.face)}</b> (${bidder.name})<br>` +
+    `${t('actualCount')}: <b>${result.actualCount}</b><br>` +
+    `→ <b>${loser.name}</b> ${t('loses')}`;
+
+  // Show all cups
+  const allCupsEl = document.getElementById('all-cups-display');
+  allCupsEl.innerHTML = '';
+  G.players.forEach(p => {
+    if (p.diceCount === 0) return;
+    const row = document.createElement('div');
+    row.className = 'cup-row';
+    const nameEl = document.createElement('div');
+    nameEl.className = 'cup-name';
+    nameEl.textContent = p.name;
+    row.appendChild(nameEl);
+    const diceEl = document.createElement('div');
+    diceEl.className = 'cup-dice';
+    p.dice.forEach(d => {
+      const die = document.createElement('div');
+      die.className = 'die-sm';
+      die.textContent = dieFace(d);
+      if (d === bid.face) {
+        die.classList.add('highlight');
+      } else if (d === 1 && bid.face !== 1) {
+        die.classList.add('wild-match');
+      }
+      diceEl.appendChild(die);
+    });
+    row.appendChild(diceEl);
+    allCupsEl.appendChild(row);
+  });
+
+  document.getElementById('highlight-count').textContent =
+    `${dieFace(bid.face)} + ⚀ = ${result.actualCount} (${t('actualCount')})`;
+
+  G.history.push(`⚡ Dudo! ${challenger.name} vs ${bidder.name}: ${result.actualCount} ${dieFace(bid.face)} → ${loser.name} ${t('lostDie')}`);
+
+  showScreen('reveal');
+}
+
+document.getElementById('btn-continue').onclick = () => {
+  const { result } = G.pendingReveal;
+  const loser = G.players[result.loser];
+  loser.diceCount--;
+
+  // Check elimination
+  if (loser.diceCount === 0) {
+    // Player eliminated — log it
+    G.history.push(`💀 ${loser.name} ${t('eliminated')}`);
+  }
+
+  // Check win condition
+  const alive = G.players.filter(p => p.diceCount > 0);
+  if (alive.length === 1) {
+    showWin(alive[0]);
+    return;
+  }
+
+  // New round: re-roll, loser goes first (if still alive)
+  G.round++;
+  G.currentBid = null;
+  G.currentBidder = null;
+  rollAllDice();
+
+  // Loser starts next round (if still alive), else next active
+  if (loser.diceCount > 0) {
+    G.activePlayer = loser.id;
+  } else {
+    G.activePlayer = nextActivePlayer(result.loser);
+  }
+
+  G.pendingReveal = null;
+  showHandoff(G.activePlayer, showGameScreen);
+};
+
+// ──────────────────────────────────────────────
+// WIN SCREEN
+// ──────────────────────────────────────────────
+function showWin(player) {
+  document.getElementById('winner-name').textContent = `🏆 ${player.name}`;
+  showScreen('win');
+}
+
+document.getElementById('btn-newgame').onclick = () => {
+  showScreen('setup');
+};
+
+// ──────────────────────────────────────────────
+// SETUP SCREEN
+// ──────────────────────────────────────────────
+let numPlayers = 2;
+const defaultNames = {
+  de: ['Spieler 1','Spieler 2','Spieler 3','Spieler 4'],
+  en: ['Player 1','Player 2','Player 3','Player 4'],
+  fr: ['Joueur 1','Joueur 2','Joueur 3','Joueur 4'],
+  it: ['Giocatore 1','Giocatore 2','Giocatore 3','Giocatore 4'],
+  es: ['Jugador 1','Jugador 2','Jugador 3','Jugador 4'],
+};
+
+function buildNameRows() {
+  const container = document.getElementById('name-rows');
+  container.innerHTML = '';
+  const lang = document.documentElement.lang || 'de';
+  const names = defaultNames[lang] || defaultNames.de;
+  for (let i = 0; i < numPlayers; i++) {
+    const row = document.createElement('div');
+    row.className = 'player-row';
+    row.innerHTML = `<span class="dice-icon">🎲</span><input type="text" value="${names[i]}" maxlength="20" id="player-name-${i}">`;
+    container.appendChild(row);
+  }
+}
+
+document.getElementById('cnt-row').onclick = (e) => {
+  const btn = e.target.closest('.cnt-btn');
+  if (!btn) return;
+  numPlayers = parseInt(btn.dataset.n);
+  document.querySelectorAll('.cnt-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  buildNameRows();
+};
+
+document.getElementById('btn-start').onclick = () => {
+  const names = [];
+  for (let i = 0; i < numPlayers; i++) {
+    const inp = document.getElementById(`player-name-${i}`);
+    names.push(inp.value.trim() || `Spieler ${i + 1}`);
+  }
+  initGame(names);
+  buildFaceSelector();
+  showHandoff(G.activePlayer, showGameScreen);
+};
+
+// Also rebuild face selector on lang change
+onLangChange(() => { buildNameRows(); });
+
+// Init
+buildNameRows();
+</script>
+</body>
+</html>
