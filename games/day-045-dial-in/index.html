@@ -1,0 +1,1359 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Dial-In 🎚️</title>
+<style>
+  :root {
+    --bg: #0a0a1a;
+    --card: #111128;
+    --border: #2a2a4a;
+    --accent: #ffcc00;
+    --accent2: #a78bfa;
+    --text: #e8e8ff;
+    --muted: #888aaa;
+    --red: #e74c3c;
+    --green: #2ecc71;
+    --blue: #3498db;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: system-ui, -apple-system, sans-serif;
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .back-bar {
+    width: 100%;
+    background: #0a0a1a;
+    padding: 0.5rem 1rem;
+    border-bottom: 1px solid #333;
+  }
+  .back-bar a {
+    color: #ffcc00;
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-family: system-ui, sans-serif;
+  }
+  .back-bar a:hover { text-decoration: underline; }
+
+  .game-wrap {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 1rem;
+    max-width: 560px;
+    margin: 0 auto;
+    width: 100%;
+  }
+
+  h1 {
+    font-size: 2rem;
+    font-weight: 900;
+    color: var(--accent);
+    letter-spacing: -0.02em;
+    margin-bottom: 0.25rem;
+  }
+  .tagline { color: var(--muted); font-size: 0.9rem; margin-bottom: 1.5rem; text-align: center; }
+
+  /* SCREENS */
+  .screen { display: none; width: 100%; }
+  .screen.active { display: flex; flex-direction: column; align-items: center; gap: 1rem; }
+
+  /* CARD */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 1.25rem;
+    width: 100%;
+  }
+
+  /* INPUTS */
+  input[type="text"] {
+    width: 100%;
+    background: #0d0d2a;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--text);
+    font-size: 1rem;
+    padding: 0.75rem 1rem;
+    outline: none;
+  }
+  input[type="text"]:focus { border-color: var(--accent); }
+  input[type="text"]::placeholder { color: var(--muted); }
+
+  /* BUTTONS */
+  .btn {
+    width: 100%;
+    padding: 0.85rem;
+    border: none;
+    border-radius: 12px;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn-primary { background: var(--accent); color: #000; }
+  .btn-primary:hover:not(:disabled) { filter: brightness(1.1); }
+  .btn-secondary { background: #1e1e3a; color: var(--text); border: 1px solid var(--border); }
+  .btn-secondary:hover:not(:disabled) { background: #2a2a4a; }
+  .btn-small {
+    width: auto;
+    padding: 0.5rem 1rem;
+    font-size: 0.85rem;
+    border-radius: 8px;
+  }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* PLAYER CHIPS */
+  .players-list { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.5rem; }
+  .player-chip {
+    padding: 0.35rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #000;
+  }
+
+  /* ROOM CODE */
+  .room-code-display {
+    font-size: 2.5rem;
+    font-weight: 900;
+    letter-spacing: 0.2em;
+    color: var(--accent);
+    text-align: center;
+    font-family: monospace;
+    background: #0d0d2a;
+    border: 2px solid var(--accent);
+    border-radius: 12px;
+    padding: 0.5rem 1rem;
+  }
+
+  /* SPECTRUM */
+  .spectrum-poles {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--accent2);
+    margin-bottom: 0.5rem;
+  }
+
+  .spectrum-bar {
+    position: relative;
+    height: 48px;
+    background: linear-gradient(to right, #1e40af, #1e40af 5%, #2563eb 30%, #7c3aed 50%, #dc2626 70%, #dc2626 95%, #7f1d1d);
+    border-radius: 24px;
+    margin: 0.5rem 0;
+    overflow: visible;
+    touch-action: none;
+  }
+
+  .spectrum-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.75rem;
+    color: var(--muted);
+    margin-bottom: 0.25rem;
+  }
+
+  /* SLIDER */
+  .slider-wrap {
+    position: relative;
+    padding: 0.75rem 0;
+    margin: 1rem 0;
+  }
+
+  input[type="range"] {
+    width: 100%;
+    -webkit-appearance: none;
+    height: 48px;
+    background: transparent;
+    cursor: pointer;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--accent);
+    border: 3px solid #fff;
+    box-shadow: 0 0 12px rgba(255,204,0,0.6);
+    cursor: grab;
+  }
+  input[type="range"]::-webkit-slider-runnable-track {
+    height: 48px;
+    border-radius: 24px;
+    background: linear-gradient(to right, #1e40af, #2563eb 30%, #7c3aed 50%, #dc2626 70%, #7f1d1d);
+  }
+  input[type="range"]::-moz-range-thumb {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--accent);
+    border: 3px solid #fff;
+    cursor: grab;
+  }
+  input[type="range"]::-moz-range-track {
+    height: 48px;
+    border-radius: 24px;
+    background: linear-gradient(to right, #1e40af, #2563eb 30%, #7c3aed 50%, #dc2626 70%, #7f1d1d);
+  }
+
+  .slider-value-display {
+    text-align: center;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--accent);
+    margin: 0.25rem 0;
+  }
+
+  /* REVEAL MARKERS */
+  .spectrum-markers {
+    position: relative;
+    height: 60px;
+    margin: 0.5rem 0;
+  }
+
+  .marker {
+    position: absolute;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    pointer-events: none;
+  }
+  .marker-line {
+    width: 3px;
+    height: 20px;
+    border-radius: 2px;
+  }
+  .marker-label {
+    font-size: 0.65rem;
+    font-weight: 700;
+    white-space: nowrap;
+    text-align: center;
+    max-width: 60px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .marker-target { top: 0; }
+  .marker-guess { top: 30px; }
+
+  /* CLUE DISPLAY */
+  .clue-display {
+    font-size: 2.5rem;
+    font-weight: 900;
+    text-align: center;
+    color: var(--accent);
+    letter-spacing: 0.05em;
+    padding: 1rem;
+    background: #0d0d2a;
+    border-radius: 12px;
+    border: 2px solid var(--accent);
+    margin: 0.5rem 0;
+    min-height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* STATUS */
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.35rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    background: #1e1e3a;
+    border: 1px solid var(--border);
+  }
+  .status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--green);
+    animation: pulse 1.5s infinite;
+  }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+  /* TIMER */
+  .timer-bar-wrap {
+    width: 100%;
+    height: 6px;
+    background: #1e1e3a;
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .timer-bar {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 3px;
+    transition: width 1s linear, background 0.5s;
+  }
+  .timer-bar.urgent { background: var(--red); }
+  .timer-num {
+    text-align: center;
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--accent);
+    margin: 0.25rem 0;
+  }
+
+  /* SCORE TABLE */
+  .score-table { width: 100%; border-collapse: collapse; }
+  .score-table th {
+    text-align: left;
+    font-size: 0.75rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 0.4rem 0.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .score-table td {
+    padding: 0.5rem 0.5rem;
+    font-size: 0.9rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .score-row-winner td { color: var(--accent); font-weight: 700; }
+
+  /* ROLE BADGE */
+  .role-badge {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 700;
+  }
+  .role-broadcaster { background: #4c1d95; color: #c4b5fd; }
+  .role-guesser { background: #1c3a5c; color: #7dd3fc; }
+
+  /* MISC */
+  .text-center { text-align: center; }
+  .text-muted { color: var(--muted); font-size: 0.85rem; }
+  .round-indicator { font-size: 0.85rem; color: var(--muted); font-weight: 600; }
+  .divider { width: 100%; height: 1px; background: var(--border); }
+
+  .guesser-status {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-top: 0.5rem;
+  }
+  .guesser-chip {
+    padding: 0.3rem 0.6rem;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    opacity: 0.4;
+    transition: opacity 0.3s;
+    border: 2px solid transparent;
+  }
+  .guesser-chip.submitted { opacity: 0.8; }
+  .guesser-chip.locked { opacity: 1; border-style: solid; }
+
+  .fade-in { animation: fadeIn 0.5s ease; }
+  @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+
+  .error-msg { color: var(--red); font-size: 0.85rem; font-weight: 600; text-align: center; }
+
+  .winner-crown { font-size: 2rem; }
+
+  .reveal-score-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .reveal-score-row:last-child { border-bottom: none; }
+  .reveal-name { flex: 1; font-weight: 600; }
+  .reveal-guess { font-size: 0.85rem; color: var(--muted); min-width: 60px; }
+  .reveal-pts {
+    font-weight: 700;
+    font-size: 1rem;
+    min-width: 40px;
+    text-align: right;
+  }
+
+  .waiting-dots::after {
+    content: '...';
+    animation: dots 1.5s steps(4, end) infinite;
+  }
+  @keyframes dots {
+    0%,100%{content:'   '}
+    33%{content:'.  '}
+    66%{content:'.. '}
+    99%{content:'...'}
+  }
+</style>
+</head>
+<body>
+<div class="back-bar"><a href="/">← Back to Games</a></div>
+
+<div class="game-wrap">
+  <h1>🎚️ Dial-In</h1>
+  <p class="tagline" data-i18n="tagline">Gib einen Hinweis — können deine Freunde den Wert erraten?</p>
+
+  <!-- LOBBY SCREEN -->
+  <div class="screen active" id="screen-lobby">
+    <div class="card">
+      <div style="margin-bottom:0.75rem;">
+        <label style="font-size:0.8rem;color:var(--muted);display:block;margin-bottom:0.4rem;" data-i18n="yourName">Dein Name</label>
+        <input type="text" id="player-name" maxlength="16" data-i18n-placeholder="namePlaceholder" value="">
+      </div>
+      <div style="display:flex;gap:0.5rem;">
+        <button class="btn btn-primary" id="btn-create" onclick="createRoom()">
+          <span data-i18n="createRoom">Raum erstellen</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="card">
+      <label style="font-size:0.8rem;color:var(--muted);display:block;margin-bottom:0.4rem;" data-i18n="joinRoom">Raum beitreten</label>
+      <div style="display:flex;gap:0.5rem;margin-bottom:0.75rem;">
+        <input type="text" id="room-code-input" maxlength="4" placeholder="ABCD" style="text-transform:uppercase;text-align:center;font-size:1.3rem;font-weight:700;letter-spacing:0.2em;flex:1;">
+        <button class="btn btn-secondary btn-small" onclick="joinRoom()">
+          <span data-i18n="join">Beitreten</span>
+        </button>
+      </div>
+      <p id="lobby-error" class="error-msg" style="display:none;"></p>
+    </div>
+  </div>
+
+  <!-- WAITING ROOM -->
+  <div class="screen" id="screen-waiting">
+    <div class="text-center">
+      <div class="room-code-display" id="display-room-code">----</div>
+      <p class="text-muted" style="margin-top:0.5rem;" data-i18n="shareCode">Teile diesen Code mit Freunden!</p>
+    </div>
+    <div class="card">
+      <div style="font-size:0.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.5rem;" data-i18n="players">Spieler</div>
+      <div class="players-list" id="waiting-players"></div>
+    </div>
+    <button class="btn btn-primary" id="btn-start" onclick="startGame()" disabled>
+      <span data-i18n="startGame">Spiel starten</span>
+    </button>
+    <p class="text-muted" data-i18n="waitingMin"><span data-i18n="minPlayers">Mindestens 2 Spieler nötig</span></p>
+  </div>
+
+  <!-- GIVING CLUE SCREEN (broadcaster) -->
+  <div class="screen" id="screen-giving-clue">
+    <div style="display:flex;justify-content:space-between;align-items:center;width:100%;">
+      <span class="round-indicator" id="clue-round-label">Runde 1/6</span>
+      <span class="role-badge role-broadcaster" data-i18n="youAreBroadcaster">📡 Du bist Sender</span>
+    </div>
+
+    <div class="card">
+      <div class="spectrum-poles">
+        <span id="clue-pole-left">KALT</span>
+        <span id="clue-pole-right">HEISS</span>
+      </div>
+      <div class="spectrum-bar" style="position:relative;">
+        <div id="clue-target-marker" style="position:absolute;top:50%;transform:translate(-50%,-50%);width:12px;height:32px;background:#fff;border-radius:6px;box-shadow:0 0 10px rgba(255,255,255,0.8);z-index:2;"></div>
+      </div>
+      <div style="text-align:center;margin-top:0.5rem;">
+        <span style="font-size:0.8rem;color:var(--muted);" data-i18n="targetAt">Zielwert:</span>
+        <span id="clue-target-display" style="font-weight:700;color:var(--accent);font-size:1.2rem;margin-left:0.5rem;">—</span>
+        <span style="font-size:0.8rem;color:var(--muted);">%</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <label style="font-size:0.8rem;color:var(--muted);display:block;margin-bottom:0.4rem;" data-i18n="giveClueLabel">Dein Ein-Wort-Hinweis:</label>
+      <input type="text" id="clue-input" maxlength="30" data-i18n-placeholder="clueInputPlaceholder" style="font-size:1.2rem;font-weight:600;letter-spacing:0.05em;">
+      <p style="font-size:0.75rem;color:var(--muted);margin-top:0.35rem;" data-i18n="clueHint">Ein Wort — das die anderen auf die Spur bringt!</p>
+    </div>
+
+    <div class="timer-bar-wrap" style="margin:0.25rem 0;">
+      <div class="timer-bar" id="clue-timer-bar" style="width:100%;"></div>
+    </div>
+    <div class="timer-num" id="clue-timer-num">45</div>
+
+    <button class="btn btn-primary" id="btn-send-clue" onclick="sendClue()">
+      <span data-i18n="sendClue">Hinweis senden ✔</span>
+    </button>
+  </div>
+
+  <!-- WAITING FOR CLUE (guessers) -->
+  <div class="screen" id="screen-waiting-clue">
+    <div style="display:flex;justify-content:space-between;align-items:center;width:100%;">
+      <span class="round-indicator" id="wc-round-label">Runde 1/6</span>
+      <span class="role-badge role-guesser" data-i18n="youAreGuesser">🎯 Du rätst</span>
+    </div>
+    <div class="card text-center">
+      <p style="font-size:0.9rem;color:var(--muted);margin-bottom:0.5rem;">
+        <span id="wc-broadcaster-name" style="color:var(--accent);font-weight:700;">Name</span>
+        <span data-i18n="isBroadcasting"> denkt nach</span>
+        <span class="waiting-dots"></span>
+      </p>
+      <div class="status-badge"><div class="status-dot"></div><span data-i18n="waitForClue">Warte auf Hinweis</span></div>
+    </div>
+  </div>
+
+  <!-- GUESSING SCREEN -->
+  <div class="screen" id="screen-guessing">
+    <div style="display:flex;justify-content:space-between;align-items:center;width:100%;">
+      <span class="round-indicator" id="guess-round-label">Runde 1/6</span>
+      <span class="role-badge role-guesser" id="guess-role-badge">🎯 Du rätst</span>
+    </div>
+
+    <div class="card">
+      <p style="font-size:0.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.3rem;" data-i18n="theClueIs">Der Hinweis:</p>
+      <div class="clue-display" id="guess-clue-display">?</div>
+    </div>
+
+    <div class="card">
+      <div class="spectrum-poles">
+        <span id="guess-pole-left">KALT</span>
+        <span id="guess-pole-right">HEISS</span>
+      </div>
+      <div class="slider-wrap" id="slider-wrap">
+        <div class="spectrum-bar" style="position:absolute;top:50%;left:0;right:0;transform:translateY(-50%);pointer-events:none;"></div>
+        <input type="range" id="guess-slider" min="0" max="100" value="50" oninput="onSliderChange(this.value)">
+      </div>
+      <div class="slider-value-display">
+        <span id="guess-value-display">50</span>%
+      </div>
+    </div>
+
+    <div class="timer-bar-wrap">
+      <div class="timer-bar" id="guess-timer-bar" style="width:100%;"></div>
+    </div>
+    <div class="timer-num" id="guess-timer-num">30</div>
+
+    <div id="guess-status-area" style="width:100%;">
+      <div style="font-size:0.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.35rem;" data-i18n="guessers">Mitspieler:</div>
+      <div class="guesser-status" id="guesser-chips"></div>
+    </div>
+
+    <div style="display:flex;gap:0.5rem;width:100%;">
+      <button class="btn btn-primary" id="btn-lock-guess" onclick="lockGuess()">
+        <span data-i18n="lockIn">Einloggen ✔</span>
+      </button>
+    </div>
+    <p id="guess-locked-msg" style="display:none;text-align:center;color:var(--green);font-weight:600;font-size:0.9rem;" data-i18n="guessLocked">✅ Abgestimmt! Warten auf andere…</p>
+  </div>
+
+  <!-- BROADCASTER WATCHING GUESSERS -->
+  <div class="screen" id="screen-broadcaster-wait">
+    <div style="display:flex;justify-content:space-between;align-items:center;width:100%;">
+      <span class="round-indicator" id="bw-round-label">Runde 1/6</span>
+      <span class="role-badge role-broadcaster" data-i18n="youAreBroadcaster">📡 Du bist Sender</span>
+    </div>
+    <div class="card text-center">
+      <p style="font-weight:700;font-size:1rem;margin-bottom:0.5rem;" data-i18n="clueWasSent">Hinweis gesendet!</p>
+      <p style="color:var(--muted);font-size:0.85rem;" data-i18n="watchingGuessers">Die anderen raten jetzt…</p>
+      <div class="status-badge" style="margin-top:0.75rem;"><div class="status-dot"></div><span data-i18n="waitingForGuesses">Warte auf Antworten</span></div>
+    </div>
+    <div style="width:100%;">
+      <div style="font-size:0.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.35rem;" data-i18n="guessers">Mitspieler:</div>
+      <div class="guesser-status" id="bw-guesser-chips"></div>
+    </div>
+  </div>
+
+  <!-- REVEAL SCREEN -->
+  <div class="screen fade-in" id="screen-reveal">
+    <div style="display:flex;justify-content:space-between;align-items:center;width:100%;">
+      <span class="round-indicator" id="reveal-round-label">Runde 1/6</span>
+      <span style="font-size:0.8rem;color:var(--muted);" data-i18n="revealTitle">Auflösung</span>
+    </div>
+
+    <div class="card">
+      <p style="font-size:0.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.3rem;" data-i18n="theClueWas">Der Hinweis war:</p>
+      <div class="clue-display" id="reveal-clue" style="font-size:2rem;min-height:60px;">?</div>
+    </div>
+
+    <!-- Spectrum visual with markers -->
+    <div class="card" id="reveal-spectrum-card">
+      <div class="spectrum-poles">
+        <span id="reveal-pole-left">KALT</span>
+        <span id="reveal-pole-right">HEISS</span>
+      </div>
+      <div class="spectrum-bar" id="reveal-spectrum-bar" style="height:16px;margin:0.25rem 0;"></div>
+      <div class="spectrum-markers" id="reveal-markers"></div>
+    </div>
+
+    <!-- Per-player scores -->
+    <div class="card">
+      <div style="font-size:0.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.5rem;" data-i18n="roundResults">Rundenresultat</div>
+      <div id="reveal-scores-list"></div>
+    </div>
+
+    <!-- Total scores -->
+    <div class="card">
+      <div style="font-size:0.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.5rem;" data-i18n="totalScores">Gesamtpunkte</div>
+      <div id="reveal-total-list"></div>
+    </div>
+
+    <p class="text-muted" style="text-align:center;" id="reveal-next-msg" data-i18n="nextRound">Nächste Runde startet gleich…</p>
+  </div>
+
+  <!-- GAME OVER SCREEN -->
+  <div class="screen" id="screen-gameover">
+    <div class="text-center">
+      <div style="font-size:3rem;">🏆</div>
+      <h2 style="font-size:1.5rem;font-weight:900;color:var(--accent);margin:0.25rem 0;" data-i18n="gameOver">Spiel beendet!</h2>
+    </div>
+    <div class="card" id="gameover-ranking"></div>
+    <button class="btn btn-primary" onclick="playAgain()" id="btn-play-again">
+      <span data-i18n="playAgain">Nochmal spielen</span>
+    </button>
+    <button class="btn btn-secondary" onclick="backToLobby()">
+      <span data-i18n="mainMenu">Hauptmenü</span>
+    </button>
+  </div>
+
+</div>
+
+<script src="/shared/i18n.js"></script>
+<script>
+const TRANSLATIONS = {
+  de: {
+    roundLabel: 'Runde',
+    tagline: 'Gib einen Hinweis — können deine Freunde den Wert erraten?',
+    yourName: 'Dein Name',
+    namePlaceholder: 'Spielername…',
+    createRoom: 'Raum erstellen',
+    joinRoom: 'Raum beitreten',
+    join: 'Beitreten',
+    shareCode: 'Teile diesen Code mit Freunden!',
+    players: 'Spieler',
+    startGame: 'Spiel starten',
+    minPlayers: 'Mindestens 2 Spieler nötig',
+    waitingMin: '',
+    youAreBroadcaster: '📡 Du bist Sender',
+    youAreGuesser: '🎯 Du rätst',
+    targetAt: 'Zielwert:',
+    giveClueLabel: 'Dein Ein-Wort-Hinweis:',
+    clueInputPlaceholder: 'z.B. Sauna…',
+    clueHint: 'Ein Wort — das die anderen auf die Spur bringt!',
+    sendClue: 'Hinweis senden ✔',
+    theClueIs: 'Der Hinweis:',
+    lockIn: 'Einloggen ✔',
+    guessLocked: '✅ Abgestimmt! Warten auf andere…',
+    guessers: 'Mitspieler:',
+    waitForClue: 'Warte auf Hinweis',
+    isBroadcasting: ' denkt nach',
+    clueWasSent: 'Hinweis gesendet!',
+    watchingGuessers: 'Die anderen raten jetzt…',
+    waitingForGuesses: 'Warte auf Antworten',
+    revealTitle: 'Auflösung',
+    theClueWas: 'Der Hinweis war:',
+    roundResults: 'Rundenresultat',
+    totalScores: 'Gesamtpunkte',
+    nextRound: 'Nächste Runde startet gleich…',
+    gameOver: 'Spiel beendet!',
+    playAgain: 'Nochmal spielen',
+    mainMenu: 'Hauptmenü',
+    broadcaster: '📡 Sender',
+    points: 'Pkt',
+    errorRoomNotFound: 'Raum nicht gefunden!',
+    errorRoomFull: 'Raum ist voll!',
+    errorGameStarted: 'Spiel läuft bereits!',
+    errorNeedName: 'Bitte gib einen Namen ein!',
+    errorNeedCode: 'Bitte gib einen Raumcode ein!',
+    errorNeed2: 'Mindestens 2 Spieler nötig!',
+    totalLabel: 'Gesamt',
+    youAreLabel: '(Du)',
+    lastRound: 'Nächste Runde = letzte Runde!',
+    youGuessed: 'Du: ',
+    targetWas: 'Ziel war ',
+    atLabel: ' %',
+    winnerLabel: '🥇 Gewinner:',
+    tieLabel: '🤝 Unentschieden!',
+    points5: '🎯 Perfekt!',
+    points4: '🔥 Sehr gut!',
+    points3: '👍 Gut!',
+    points2: '😐 Na ja…',
+    points1: '😬 Knapp daneben',
+    points0: '💀 Daneben!',
+  },
+  en: {
+    roundLabel: 'Round',
+    tagline: 'Give a clue — can your friends guess the value?',
+    yourName: 'Your Name',
+    namePlaceholder: 'Player name…',
+    createRoom: 'Create Room',
+    joinRoom: 'Join Room',
+    join: 'Join',
+    shareCode: 'Share this code with friends!',
+    players: 'Players',
+    startGame: 'Start Game',
+    minPlayers: 'At least 2 players needed',
+    waitingMin: '',
+    youAreBroadcaster: '📡 You are the Broadcaster',
+    youAreGuesser: '🎯 You are Guessing',
+    targetAt: 'Target:',
+    giveClueLabel: 'Your one-word clue:',
+    clueInputPlaceholder: 'e.g. Sauna…',
+    clueHint: 'One word — to put the others on the right track!',
+    sendClue: 'Send Clue ✔',
+    theClueIs: 'The Clue:',
+    lockIn: 'Lock In ✔',
+    guessLocked: '✅ Locked in! Waiting for others…',
+    guessers: 'Players:',
+    waitForClue: 'Waiting for clue',
+    isBroadcasting: ' is thinking',
+    clueWasSent: 'Clue sent!',
+    watchingGuessers: 'Others are guessing…',
+    waitingForGuesses: 'Waiting for guesses',
+    revealTitle: 'Reveal',
+    theClueWas: 'The clue was:',
+    roundResults: 'Round Results',
+    totalScores: 'Total Scores',
+    nextRound: 'Next round starts soon…',
+    gameOver: 'Game Over!',
+    playAgain: 'Play Again',
+    mainMenu: 'Main Menu',
+    broadcaster: '📡 Broadcaster',
+    points: 'pts',
+    errorRoomNotFound: 'Room not found!',
+    errorRoomFull: 'Room is full!',
+    errorGameStarted: 'Game already started!',
+    errorNeedName: 'Please enter a name!',
+    errorNeedCode: 'Please enter a room code!',
+    errorNeed2: 'At least 2 players needed!',
+    totalLabel: 'Total',
+    youAreLabel: '(You)',
+    lastRound: 'Next round = final round!',
+    youGuessed: 'You: ',
+    targetWas: 'Target was ',
+    atLabel: ' %',
+    winnerLabel: '🥇 Winner:',
+    tieLabel: '🤝 It\'s a tie!',
+    points5: '🎯 Perfect!',
+    points4: '🔥 Excellent!',
+    points3: '👍 Good!',
+    points2: '😐 Meh…',
+    points1: '😬 Close miss',
+    points0: '💀 Way off!',
+  },
+  fr: {
+    roundLabel: 'Manche',
+    tagline: 'Donne un indice — tes amis peuvent-ils deviner la valeur ?',
+    yourName: 'Ton nom',
+    namePlaceholder: 'Nom du joueur…',
+    createRoom: 'Créer une salle',
+    joinRoom: 'Rejoindre une salle',
+    join: 'Rejoindre',
+    shareCode: 'Partage ce code avec tes amis !',
+    players: 'Joueurs',
+    startGame: 'Démarrer le jeu',
+    minPlayers: '2 joueurs minimum requis',
+    waitingMin: '',
+    youAreBroadcaster: '📡 Tu es l\'émetteur',
+    youAreGuesser: '🎯 Tu devines',
+    targetAt: 'Cible :',
+    giveClueLabel: 'Ton indice en un mot :',
+    clueInputPlaceholder: 'ex. Sauna…',
+    clueHint: 'Un mot — pour mettre les autres sur la piste !',
+    sendClue: 'Envoyer l\'indice ✔',
+    theClueIs: 'L\'indice :',
+    lockIn: 'Valider ✔',
+    guessLocked: '✅ Validé ! En attente des autres…',
+    guessers: 'Joueurs :',
+    waitForClue: 'En attente de l\'indice',
+    isBroadcasting: ' réfléchit',
+    clueWasSent: 'Indice envoyé !',
+    watchingGuessers: 'Les autres devinent…',
+    waitingForGuesses: 'En attente des réponses',
+    revealTitle: 'Révélation',
+    theClueWas: 'L\'indice était :',
+    roundResults: 'Résultats du tour',
+    totalScores: 'Scores totaux',
+    nextRound: 'Prochain tour dans un instant…',
+    gameOver: 'Fin du jeu !',
+    playAgain: 'Rejouer',
+    mainMenu: 'Menu principal',
+    broadcaster: '📡 Émetteur',
+    points: 'pts',
+    errorRoomNotFound: 'Salle introuvable !',
+    errorRoomFull: 'Salle pleine !',
+    errorGameStarted: 'Le jeu a déjà commencé !',
+    errorNeedName: 'Veuillez entrer un nom !',
+    errorNeedCode: 'Veuillez entrer un code de salle !',
+    errorNeed2: 'Il faut au moins 2 joueurs !',
+    totalLabel: 'Total',
+    youAreLabel: '(Toi)',
+    lastRound: 'Prochain tour = tour final !',
+    youGuessed: 'Toi : ',
+    targetWas: 'Cible était ',
+    atLabel: ' %',
+    winnerLabel: '🥇 Gagnant :',
+    tieLabel: '🤝 Égalité !',
+    points5: '🎯 Parfait !',
+    points4: '🔥 Excellent !',
+    points3: '👍 Bien !',
+    points2: '😐 Bof…',
+    points1: '😬 Presque',
+    points0: '💀 Raté !',
+  },
+  it: {
+    roundLabel: 'Round',
+    tagline: 'Dai un indizio — i tuoi amici riusciranno a indovinare il valore?',
+    yourName: 'Il tuo nome',
+    namePlaceholder: 'Nome del giocatore…',
+    createRoom: 'Crea stanza',
+    joinRoom: 'Unisciti a una stanza',
+    join: 'Unisciti',
+    shareCode: 'Condividi questo codice con gli amici!',
+    players: 'Giocatori',
+    startGame: 'Inizia il gioco',
+    minPlayers: 'Servono almeno 2 giocatori',
+    waitingMin: '',
+    youAreBroadcaster: '📡 Sei il Trasmettitore',
+    youAreGuesser: '🎯 Stai indovinando',
+    targetAt: 'Obiettivo:',
+    giveClueLabel: 'Il tuo indizio in una parola:',
+    clueInputPlaceholder: 'es. Sauna…',
+    clueHint: 'Una parola — per mettere gli altri sulla pista!',
+    sendClue: 'Invia indizio ✔',
+    theClueIs: 'L\'indizio:',
+    lockIn: 'Conferma ✔',
+    guessLocked: '✅ Confermato! Aspettando gli altri…',
+    guessers: 'Giocatori:',
+    waitForClue: 'In attesa dell\'indizio',
+    isBroadcasting: ' sta pensando',
+    clueWasSent: 'Indizio inviato!',
+    watchingGuessers: 'Gli altri stanno indovinando…',
+    waitingForGuesses: 'In attesa delle risposte',
+    revealTitle: 'Rivelazione',
+    theClueWas: 'L\'indizio era:',
+    roundResults: 'Risultati del round',
+    totalScores: 'Punteggi totali',
+    nextRound: 'Il prossimo round inizia presto…',
+    gameOver: 'Fine del gioco!',
+    playAgain: 'Gioca ancora',
+    mainMenu: 'Menu principale',
+    broadcaster: '📡 Trasmettitore',
+    points: 'pts',
+    errorRoomNotFound: 'Stanza non trovata!',
+    errorRoomFull: 'Stanza piena!',
+    errorGameStarted: 'Il gioco è già iniziato!',
+    errorNeedName: 'Inserisci un nome!',
+    errorNeedCode: 'Inserisci un codice stanza!',
+    errorNeed2: 'Servono almeno 2 giocatori!',
+    totalLabel: 'Totale',
+    youAreLabel: '(Tu)',
+    lastRound: 'Prossimo round = round finale!',
+    youGuessed: 'Tu: ',
+    targetWas: 'Obiettivo era ',
+    atLabel: ' %',
+    winnerLabel: '🥇 Vincitore:',
+    tieLabel: '🤝 Pareggio!',
+    points5: '🎯 Perfetto!',
+    points4: '🔥 Eccellente!',
+    points3: '👍 Bene!',
+    points2: '😐 Così così…',
+    points1: '😬 Quasi',
+    points0: '💀 Mancato!',
+  },
+  es: {
+    roundLabel: 'Ronda',
+    tagline: '¡Da una pista — pueden tus amigos adivinar el valor?',
+    yourName: 'Tu nombre',
+    namePlaceholder: 'Nombre del jugador…',
+    createRoom: 'Crear sala',
+    joinRoom: 'Unirse a una sala',
+    join: 'Unirse',
+    shareCode: '¡Comparte este código con tus amigos!',
+    players: 'Jugadores',
+    startGame: 'Iniciar juego',
+    minPlayers: 'Se necesitan mínimo 2 jugadores',
+    waitingMin: '',
+    youAreBroadcaster: '📡 Eres el Emisor',
+    youAreGuesser: '🎯 Estás adivinando',
+    targetAt: 'Objetivo:',
+    giveClueLabel: 'Tu pista de una palabra:',
+    clueInputPlaceholder: 'ej. Sauna…',
+    clueHint: '¡Una palabra — para poner a los demás en la pista!',
+    sendClue: 'Enviar pista ✔',
+    theClueIs: 'La pista:',
+    lockIn: 'Confirmar ✔',
+    guessLocked: '✅ ¡Confirmado! Esperando a otros…',
+    guessers: 'Jugadores:',
+    waitForClue: 'Esperando la pista',
+    isBroadcasting: ' está pensando',
+    clueWasSent: '¡Pista enviada!',
+    watchingGuessers: 'Los demás están adivinando…',
+    waitingForGuesses: 'Esperando respuestas',
+    revealTitle: 'Revelación',
+    theClueWas: 'La pista era:',
+    roundResults: 'Resultados de la ronda',
+    totalScores: 'Puntuaciones totales',
+    nextRound: 'La próxima ronda comienza pronto…',
+    gameOver: '¡Fin del juego!',
+    playAgain: 'Jugar de nuevo',
+    mainMenu: 'Menú principal',
+    broadcaster: '📡 Emisor',
+    points: 'pts',
+    errorRoomNotFound: '¡Sala no encontrada!',
+    errorRoomFull: '¡Sala llena!',
+    errorGameStarted: '¡El juego ya empezó!',
+    errorNeedName: '¡Por favor ingresa un nombre!',
+    errorNeedCode: '¡Por favor ingresa un código de sala!',
+    errorNeed2: '¡Se necesitan mínimo 2 jugadores!',
+    totalLabel: 'Total',
+    youAreLabel: '(Tú)',
+    lastRound: '¡Próxima ronda = ronda final!',
+    youGuessed: 'Tú: ',
+    targetWas: 'Objetivo era ',
+    atLabel: ' %',
+    winnerLabel: '🥇 Ganador:',
+    tieLabel: '🤝 ¡Empate!',
+    points5: '🎯 ¡Perfecto!',
+    points4: '🔥 ¡Excelente!',
+    points3: '👍 ¡Bien!',
+    points2: '😐 Regular…',
+    points1: '😬 Casi',
+    points0: '💀 ¡Fallado!',
+  },
+};
+
+const { t, lang, onLangChange } = initI18n(TRANSLATIONS);
+
+// ─── WebSocket & State ───────────────────────────────────────────────
+const WS_URL = 'wss://day-045-dial-in.lab.gogerl.com';
+
+let ws = null;
+let myId = null;
+let myName = '';
+let roomCode = null;
+let players = [];
+let currentPhase = 'lobby';
+let isBroadcaster = false;
+let currentRound = 0;
+let totalRounds = 6;
+let clueTimerInterval = null;
+let guessTimerInterval = null;
+let sliderValue = 50;
+let guessLocked = false;
+let currentSpectrum = null;
+
+// ─── Helpers ──────────────────────────────────────────────────────────
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function getLangPole(spectrum, side) {
+  const l = lang();
+  const key = side + '_' + l;
+  return spectrum[key] || spectrum[side] || '';
+}
+
+function renderPoles(spectrum, leftId, rightId) {
+  if (!spectrum) return;
+  document.getElementById(leftId).textContent = getLangPole(spectrum, 'left');
+  document.getElementById(rightId).textContent = getLangPole(spectrum, 'right');
+}
+
+function renderPlayers(targetId, playerList) {
+  const el = document.getElementById(targetId);
+  el.innerHTML = '';
+  playerList.forEach(p => {
+    const chip = document.createElement('div');
+    chip.className = 'player-chip';
+    chip.style.background = p.color;
+    chip.textContent = p.name + (p.id === myId ? ` ${t('youAreLabel')}` : '');
+    el.appendChild(chip);
+  });
+}
+
+function renderGuesserChips(targetId, guesserIds = [], lockedIds = []) {
+  const el = document.getElementById(targetId);
+  if (!el) return;
+  el.innerHTML = '';
+  const guessers = players.filter(p => !isBroadcasterPlayer(p.id));
+  guessers.forEach(p => {
+    const chip = document.createElement('div');
+    chip.className = 'guesser-chip' + (guesserIds.includes(p.id) ? ' submitted' : '') + (lockedIds.includes(p.id) ? ' locked' : '');
+    chip.style.background = p.color;
+    chip.style.borderColor = lockedIds.includes(p.id) ? p.color : 'transparent';
+    chip.style.color = '#000';
+    chip.textContent = p.name + (lockedIds.includes(p.id) ? ' ✓' : '');
+    el.appendChild(chip);
+  });
+}
+
+function isBroadcasterPlayer(pid) {
+  // determined by broadcasterIdx
+  return window._broadcasterIdx !== undefined && players[window._broadcasterIdx]?.id === pid;
+}
+
+function setTimer(barId, numId, value, max, urgent = false) {
+  const bar = document.getElementById(barId);
+  const num = document.getElementById(numId);
+  if (bar) {
+    bar.style.width = (value / max * 100) + '%';
+    if (urgent || value <= 10) bar.classList.add('urgent');
+    else bar.classList.remove('urgent');
+  }
+  if (num) num.textContent = value;
+}
+
+function getRoundLabel(round, total) {
+  return `${t('roundLabel') || 'Runde'} ${round}/${total}`;
+}
+
+// ─── WebSocket ────────────────────────────────────────────────────────
+
+function connectWS(onOpen) {
+  ws = new WebSocket(WS_URL);
+  ws.onopen = onOpen;
+  ws.onmessage = (event) => {
+    let msg;
+    try { msg = JSON.parse(event.data); } catch { return; }
+    handleMessage(msg);
+  };
+  ws.onerror = () => showError('Verbindungsfehler!');
+  ws.onclose = () => {
+    if (currentPhase !== 'lobby') showError('Verbindung getrennt.');
+  };
+}
+
+function showError(msg) {
+  const el = document.getElementById('lobby-error');
+  if (el) { el.textContent = msg; el.style.display = 'block'; }
+}
+
+function handleMessage(msg) {
+  switch (msg.type) {
+    case 'state': {
+      myId = msg.yourId;
+      players = msg.players;
+      roomCode = msg.code;
+      totalRounds = msg.totalRounds || 6;
+      document.getElementById('display-room-code').textContent = roomCode;
+      renderPlayers('waiting-players', players);
+      const canStart = players.length >= 2;
+      document.getElementById('btn-start').disabled = !canStart;
+      showScreen('screen-waiting');
+      break;
+    }
+    case 'playerJoined': {
+      players = msg.players;
+      renderPlayers('waiting-players', players);
+      const canStart = players.length >= 2;
+      document.getElementById('btn-start').disabled = !canStart;
+      break;
+    }
+    case 'playerLeft': {
+      players = msg.players;
+      renderPlayers('waiting-players', players);
+      const canStart = players.length >= 2;
+      document.getElementById('btn-start').disabled = !canStart;
+      break;
+    }
+    case 'error': {
+      showError(msg.message);
+      break;
+    }
+    case 'roundStart': {
+      if (clueTimerInterval) { clearInterval(clueTimerInterval); clueTimerInterval = null; }
+      if (guessTimerInterval) { clearInterval(guessTimerInterval); guessTimerInterval = null; }
+      currentRound = msg.round;
+      totalRounds = msg.totalRounds;
+      window._broadcasterIdx = msg.broadcasterIdx;
+      currentSpectrum = msg.spectrum;
+      isBroadcaster = msg.broadcasterId === myId;
+      guessLocked = false;
+
+      if (isBroadcaster) {
+        // Show broadcaster clue screen
+        document.getElementById('clue-round-label').textContent = getRoundLabel(currentRound, totalRounds);
+        renderPoles(msg.spectrum, 'clue-pole-left', 'clue-pole-right');
+        document.getElementById('clue-target-display').textContent = msg.target;
+        // Position the marker
+        const marker = document.getElementById('clue-target-marker');
+        if (marker) marker.style.left = msg.target + '%';
+        document.getElementById('clue-input').value = '';
+        document.getElementById('btn-send-clue').disabled = false;
+        setTimer('clue-timer-bar', 'clue-timer-num', msg.timeLeft, 45);
+
+        let timeLeft = msg.timeLeft;
+        clueTimerInterval = setInterval(() => {
+          timeLeft--;
+          setTimer('clue-timer-bar', 'clue-timer-num', timeLeft, 45);
+          if (timeLeft <= 0) { clearInterval(clueTimerInterval); }
+        }, 1000);
+
+        showScreen('screen-giving-clue');
+      } else {
+        // Show waiting for clue screen
+        document.getElementById('wc-round-label').textContent = getRoundLabel(currentRound, totalRounds);
+        const broadcaster = players[msg.broadcasterIdx];
+        if (broadcaster) document.getElementById('wc-broadcaster-name').textContent = broadcaster.name;
+        showScreen('screen-waiting-clue');
+      }
+      break;
+    }
+    case 'tick': {
+      if (msg.phase === 'giving_clue') {
+        setTimer('clue-timer-bar', 'clue-timer-num', msg.timeLeft, 45);
+      } else if (msg.phase === 'guessing') {
+        setTimer('guess-timer-bar', 'guess-timer-num', msg.timeLeft, 30);
+      }
+      break;
+    }
+    case 'guessingStart': {
+      if (clueTimerInterval) { clearInterval(clueTimerInterval); clueTimerInterval = null; }
+      currentSpectrum = msg.spectrum;
+      guessLocked = false;
+      sliderValue = 50;
+
+      if (!isBroadcaster) {
+        document.getElementById('guess-round-label').textContent = getRoundLabel(currentRound, totalRounds);
+        document.getElementById('guess-clue-display').textContent = msg.clue || '?';
+        renderPoles(msg.spectrum, 'guess-pole-left', 'guess-pole-right');
+        document.getElementById('guess-slider').value = 50;
+        document.getElementById('guess-value-display').textContent = 50;
+        document.getElementById('btn-lock-guess').disabled = false;
+        document.getElementById('guess-locked-msg').style.display = 'none';
+        renderGuesserChips('guesser-chips', [], []);
+        setTimer('guess-timer-bar', 'guess-timer-num', msg.timeLeft, 30);
+
+        let timeLeft = msg.timeLeft;
+        guessTimerInterval = setInterval(() => {
+          timeLeft--;
+          setTimer('guess-timer-bar', 'guess-timer-num', timeLeft, 30);
+          if (timeLeft <= 0) { clearInterval(guessTimerInterval); }
+        }, 1000);
+
+        showScreen('screen-guessing');
+      } else {
+        // Broadcaster sees a "watching" screen
+        document.getElementById('bw-round-label').textContent = getRoundLabel(currentRound, totalRounds);
+        renderGuesserChips('bw-guesser-chips', [], []);
+        showScreen('screen-broadcaster-wait');
+      }
+      break;
+    }
+    case 'guessUpdate': {
+      renderGuesserChips('guesser-chips', msg.guessers || [], msg.locked || []);
+      renderGuesserChips('bw-guesser-chips', msg.guessers || [], msg.locked || []);
+      break;
+    }
+    case 'reveal': {
+      if (guessTimerInterval) { clearInterval(guessTimerInterval); guessTimerInterval = null; }
+      renderReveal(msg);
+      showScreen('screen-reveal');
+      break;
+    }
+    case 'gameOver': {
+      renderGameOver(msg);
+      showScreen('screen-gameover');
+      break;
+    }
+    case 'reset': {
+      players = msg.players;
+      renderPlayers('waiting-players', players);
+      document.getElementById('btn-start').disabled = players.length < 2;
+      showScreen('screen-waiting');
+      break;
+    }
+  }
+}
+
+// ─── Render Reveal ────────────────────────────────────────────────────
+
+function renderReveal(msg) {
+  document.getElementById('reveal-round-label').textContent = getRoundLabel(msg.round, msg.totalRounds);
+  document.getElementById('reveal-clue').textContent = msg.clue || '?';
+  renderPoles(msg.spectrum, 'reveal-pole-left', 'reveal-pole-right');
+
+  const nextMsg = document.getElementById('reveal-next-msg');
+  if (msg.round >= msg.totalRounds) {
+    nextMsg.textContent = t('gameOver');
+  } else {
+    nextMsg.textContent = t('nextRound');
+  }
+
+  // Render markers on spectrum
+  const markersEl = document.getElementById('reveal-markers');
+  markersEl.innerHTML = '';
+
+  // Target marker
+  const targetMarker = document.createElement('div');
+  targetMarker.className = 'marker marker-target';
+  targetMarker.style.left = msg.target + '%';
+  targetMarker.innerHTML = `
+    <div class="marker-line" style="background:#fff;height:28px;"></div>
+    <div class="marker-label" style="color:#fff;font-size:0.7rem;">${t('targetWas')}${msg.target}${t('atLabel')}</div>
+  `;
+  markersEl.appendChild(targetMarker);
+
+  // Player guess markers
+  Object.entries(msg.guesses || {}).forEach(([pid, guess]) => {
+    const player = players.find(p => p.id === pid);
+    if (!player) return;
+    const marker = document.createElement('div');
+    marker.className = 'marker marker-guess';
+    marker.style.left = guess + '%';
+    marker.innerHTML = `
+      <div class="marker-line" style="background:${player.color};height:16px;"></div>
+      <div class="marker-label" style="color:${player.color};">${player.name.slice(0,8)}${pid === myId ? ' ★' : ''}</div>
+    `;
+    markersEl.appendChild(marker);
+  });
+
+  // Round scores
+  const roundList = document.getElementById('reveal-scores-list');
+  roundList.innerHTML = '';
+  players.forEach(p => {
+    const score = msg.roundScores?.[p.id] ?? 0;
+    const guess = msg.guesses?.[p.id];
+    const isBroad = isBroadcasterPlayer(p.id);
+    const row = document.createElement('div');
+    row.className = 'reveal-score-row';
+    const guessLabel = isBroad ? t('broadcaster') : (guess !== undefined ? `${guess}%` : '—');
+    const ptsKey = `points${score}`;
+    row.innerHTML = `
+      <div class="player-chip" style="background:${p.color};color:#000;flex-shrink:0;">${p.name}</div>
+      <div class="reveal-name" style="font-size:0.8rem;color:var(--muted);">${guessLabel}</div>
+      <div class="reveal-pts" style="color:${score>=4?'var(--green)':score>=2?'var(--accent)':'var(--red)'}">+${score} ${t('points')}</div>
+      <div style="font-size:0.75rem;min-width:80px;text-align:right;color:var(--muted);">${t(ptsKey)||''}</div>
+    `;
+    roundList.appendChild(row);
+  });
+
+  // Total scores
+  const totalList = document.getElementById('reveal-total-list');
+  totalList.innerHTML = '';
+  const sorted = [...players].sort((a, b) => (msg.totalScores?.[b.id] || 0) - (msg.totalScores?.[a.id] || 0));
+  sorted.forEach((p, i) => {
+    const total = msg.totalScores?.[p.id] || 0;
+    const row = document.createElement('div');
+    row.className = 'reveal-score-row';
+    row.innerHTML = `
+      <div style="font-size:0.9rem;color:var(--muted);min-width:24px;">${i + 1}.</div>
+      <div class="player-chip" style="background:${p.color};color:#000;flex-shrink:0;">${p.name}</div>
+      <div class="reveal-name"></div>
+      <div class="reveal-pts" style="color:${i===0?'var(--accent)':'var(--text)'}">${total} ${t('points')}</div>
+    `;
+    totalList.appendChild(row);
+  });
+}
+
+// ─── Render Game Over ─────────────────────────────────────────────────
+
+function renderGameOver(msg) {
+  const container = document.getElementById('gameover-ranking');
+  container.innerHTML = '';
+  const ranking = msg.ranking || [];
+
+  ranking.forEach((p, i) => {
+    const row = document.createElement('div');
+    row.className = 'reveal-score-row';
+    const medals = ['🥇', '🥈', '🥉'];
+    row.innerHTML = `
+      <div style="font-size:1.2rem;">${medals[i] || (i+1)+'.'}</div>
+      <div class="player-chip" style="background:${p.color};color:#000;">${p.name}${p.id === myId ? ' ★' : ''}</div>
+      <div class="reveal-name"></div>
+      <div class="reveal-pts" style="color:${i===0?'var(--accent)':'var(--text)'};font-size:1.1rem;">${p.score} ${t('points')}</div>
+    `;
+    container.appendChild(row);
+  });
+
+  if (ranking.length > 0) {
+    const winner = ranking[0];
+    const winnerTitle = document.createElement('p');
+    winnerTitle.style.cssText = 'text-align:center;color:var(--accent);font-weight:700;margin-bottom:0.75rem;';
+    if (ranking.length >= 2 && ranking[0].score === ranking[1].score) {
+      winnerTitle.textContent = t('tieLabel');
+    } else {
+      winnerTitle.textContent = `${t('winnerLabel')} ${winner.name}`;
+    }
+    container.insertBefore(winnerTitle, container.firstChild);
+  }
+}
+
+// ─── Actions ──────────────────────────────────────────────────────────
+
+function createRoom() {
+  const nameEl = document.getElementById('player-name');
+  const name = nameEl.value.trim() || 'Player';
+  myName = name;
+  document.getElementById('lobby-error').style.display = 'none';
+  connectWS(() => ws.send(JSON.stringify({ type: 'create', name })));
+}
+
+function joinRoom() {
+  const nameEl = document.getElementById('player-name');
+  const codeEl = document.getElementById('room-code-input');
+  const name = nameEl.value.trim() || 'Player';
+  const code = codeEl.value.trim().toUpperCase();
+  if (!code) { showError(t('errorNeedCode')); return; }
+  myName = name;
+  document.getElementById('lobby-error').style.display = 'none';
+  connectWS(() => ws.send(JSON.stringify({ type: 'join', name, code })));
+}
+
+function startGame() {
+  if (ws) ws.send(JSON.stringify({ type: 'start' }));
+}
+
+function sendClue() {
+  const clue = document.getElementById('clue-input').value.trim();
+  if (!clue) return;
+  document.getElementById('btn-send-clue').disabled = true;
+  if (clueTimerInterval) { clearInterval(clueTimerInterval); clueTimerInterval = null; }
+  if (ws) ws.send(JSON.stringify({ type: 'clue', clue }));
+}
+
+function onSliderChange(val) {
+  sliderValue = parseInt(val);
+  document.getElementById('guess-value-display').textContent = sliderValue;
+  if (!guessLocked && ws) {
+    ws.send(JSON.stringify({ type: 'guess', value: sliderValue }));
+  }
+}
+
+function lockGuess() {
+  guessLocked = true;
+  document.getElementById('btn-lock-guess').disabled = true;
+  document.getElementById('guess-locked-msg').style.display = 'block';
+  if (guessTimerInterval) { clearInterval(guessTimerInterval); guessTimerInterval = null; }
+  if (ws) ws.send(JSON.stringify({ type: 'lockGuess', value: sliderValue }));
+}
+
+function playAgain() {
+  if (ws) ws.send(JSON.stringify({ type: 'playAgain' }));
+}
+
+function backToLobby() {
+  if (ws) { ws.close(); ws = null; }
+  myId = null; players = []; roomCode = null;
+  currentPhase = 'lobby';
+  showScreen('screen-lobby');
+}
+
+// Allow Enter key to submit clue
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    const activeScreen = document.querySelector('.screen.active');
+    if (activeScreen?.id === 'screen-giving-clue') sendClue();
+  }
+});
+
+// Set a default name
+document.getElementById('player-name').value = 'Spieler ' + Math.floor(Math.random() * 9 + 1);
+</script>
+</body>
+</html>
