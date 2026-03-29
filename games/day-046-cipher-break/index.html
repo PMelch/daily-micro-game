@@ -1,0 +1,1106 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cipher Break</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #0a0a1a;
+      color: #e0e0ff;
+      font-family: 'Courier New', Courier, monospace;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .back-bar {
+      width: 100%;
+      background: #0a0a1a;
+      padding: 0.5rem 1rem;
+      border-bottom: 1px solid #333;
+    }
+    .back-bar a {
+      color: #ffcc00;
+      text-decoration: none;
+      font-size: 0.9rem;
+      font-family: system-ui, sans-serif;
+    }
+    .back-bar a:hover { text-decoration: underline; }
+
+    .game-container {
+      flex: 1;
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 1rem;
+      width: 100%;
+    }
+
+    /* ── START SCREEN ── */
+    #start-screen {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 60vh;
+      gap: 1.5rem;
+      text-align: center;
+    }
+
+    .game-title {
+      font-size: 2.8rem;
+      color: #ffcc00;
+      letter-spacing: 0.1em;
+      text-shadow: 0 0 20px #ffcc0088;
+    }
+
+    .game-subtitle {
+      font-size: 1rem;
+      color: #a0a0c0;
+      max-width: 380px;
+      line-height: 1.6;
+    }
+
+    .level-select {
+      display: flex;
+      gap: 0.8rem;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .level-btn {
+      background: #1a1a2e;
+      border: 2px solid #333;
+      color: #e0e0ff;
+      padding: 0.6rem 1.2rem;
+      border-radius: 8px;
+      cursor: pointer;
+      font-family: 'Courier New', monospace;
+      font-size: 0.95rem;
+      transition: all 0.2s;
+    }
+    .level-btn:hover { border-color: #ffcc00; color: #ffcc00; }
+    .level-btn.selected { border-color: #ffcc00; background: #2a2a10; color: #ffcc00; }
+
+    .start-btn {
+      background: #ffcc00;
+      color: #0a0a1a;
+      border: none;
+      padding: 0.8rem 2.5rem;
+      border-radius: 10px;
+      font-size: 1.1rem;
+      font-weight: bold;
+      cursor: pointer;
+      font-family: 'Courier New', monospace;
+      transition: transform 0.1s, box-shadow 0.2s;
+      box-shadow: 0 4px 15px #ffcc0044;
+    }
+    .start-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px #ffcc0066; }
+
+    /* ── GAME SCREEN ── */
+    #game-screen { display: none; }
+
+    .hud {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.5rem 0;
+      border-bottom: 1px solid #222;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .hud-item {
+      font-size: 0.85rem;
+      color: #a0a0c0;
+    }
+
+    .hud-item span {
+      color: #ffcc00;
+      font-weight: bold;
+    }
+
+    .hint-btn {
+      background: none;
+      border: 1px solid #555;
+      color: #a0a0c0;
+      padding: 0.3rem 0.8rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font-family: 'Courier New', monospace;
+      font-size: 0.8rem;
+      transition: all 0.2s;
+    }
+    .hint-btn:hover:not(:disabled) { border-color: #ffcc00; color: #ffcc00; }
+    .hint-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* ── CIPHER TEXT ── */
+    .cipher-text-block {
+      background: #0d0d1f;
+      border: 1px solid #2a2a3e;
+      border-radius: 10px;
+      padding: 1rem 1.2rem;
+      margin-bottom: 1rem;
+      line-height: 2;
+      font-size: 1.15rem;
+      word-break: break-all;
+    }
+
+    .cipher-char {
+      display: inline-block;
+      position: relative;
+    }
+
+    .cipher-char.letter {
+      cursor: pointer;
+      padding: 0 1px;
+    }
+
+    .cipher-char.letter:hover .enc-letter { color: #ffcc00; }
+    .cipher-char.letter.selected .enc-letter { color: #ffcc00; background: #2a2a00; border-radius: 3px; }
+    .cipher-char.letter.mapped .enc-letter { color: #44dd88; }
+    .cipher-char.letter.selected.mapped .enc-letter { color: #ffcc00; }
+    .cipher-char.letter.hinted .enc-letter { color: #ff9944; }
+    .cipher-char.letter.wrong .enc-letter { color: #ff4444; }
+
+    .enc-letter {
+      display: block;
+      text-align: center;
+      font-weight: bold;
+      transition: color 0.15s;
+    }
+
+    .decoded-letter {
+      display: block;
+      text-align: center;
+      font-size: 0.75rem;
+      color: #44dd88;
+      min-height: 1em;
+      letter-spacing: 0;
+    }
+
+    .cipher-char.hinted .decoded-letter { color: #ff9944; }
+    .cipher-char.wrong .decoded-letter { color: #ff4444; }
+
+    /* ── ALPHABET KEYBOARD ── */
+    .keyboard-section {
+      margin-bottom: 1rem;
+    }
+
+    .keyboard-label {
+      font-size: 0.75rem;
+      color: #666;
+      margin-bottom: 0.5rem;
+    }
+
+    .keyboard {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+
+    .key {
+      width: 32px;
+      height: 32px;
+      border-radius: 5px;
+      background: #1a1a2e;
+      border: 1px solid #333;
+      color: #e0e0ff;
+      cursor: pointer;
+      font-family: 'Courier New', monospace;
+      font-size: 0.85rem;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+      position: relative;
+    }
+
+    .key:hover:not(.used):not(:disabled) {
+      background: #2a2a40;
+      border-color: #ffcc00;
+      color: #ffcc00;
+    }
+
+    .key.used {
+      background: #0d1a0d;
+      border-color: #2a3a2a;
+      color: #44dd88;
+      cursor: default;
+    }
+
+    .key.selected-key {
+      background: #2a2a10;
+      border-color: #ffcc00;
+      color: #ffcc00;
+    }
+
+    .key:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    /* ── FREQUENCY BAR ── */
+    .freq-section {
+      margin-bottom: 1rem;
+    }
+
+    .freq-label {
+      font-size: 0.75rem;
+      color: #666;
+      margin-bottom: 0.4rem;
+    }
+
+    .freq-bars {
+      display: flex;
+      gap: 3px;
+      align-items: flex-end;
+      height: 40px;
+    }
+
+    .freq-bar-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      flex: 1;
+    }
+
+    .freq-bar {
+      background: #2a3a5a;
+      border-radius: 2px 2px 0 0;
+      width: 100%;
+      min-width: 8px;
+      transition: background 0.2s;
+    }
+
+    .freq-bar.selected-freq { background: #ffcc00; }
+    .freq-bar.mapped-freq { background: #44dd88; }
+
+    .freq-bar-letter {
+      font-size: 0.6rem;
+      color: #888;
+    }
+
+    /* ── STATUS MESSAGES ── */
+    .status-msg {
+      text-align: center;
+      font-size: 0.9rem;
+      color: #a0a0c0;
+      min-height: 1.4em;
+      margin-bottom: 0.5rem;
+    }
+
+    .status-msg.success { color: #44dd88; }
+    .status-msg.error { color: #ff4444; }
+    .status-msg.hint { color: #ff9944; }
+
+    /* ── WIN SCREEN ── */
+    #win-screen {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 60vh;
+      gap: 1.2rem;
+      text-align: center;
+    }
+
+    .win-title {
+      font-size: 2.5rem;
+      color: #44dd88;
+      text-shadow: 0 0 20px #44dd8888;
+    }
+
+    .win-stats {
+      font-size: 1rem;
+      color: #a0a0c0;
+      line-height: 1.8;
+    }
+
+    .win-score {
+      font-size: 2rem;
+      color: #ffcc00;
+    }
+
+    .stars {
+      font-size: 2rem;
+      letter-spacing: 0.2em;
+    }
+
+    .play-again-btn {
+      background: #ffcc00;
+      color: #0a0a1a;
+      border: none;
+      padding: 0.7rem 2rem;
+      border-radius: 10px;
+      font-size: 1rem;
+      font-weight: bold;
+      cursor: pointer;
+      font-family: 'Courier New', monospace;
+      transition: transform 0.1s;
+    }
+    .play-again-btn:hover { transform: translateY(-2px); }
+
+    /* ── PROGRESS BAR ── */
+    .progress-bar-wrap {
+      width: 100%;
+      height: 6px;
+      background: #1a1a2e;
+      border-radius: 3px;
+      margin-bottom: 0.5rem;
+      overflow: hidden;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #44dd88, #ffcc00);
+      border-radius: 3px;
+      transition: width 0.3s ease;
+    }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 480px) {
+      .game-title { font-size: 2rem; }
+      .cipher-text-block { font-size: 1rem; }
+      .key { width: 26px; height: 26px; font-size: 0.75rem; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="back-bar">
+  <a href="/">← <span data-i18n="backToGames">Back to Games</span></a>
+</div>
+
+<div class="game-container">
+
+  <!-- START SCREEN -->
+  <div id="start-screen">
+    <div class="game-title">🔐 CIPHER BREAK</div>
+    <p class="game-subtitle" data-i18n="subtitle">Knacke den Geheimcode! Jeder Buchstabe wurde durch einen anderen ersetzt. Finde heraus, welcher für welchen steht.</p>
+
+    <div>
+      <p style="font-size:0.85rem;color:#888;margin-bottom:0.6rem;" data-i18n="difficultyLabel">Schwierigkeitsgrad:</p>
+      <div class="level-select">
+        <button class="level-btn selected" data-level="easy" data-i18n="levelEasy">Leicht</button>
+        <button class="level-btn" data-level="medium" data-i18n="levelMedium">Mittel</button>
+        <button class="level-btn" data-level="hard" data-i18n="levelHard">Schwer</button>
+      </div>
+    </div>
+
+    <button class="start-btn" id="start-btn" data-i18n="startBtn">STARTEN</button>
+
+    <div style="font-size:0.75rem;color:#555;max-width:300px;text-align:center;" data-i18n="howToPlayShort">
+      Tippe auf einen Buchstaben im Chiffretext → wähle den echten Buchstaben unten
+    </div>
+  </div>
+
+  <!-- GAME SCREEN -->
+  <div id="game-screen">
+
+    <!-- HUD -->
+    <div class="hud">
+      <div class="hud-item" data-i18n-template="puzzleNum">Rätsel <span id="puzzle-num">1</span>/5</div>
+      <div class="hud-item"><span data-i18n="mistakes">Fehler</span>: <span id="mistake-count">0</span>/5</div>
+      <div class="hud-item"><span data-i18n="hintsLeft">Hinweise</span>: <span id="hints-left">3</span></div>
+      <button class="hint-btn" id="hint-btn" data-i18n="hintBtn">💡 Hinweis</button>
+    </div>
+
+    <!-- Progress bar -->
+    <div class="progress-bar-wrap">
+      <div class="progress-bar-fill" id="progress-bar" style="width:0%"></div>
+    </div>
+
+    <!-- Cipher text display -->
+    <div class="cipher-text-block" id="cipher-display"></div>
+
+    <!-- Status message -->
+    <div class="status-msg" id="status-msg"></div>
+
+    <!-- Frequency analyzer -->
+    <div class="freq-section">
+      <div class="freq-label" data-i18n="freqLabel">📊 Häufigkeit der verschlüsselten Buchstaben:</div>
+      <div class="freq-bars" id="freq-bars"></div>
+    </div>
+
+    <!-- Alphabet keyboard for guessing -->
+    <div class="keyboard-section">
+      <div class="keyboard-label" data-i18n="keyboardLabel">→ Wähle den echten Buchstaben:</div>
+      <div class="keyboard" id="keyboard"></div>
+    </div>
+
+  </div>
+
+  <!-- WIN SCREEN -->
+  <div id="win-screen">
+    <div class="win-title" data-i18n="winTitle">🔓 GEKNACKT!</div>
+    <div class="stars" id="win-stars">⭐⭐⭐</div>
+    <div class="win-score" id="win-score">1850</div>
+    <div class="win-stats" id="win-stats"></div>
+    <button class="play-again-btn" id="play-again-btn" data-i18n="playAgain">Nochmal spielen</button>
+  </div>
+
+</div>
+
+<script src="/shared/i18n.js"></script>
+<script>
+
+// ── TRANSLATIONS ──
+const TRANSLATIONS = {
+  de: {
+    backToGames: "Zurück zu den Spielen",
+    subtitle: "Knacke den Geheimcode! Jeder Buchstabe wurde durch einen anderen ersetzt. Finde heraus, welcher für welchen steht.",
+    difficultyLabel: "Schwierigkeitsgrad:",
+    levelEasy: "Leicht",
+    levelMedium: "Mittel",
+    levelHard: "Schwer",
+    startBtn: "STARTEN",
+    howToPlayShort: "Tippe auf einen Buchstaben im Chiffretext → wähle den echten Buchstaben unten",
+    mistakes: "Fehler",
+    hintsLeft: "Hinweise",
+    hintBtn: "💡 Hinweis",
+    freqLabel: "📊 Häufigkeit:",
+    keyboardLabel: "→ Wähle den echten Buchstaben:",
+    winTitle: "🔓 GEKNACKT!",
+    playAgain: "Nochmal spielen",
+    selectEncFirst: "Klicke zuerst einen Buchstaben im Chiffretext an!",
+    alreadyMapped: "Bereits entschlüsselt!",
+    wrongMapping: "Falsch! Versuch nochmal.",
+    hintUsed: "Hinweis: {enc} = {plain}",
+    noHints: "Keine Hinweise mehr!",
+    allHinted: "Alle Buchstaben bereits entschlüsselt!",
+    mistakesOut: "Zu viele Fehler! Das Rätsel wird aufgedeckt.",
+    puzzleLabel: "Rätsel",
+    scoreLabel: "Punkte",
+    mistakesLabel: "Fehler gemacht",
+    hintsUsedLabel: "Hinweise benutzt",
+    timeLabel: "Zeit",
+    nextPuzzle: "Nächstes Rätsel →",
+    correct: "✓ Richtig!",
+    puzzleComplete: "Rätsel gelöst! +",
+    pts: "Pkt",
+    stars3: "Perfekt! Keine Fehler!",
+    stars2: "Gut! Fast fehlerfrei!",
+    stars1: "Geschafft!",
+  },
+  en: {
+    backToGames: "Back to Games",
+    subtitle: "Crack the secret code! Every letter has been replaced by another. Figure out what maps to what.",
+    difficultyLabel: "Difficulty:",
+    levelEasy: "Easy",
+    levelMedium: "Medium",
+    levelHard: "Hard",
+    startBtn: "START",
+    howToPlayShort: "Tap a letter in the cipher text → choose the real letter below",
+    mistakes: "Mistakes",
+    hintsLeft: "Hints",
+    hintBtn: "💡 Hint",
+    freqLabel: "📊 Frequency:",
+    keyboardLabel: "→ Pick the real letter:",
+    winTitle: "🔓 CRACKED!",
+    playAgain: "Play Again",
+    selectEncFirst: "First click a letter in the cipher text!",
+    alreadyMapped: "Already decoded!",
+    wrongMapping: "Wrong! Try again.",
+    hintUsed: "Hint: {enc} = {plain}",
+    noHints: "No hints left!",
+    allHinted: "All letters already decoded!",
+    mistakesOut: "Too many mistakes! Puzzle revealed.",
+    puzzleLabel: "Puzzle",
+    scoreLabel: "Score",
+    mistakesLabel: "Mistakes",
+    hintsUsedLabel: "Hints used",
+    timeLabel: "Time",
+    nextPuzzle: "Next Puzzle →",
+    correct: "✓ Correct!",
+    puzzleComplete: "Puzzle solved! +",
+    pts: "pts",
+    stars3: "Perfect! No mistakes!",
+    stars2: "Great! Nearly flawless!",
+    stars1: "Done!",
+  },
+  fr: {
+    backToGames: "Retour aux Jeux",
+    subtitle: "Déchiffre le code secret ! Chaque lettre a été remplacée par une autre. Trouve ce qui correspond à quoi.",
+    difficultyLabel: "Difficulté :",
+    levelEasy: "Facile",
+    levelMedium: "Moyen",
+    levelHard: "Difficile",
+    startBtn: "DÉMARRER",
+    howToPlayShort: "Touche une lettre dans le texte chiffré → choisis la vraie lettre en bas",
+    mistakes: "Erreurs",
+    hintsLeft: "Indices",
+    hintBtn: "💡 Indice",
+    freqLabel: "📊 Fréquence :",
+    keyboardLabel: "→ Choisis la vraie lettre :",
+    winTitle: "🔓 DÉCHIFFRÉ !",
+    playAgain: "Rejouer",
+    selectEncFirst: "D'abord clique une lettre dans le texte chiffré !",
+    alreadyMapped: "Déjà déchiffré !",
+    wrongMapping: "Faux ! Réessaie.",
+    hintUsed: "Indice : {enc} = {plain}",
+    noHints: "Plus d'indices !",
+    allHinted: "Toutes les lettres déjà déchiffrées !",
+    mistakesOut: "Trop d'erreurs ! Puzzle révélé.",
+    puzzleLabel: "Puzzle",
+    scoreLabel: "Score",
+    mistakesLabel: "Erreurs",
+    hintsUsedLabel: "Indices utilisés",
+    timeLabel: "Temps",
+    nextPuzzle: "Puzzle suivant →",
+    correct: "✓ Correct !",
+    puzzleComplete: "Puzzle résolu ! +",
+    pts: "pts",
+    stars3: "Parfait ! Aucune erreur !",
+    stars2: "Super ! Presque parfait !",
+    stars1: "Réussi !",
+  },
+  it: {
+    backToGames: "Torna ai Giochi",
+    subtitle: "Decifra il codice segreto! Ogni lettera è stata sostituita con un'altra. Scopri quale corrisponde a quale.",
+    difficultyLabel: "Difficoltà:",
+    levelEasy: "Facile",
+    levelMedium: "Medio",
+    levelHard: "Difficile",
+    startBtn: "INIZIA",
+    howToPlayShort: "Tocca una lettera nel testo cifrato → scegli la vera lettera qui sotto",
+    mistakes: "Errori",
+    hintsLeft: "Indizi",
+    hintBtn: "💡 Indizio",
+    freqLabel: "📊 Frequenza:",
+    keyboardLabel: "→ Scegli la vera lettera:",
+    winTitle: "🔓 DECIFRATO!",
+    playAgain: "Gioca ancora",
+    selectEncFirst: "Prima clicca una lettera nel testo cifrato!",
+    alreadyMapped: "Già decifrato!",
+    wrongMapping: "Sbagliato! Riprova.",
+    hintUsed: "Indizio: {enc} = {plain}",
+    noHints: "Nessun indizio rimasto!",
+    allHinted: "Tutte le lettere già decifrate!",
+    mistakesOut: "Troppi errori! Puzzle rivelato.",
+    puzzleLabel: "Puzzle",
+    scoreLabel: "Punteggio",
+    mistakesLabel: "Errori",
+    hintsUsedLabel: "Indizi usati",
+    timeLabel: "Tempo",
+    nextPuzzle: "Prossimo Puzzle →",
+    correct: "✓ Corretto!",
+    puzzleComplete: "Puzzle risolto! +",
+    pts: "pt",
+    stars3: "Perfetto! Nessun errore!",
+    stars2: "Ottimo! Quasi perfetto!",
+    stars1: "Completato!",
+  },
+  es: {
+    backToGames: "Volver a los Juegos",
+    subtitle: "¡Descifra el código secreto! Cada letra ha sido reemplazada por otra. Descubre qué corresponde a qué.",
+    difficultyLabel: "Dificultad:",
+    levelEasy: "Fácil",
+    levelMedium: "Medio",
+    levelHard: "Difícil",
+    startBtn: "EMPEZAR",
+    howToPlayShort: "Toca una letra en el texto cifrado → elige la letra real abajo",
+    mistakes: "Errores",
+    hintsLeft: "Pistas",
+    hintBtn: "💡 Pista",
+    freqLabel: "📊 Frecuencia:",
+    keyboardLabel: "→ Elige la letra real:",
+    winTitle: "🔓 ¡DESCIFRADO!",
+    playAgain: "Jugar de nuevo",
+    selectEncFirst: "¡Primero haz clic en una letra del texto cifrado!",
+    alreadyMapped: "¡Ya descifrado!",
+    wrongMapping: "¡Incorrecto! Inténtalo de nuevo.",
+    hintUsed: "Pista: {enc} = {plain}",
+    noHints: "¡No quedan pistas!",
+    allHinted: "¡Todas las letras ya descifradas!",
+    mistakesOut: "¡Demasiados errores! Puzzle revelado.",
+    puzzleLabel: "Puzzle",
+    scoreLabel: "Puntuación",
+    mistakesLabel: "Errores",
+    hintsUsedLabel: "Pistas usadas",
+    timeLabel: "Tiempo",
+    nextPuzzle: "Siguiente Puzzle →",
+    correct: "✓ ¡Correcto!",
+    puzzleComplete: "¡Puzzle resuelto! +",
+    pts: "pts",
+    stars3: "¡Perfecto! ¡Sin errores!",
+    stars2: "¡Genial! ¡Casi perfecto!",
+    stars1: "¡Completado!",
+  }
+};
+
+const { t, lang, onLangChange } = initI18n(TRANSLATIONS);
+
+// ── CIPHER LOGIC (inline, no module import for browser) ──
+
+function seededRNG(seed) {
+  let s = (seed >>> 0);
+  return () => {
+    s += 0x6D2B79F5;
+    let tt = s;
+    tt = Math.imul(tt ^ (tt >>> 15), tt | 1);
+    tt ^= tt + Math.imul(tt ^ (tt >>> 7), tt | 61);
+    return ((tt ^ (tt >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function shuffleWithSeed(arr, rand) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(rand() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function generateCipher(seed) {
+  const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+  let shuffled;
+  let attempts = 0;
+  do {
+    shuffled = shuffleWithSeed(letters, seededRNG(seed + attempts * 7919));
+    attempts++;
+  } while (shuffled.some((enc, i) => enc === letters[i]) && attempts < 1000);
+  const cipher = {};
+  letters.forEach((letter, i) => { cipher[letter] = shuffled[i]; });
+  return cipher;
+}
+
+function decodeCipher(cipher) {
+  const inverse = {};
+  Object.entries(cipher).forEach(([plain, encoded]) => { inverse[encoded] = plain; });
+  return inverse;
+}
+
+function applyCipher(text, cipher) {
+  return text.split('').map(ch => {
+    const upper = ch.toUpperCase();
+    if (cipher[upper] !== undefined) {
+      return ch === ch.toLowerCase() ? cipher[upper].toLowerCase() : cipher[upper];
+    }
+    return ch;
+  }).join('');
+}
+
+function getLetterFrequency(text) {
+  const freq = {};
+  for (const ch of text.toUpperCase()) {
+    if (ch >= 'A' && ch <= 'Z') freq[ch] = (freq[ch] || 0) + 1;
+  }
+  return freq;
+}
+
+// ── PUZZLE BANK ──
+// Each puzzle: { plain, author (optional) }
+const PUZZLES = {
+  easy: [
+    "DER FRUEHE VOGEL FAENGT DEN WURM",
+    "ALLER ANFANG IST SCHWER",
+    "MORGENSTUND HAT GOLD IM MUND",
+    "ENDE GUT ALLES GUT",
+    "MIT GEDULD UND SPUCKE FAENGT MAN EINE MUCKE",
+  ],
+  medium: [
+    "WISSEN IST MACHT UND MACHT MACHT NICHTS WISSEN",
+    "WER NICHT WAGT DER NICHT GEWINNT",
+    "IN DER RUHE LIEGT DIE KRAFT",
+    "DAS BESTE AN DER ZUKUNFT IST DASS SIE NOCH NICHT DA IST",
+    "UEBUNG MACHT DEN MEISTER UND DER MEISTER MACHT UEBUNG",
+  ],
+  hard: [
+    "PHANTASIE IST WICHTIGER ALS WISSEN DENN WISSEN IST BEGRENZT",
+    "MAN SIEHT NUR MIT DEM HERZEN GUT DAS WESENTLICHE IST FUER DIE AUGEN UNSICHTBAR",
+    "DAS LEBEN IST ZU KURZ UM SCHLECHTEN WEIN ZU TRINKEN",
+    "DER UNTERSCHIED ZWISCHEN THEORIE UND PRAXIS IST IN DER PRAXIS GROESSER ALS IN DER THEORIE",
+    "WIR MUESSEN DIE VERAENDERUNG SEIN DIE WIR IN DER WELT SEHEN WOLLEN",
+  ]
+};
+
+// ── GAME STATE ──
+let state = {
+  level: 'easy',
+  puzzleIndex: 0,
+  cipher: null,
+  inverse: null,
+  plainText: '',
+  encodedText: '',
+  userMapping: {},      // encoded → plain guesses
+  hintedLetters: new Set(),
+  mistakes: 0,
+  hintsUsed: 0,
+  hintsLeft: 3,
+  score: 0,
+  startTime: 0,
+  selectedEnc: null,    // currently selected encoded letter
+  puzzleSolved: false,
+  totalMistakes: 0,
+  totalHints: 0,
+};
+
+const MAX_MISTAKES = 5;
+
+// ── PUZZLE SELECTION ──
+function getPuzzleForIndex(level, idx) {
+  const bank = PUZZLES[level];
+  return bank[idx % bank.length];
+}
+
+// ── RENDER ──
+function renderCipherText() {
+  const display = document.getElementById('cipher-display');
+  display.innerHTML = '';
+
+  const words = state.encodedText.split(' ');
+  let charIdx = 0;
+
+  words.forEach((word, wi) => {
+    word.split('').forEach(ch => {
+      const span = document.createElement('span');
+      span.className = 'cipher-char';
+      const upper = ch.toUpperCase();
+
+      if (upper >= 'A' && upper <= 'Z') {
+        span.className += ' letter';
+        span.dataset.enc = upper;
+
+        const encEl = document.createElement('span');
+        encEl.className = 'enc-letter';
+        encEl.textContent = upper;
+
+        const decEl = document.createElement('span');
+        decEl.className = 'decoded-letter';
+
+        if (state.userMapping[upper]) {
+          decEl.textContent = state.userMapping[upper];
+          span.classList.add('mapped');
+        } else {
+          decEl.textContent = '';
+        }
+
+        if (state.hintedLetters.has(upper)) span.classList.add('hinted');
+
+        span.appendChild(encEl);
+        span.appendChild(decEl);
+
+        span.addEventListener('click', () => selectEncLetter(upper));
+      } else {
+        span.textContent = ch;
+      }
+
+      display.appendChild(span);
+      charIdx++;
+    });
+
+    if (wi < words.length - 1) {
+      const space = document.createElement('span');
+      space.textContent = ' ';
+      display.appendChild(space);
+    }
+  });
+
+  updateSelectedHighlight();
+  updateProgress();
+}
+
+function updateSelectedHighlight() {
+  document.querySelectorAll('.cipher-char.letter').forEach(el => {
+    el.classList.remove('selected');
+    if (el.dataset.enc === state.selectedEnc) el.classList.add('selected');
+  });
+}
+
+function updateProgress() {
+  const letters = [...new Set(state.encodedText.replace(/[^A-Za-z]/g, '').toUpperCase())];
+  const mapped = letters.filter(l => state.userMapping[l]).length;
+  const pct = letters.length > 0 ? (mapped / letters.length) * 100 : 0;
+  document.getElementById('progress-bar').style.width = pct + '%';
+}
+
+function renderFreqBars() {
+  const freq = getLetterFrequency(state.encodedText);
+  const maxFreq = Math.max(...Object.values(freq));
+  const sorted = Object.entries(freq).sort((a, b) => b[1] - a[1]);
+
+  const container = document.getElementById('freq-bars');
+  container.innerHTML = '';
+
+  sorted.forEach(([letter, count]) => {
+    const wrap = document.createElement('div');
+    wrap.className = 'freq-bar-wrap';
+
+    const bar = document.createElement('div');
+    bar.className = 'freq-bar';
+    const h = Math.max(4, Math.round((count / maxFreq) * 34));
+    bar.style.height = h + 'px';
+    bar.dataset.enc = letter;
+
+    if (letter === state.selectedEnc) bar.classList.add('selected-freq');
+    if (state.userMapping[letter]) bar.classList.add('mapped-freq');
+
+    const lbl = document.createElement('div');
+    lbl.className = 'freq-bar-letter';
+    lbl.textContent = letter;
+
+    wrap.appendChild(bar);
+    wrap.appendChild(lbl);
+    container.appendChild(wrap);
+  });
+}
+
+function renderKeyboard() {
+  const keyboard = document.getElementById('keyboard');
+  keyboard.innerHTML = '';
+  const usedPlain = new Set(Object.values(state.userMapping));
+
+  'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').forEach(letter => {
+    const btn = document.createElement('button');
+    btn.className = 'key';
+    btn.textContent = letter;
+    btn.dataset.plain = letter;
+
+    if (usedPlain.has(letter)) {
+      btn.classList.add('used');
+      btn.title = '✓ ' + letter;
+    }
+
+    btn.addEventListener('click', () => guessLetter(letter));
+    keyboard.appendChild(btn);
+  });
+}
+
+// ── INTERACTION ──
+function selectEncLetter(enc) {
+  if (state.puzzleSolved) return;
+  state.selectedEnc = (state.selectedEnc === enc) ? null : enc;
+  updateSelectedHighlight();
+  renderFreqBars();
+  setStatus('');
+}
+
+function guessLetter(plain) {
+  if (!state.selectedEnc) {
+    setStatus(t('selectEncFirst'), 'error');
+    return;
+  }
+
+  if (state.puzzleSolved) return;
+
+  const enc = state.selectedEnc;
+
+  // Already correctly mapped?
+  if (state.userMapping[enc] === state.inverse[enc]) {
+    setStatus(t('alreadyMapped'), '');
+    return;
+  }
+
+  const correct = state.inverse[enc];
+
+  if (plain === correct) {
+    // Correct!
+    state.userMapping[enc] = plain;
+    setStatus(t('correct'), 'success');
+    renderCipherText();
+    renderFreqBars();
+    renderKeyboard();
+    state.selectedEnc = null;
+    checkAllSolved();
+  } else {
+    // Wrong
+    state.mistakes++;
+    state.totalMistakes++;
+    document.getElementById('mistake-count').textContent = state.mistakes;
+
+    // Flash the selected chars red briefly
+    document.querySelectorAll(`.cipher-char.letter[data-enc="${enc}"]`).forEach(el => {
+      el.classList.add('wrong');
+      setTimeout(() => el.classList.remove('wrong'), 700);
+    });
+
+    setStatus(t('wrongMapping'), 'error');
+
+    if (state.mistakes >= MAX_MISTAKES) {
+      revealPuzzle();
+    }
+  }
+}
+
+function useHint() {
+  if (state.hintsLeft <= 0) {
+    setStatus(t('noHints'), 'error');
+    return;
+  }
+
+  // Find an unmapped letter that appears in the text
+  const textLetters = [...new Set(state.encodedText.replace(/[^A-Z]/g, ''))];
+  const unmapped = textLetters.filter(enc => !state.userMapping[enc]);
+
+  if (unmapped.length === 0) {
+    setStatus(t('allHinted'), '');
+    return;
+  }
+
+  // Pick the most frequent unmapped letter
+  const freq = getLetterFrequency(state.encodedText);
+  unmapped.sort((a, b) => (freq[b] || 0) - (freq[a] || 0));
+  const enc = unmapped[0];
+  const plain = state.inverse[enc];
+
+  state.userMapping[enc] = plain;
+  state.hintedLetters.add(enc);
+  state.hintsLeft--;
+  state.hintsUsed++;
+  state.totalHints++;
+
+  document.getElementById('hints-left').textContent = state.hintsLeft;
+  document.getElementById('hint-btn').disabled = state.hintsLeft === 0;
+
+  const msg = t('hintUsed').replace('{enc}', enc).replace('{plain}', plain);
+  setStatus(msg, 'hint');
+
+  renderCipherText();
+  renderFreqBars();
+  renderKeyboard();
+  checkAllSolved();
+}
+
+function checkAllSolved() {
+  const textLetters = [...new Set(state.encodedText.replace(/[^A-Z]/g, ''))];
+  const allMapped = textLetters.every(enc => state.userMapping[enc] === state.inverse[enc]);
+
+  if (allMapped) {
+    state.puzzleSolved = true;
+    const elapsed = Math.floor((Date.now() - state.startTime) / 1000);
+    const baseScore = { easy: 100, medium: 200, hard: 350 }[state.level];
+    const mistakePenalty = state.mistakes * 20;
+    const hintPenalty = state.hintsUsed * 30;
+    const timePenalty = Math.min(100, Math.floor(elapsed / 5) * 5);
+    const earned = Math.max(10, baseScore - mistakePenalty - hintPenalty - timePenalty);
+
+    state.score += earned;
+    setStatus(t('puzzleComplete') + earned + ' ' + t('pts'), 'success');
+
+    setTimeout(() => {
+      state.puzzleIndex++;
+      if (state.puzzleIndex >= 5) {
+        showWinScreen();
+      } else {
+        startPuzzle();
+      }
+    }, 2000);
+  }
+}
+
+function revealPuzzle() {
+  // Auto-reveal all remaining
+  const textLetters = [...new Set(state.encodedText.replace(/[^A-Z]/g, ''))];
+  textLetters.forEach(enc => {
+    if (!state.userMapping[enc]) state.userMapping[enc] = state.inverse[enc];
+  });
+  state.puzzleSolved = true;
+  setStatus(t('mistakesOut'), 'error');
+  renderCipherText();
+  renderFreqBars();
+  renderKeyboard();
+  setTimeout(() => {
+    state.puzzleIndex++;
+    if (state.puzzleIndex >= 5) showWinScreen();
+    else startPuzzle();
+  }, 3000);
+}
+
+function setStatus(msg, type = '') {
+  const el = document.getElementById('status-msg');
+  el.textContent = msg;
+  el.className = 'status-msg' + (type ? ' ' + type : '');
+}
+
+// ── GAME FLOW ──
+function startGame() {
+  state.puzzleIndex = 0;
+  state.score = 0;
+  state.totalMistakes = 0;
+  state.totalHints = 0;
+
+  document.getElementById('start-screen').style.display = 'none';
+  document.getElementById('win-screen').style.display = 'none';
+  document.getElementById('game-screen').style.display = 'block';
+
+  startPuzzle();
+}
+
+function startPuzzle() {
+  const seed = Date.now() % 9999 + state.puzzleIndex * 1337 + ['easy','medium','hard'].indexOf(state.level) * 500;
+  state.cipher = generateCipher(seed);
+  state.inverse = decodeCipher(state.cipher);
+  state.plainText = getPuzzleForIndex(state.level, state.puzzleIndex).toUpperCase();
+  state.encodedText = applyCipher(state.plainText, state.cipher).toUpperCase();
+  state.userMapping = {};
+  state.hintedLetters = new Set();
+  state.mistakes = 0;
+  state.hintsUsed = 0;
+  state.hintsLeft = 3;
+  state.selectedEnc = null;
+  state.puzzleSolved = false;
+  state.startTime = Date.now();
+
+  document.getElementById('puzzle-num').textContent = state.puzzleIndex + 1;
+  document.getElementById('mistake-count').textContent = '0';
+  document.getElementById('hints-left').textContent = '3';
+  document.getElementById('hint-btn').disabled = false;
+
+  setStatus('');
+  renderCipherText();
+  renderFreqBars();
+  renderKeyboard();
+}
+
+function showWinScreen() {
+  document.getElementById('game-screen').style.display = 'none';
+  const ws = document.getElementById('win-screen');
+  ws.style.display = 'flex';
+
+  document.getElementById('win-score').textContent = state.score + ' ' + t('pts');
+
+  const stars = state.totalMistakes === 0 ? 3 : state.totalMistakes <= 3 ? 2 : 1;
+  document.getElementById('win-stars').textContent = '⭐'.repeat(stars) + '☆'.repeat(3 - stars);
+
+  const statsEl = document.getElementById('win-stats');
+  statsEl.innerHTML = `
+    ${t('mistakesLabel')}: ${state.totalMistakes}<br>
+    ${t('hintsUsedLabel')}: ${state.totalHints}<br>
+    ${t('stars' + stars)}
+  `;
+}
+
+// ── INIT ──
+document.getElementById('start-btn').addEventListener('click', startGame);
+document.getElementById('hint-btn').addEventListener('click', useHint);
+document.getElementById('play-again-btn').addEventListener('click', () => {
+  document.getElementById('win-screen').style.display = 'none';
+  document.getElementById('start-screen').style.display = 'flex';
+});
+
+document.querySelectorAll('.level-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.level-btn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    state.level = btn.dataset.level;
+  });
+});
+
+// Re-render on language change
+onLangChange(() => {
+  if (document.getElementById('game-screen').style.display !== 'none') {
+    renderKeyboard();
+    document.getElementById('hints-left').textContent = state.hintsLeft;
+  }
+});
+
+</script>
+</body>
+</html>
