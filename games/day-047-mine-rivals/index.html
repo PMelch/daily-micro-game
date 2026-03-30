@@ -1,0 +1,895 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Mine Rivals 💣</title>
+<style>
+  :root {
+    --bg: #0a0a1a;
+    --panel: #12122a;
+    --border: #2a2a4a;
+    --gold: #ffcc00;
+    --red: #ff4466;
+    --green: #44ff88;
+    --blue: #4488ff;
+    --p1: #ff6b6b;
+    --p2: #4ecdc4;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: #fff;
+    font-family: system-ui, -apple-system, sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .back-bar {
+    width: 100%;
+    background: #0a0a1a;
+    padding: 0.5rem 1rem;
+    border-bottom: 1px solid #333;
+  }
+  .back-bar a {
+    color: #ffcc00;
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .back-bar a:hover { text-decoration: underline; }
+
+  /* ── SCREENS ── */
+  .screen {
+    display: none;
+    flex: 1;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem 1rem;
+  }
+  .screen.active { display: flex; }
+
+  h1 { font-size: 2.2rem; text-align: center; }
+  h1 span { font-size: 1.5rem; }
+  .subtitle { color: #aaa; text-align: center; margin-top: 0.4rem; font-size: 0.95rem; }
+
+  /* ── SETUP ── */
+  .setup-box {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.5rem;
+    width: 100%;
+    max-width: 400px;
+    margin-top: 1.5rem;
+  }
+
+  .player-inputs { display: flex; flex-direction: column; gap: 0.8rem; margin-bottom: 1.2rem; }
+
+  .player-row { display: flex; align-items: center; gap: 0.6rem; }
+  .player-icon { font-size: 1.4rem; width: 2rem; text-align: center; }
+
+  input[type="text"] {
+    background: #0e0e2a;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: #fff;
+    font-size: 1rem;
+    padding: 0.5rem 0.8rem;
+    flex: 1;
+    outline: none;
+  }
+  input[type="text"]:focus { border-color: var(--gold); }
+
+  .diff-row { display: flex; gap: 0.5rem; margin-bottom: 1.2rem; }
+  .diff-btn {
+    flex: 1;
+    background: #0e0e2a;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: #aaa;
+    cursor: pointer;
+    font-size: 0.85rem;
+    padding: 0.5rem;
+    transition: all 0.15s;
+    text-align: center;
+  }
+  .diff-btn.selected {
+    background: #1a1a3a;
+    border-color: var(--gold);
+    color: var(--gold);
+  }
+
+  .btn-primary {
+    background: var(--gold);
+    border: none;
+    border-radius: 10px;
+    color: #000;
+    cursor: pointer;
+    font-size: 1.1rem;
+    font-weight: 700;
+    padding: 0.75rem 2rem;
+    width: 100%;
+    transition: transform 0.1s, opacity 0.1s;
+  }
+  .btn-primary:active { transform: scale(0.97); opacity: 0.9; }
+
+  /* ── GAME UI ── */
+  #game-screen { padding: 0.5rem 0.5rem 1rem; justify-content: flex-start; }
+
+  .scoreboard {
+    display: flex;
+    gap: 0.5rem;
+    width: 100%;
+    max-width: 480px;
+    margin-bottom: 0.6rem;
+  }
+
+  .player-card {
+    flex: 1;
+    background: var(--panel);
+    border: 2px solid var(--border);
+    border-radius: 10px;
+    padding: 0.5rem 0.7rem;
+    transition: border-color 0.2s;
+  }
+  .player-card.active-turn { border-color: var(--gold); }
+  .player-card.p1 { --pcolor: var(--p1); }
+  .player-card.p2 { --pcolor: var(--p2); }
+
+  .pname {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--pcolor);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .hp-row { display: flex; gap: 3px; margin: 3px 0; }
+  .heart { font-size: 1rem; transition: opacity 0.3s; }
+  .heart.lost { opacity: 0.2; }
+
+  .pscore { font-size: 1.1rem; font-weight: 700; color: #fff; }
+  .pscore-label { font-size: 0.7rem; color: #888; }
+
+  .turn-banner {
+    background: #1a1a2e;
+    border: 1px solid var(--gold);
+    border-radius: 8px;
+    color: var(--gold);
+    font-size: 0.85rem;
+    font-weight: 700;
+    padding: 0.3rem 0.8rem;
+    text-align: center;
+    width: 100%;
+    max-width: 480px;
+    margin-bottom: 0.5rem;
+  }
+
+  /* ── MINE GRID ── */
+  #grid-container {
+    width: 100%;
+    max-width: 480px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  #mine-grid {
+    display: grid;
+    gap: 2px;
+    touch-action: none;
+    user-select: none;
+  }
+
+  .cell {
+    aspect-ratio: 1;
+    background: #1e1e3a;
+    border: 1px solid #2a2a4a;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    font-weight: 700;
+    position: relative;
+    transition: background 0.1s;
+  }
+  .cell:active { background: #2a2a4a; }
+  .cell.revealed {
+    background: #0d0d20;
+    border-color: #1a1a30;
+    cursor: default;
+  }
+  .cell.flagged { background: #1a1a3a; }
+  .cell.mine-hit { background: #660022; border-color: var(--red); }
+
+  /* Number colors */
+  .n1 { color: #4ecdc4; }
+  .n2 { color: #44ff88; }
+  .n3 { color: #ff6b6b; }
+  .n4 { color: #4488ff; }
+  .n5 { color: #ff9f43; }
+  .n6 { color: #ee5a24; }
+  .n7 { color: #fd79a8; }
+  .n8 { color: #a29bfe; }
+
+  /* Flag mode indicator */
+  .mode-bar {
+    display: flex;
+    gap: 0.5rem;
+    width: 100%;
+    max-width: 480px;
+    margin-top: 0.5rem;
+  }
+
+  .mode-btn {
+    flex: 1;
+    background: #0e0e2a;
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    color: #aaa;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 600;
+    padding: 0.5rem;
+    transition: all 0.15s;
+  }
+  .mode-btn.active {
+    background: #1a1a3a;
+    border-color: var(--gold);
+    color: var(--gold);
+  }
+
+  /* ── OVERLAY / TRANSITION ── */
+  .overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.85);
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    padding: 2rem;
+    text-align: center;
+  }
+  .overlay.active { display: flex; }
+
+  .overlay-title { font-size: 2rem; font-weight: 900; margin-bottom: 0.5rem; }
+  .overlay-subtitle { font-size: 1rem; color: #ccc; margin-bottom: 1.5rem; }
+
+  .btn-secondary {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: #fff;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 600;
+    padding: 0.6rem 1.5rem;
+    margin: 0.3rem;
+    transition: border-color 0.15s;
+  }
+  .btn-secondary:hover { border-color: var(--gold); }
+
+  /* ── GAMEOVER ── */
+  #gameover-screen { gap: 1rem; }
+  .final-scores {
+    display: flex;
+    gap: 1rem;
+    margin: 1rem 0;
+  }
+  .final-card {
+    background: var(--panel);
+    border: 2px solid var(--border);
+    border-radius: 12px;
+    padding: 1rem 1.5rem;
+    text-align: center;
+    flex: 1;
+  }
+  .final-card.winner { border-color: var(--gold); }
+  .final-name { font-size: 1rem; font-weight: 700; margin-bottom: 0.3rem; }
+  .final-score { font-size: 2rem; font-weight: 900; color: var(--gold); }
+  .final-hp { font-size: 1.2rem; }
+
+  .mine-stat { color: #aaa; font-size: 0.85rem; }
+
+  @media (max-width: 360px) {
+    .cell { font-size: 0.65rem; }
+  }
+</style>
+</head>
+<body>
+<div class="back-bar"><a href="/">← <span data-i18n="backToGames">Zurück</span></a></div>
+
+<!-- SETUP SCREEN -->
+<div class="screen active" id="setup-screen">
+  <h1>💣 Mine Rivals</h1>
+  <p class="subtitle" data-i18n="tagline">Pass & Play Minenduell!</p>
+
+  <div class="setup-box">
+    <div class="player-inputs">
+      <div class="player-row">
+        <div class="player-icon" style="color:#ff6b6b">💣</div>
+        <input type="text" id="p1-name" maxlength="16" placeholder="Spieler 1">
+      </div>
+      <div class="player-row">
+        <div class="player-icon" style="color:#4ecdc4">🛡️</div>
+        <input type="text" id="p2-name" maxlength="16" placeholder="Spieler 2">
+      </div>
+    </div>
+
+    <p style="color:#aaa;font-size:0.85rem;margin-bottom:0.5rem;" data-i18n="difficulty">Schwierigkeit:</p>
+    <div class="diff-row">
+      <button class="diff-btn selected" data-diff="easy" data-i18n="easy">Leicht</button>
+      <button class="diff-btn" data-diff="medium" data-i18n="medium">Mittel</button>
+      <button class="diff-btn" data-diff="hard" data-i18n="hard">Schwer</button>
+    </div>
+
+    <button class="btn-primary" id="start-btn" data-i18n="startGame">Spiel starten!</button>
+  </div>
+</div>
+
+<!-- GAME SCREEN -->
+<div class="screen" id="game-screen">
+  <div class="scoreboard">
+    <div class="player-card p1 active-turn" id="card-0">
+      <div class="pname" id="pname-0">P1</div>
+      <div class="hp-row" id="hp-0"></div>
+      <div class="pscore-label" data-i18n="score">Punkte</div>
+      <div class="pscore" id="score-0">0</div>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:1.5rem;">VS</div>
+    <div class="player-card p2" id="card-1">
+      <div class="pname" id="pname-1">P2</div>
+      <div class="hp-row" id="hp-1"></div>
+      <div class="pscore-label" data-i18n="score">Punkte</div>
+      <div class="pscore" id="score-1">0</div>
+    </div>
+  </div>
+
+  <div class="turn-banner" id="turn-banner">⚡ Spieler 1 ist dran</div>
+
+  <div id="grid-container">
+    <div id="mine-grid"></div>
+  </div>
+
+  <div class="mode-bar">
+    <button class="mode-btn active" id="mode-reveal" data-i18n="modeReveal">🔍 Aufdecken</button>
+    <button class="mode-btn" id="mode-flag" data-i18n="modeFlag">🚩 Flaggen</button>
+  </div>
+</div>
+
+<!-- GAME OVER SCREEN -->
+<div class="screen" id="gameover-screen">
+  <h1 id="gameover-title">🏆 Sieg!</h1>
+  <p id="gameover-subtitle" style="color:#aaa;font-size:1rem;margin-bottom:0.5rem;"></p>
+  <div class="final-scores" id="final-scores"></div>
+  <button class="btn-primary" id="play-again-btn" data-i18n="playAgain">Nochmal!</button>
+  <button class="btn-secondary" style="margin-top:0.5rem;" onclick="location.href='/'" data-i18n="backToGames">Zurück zur Übersicht</button>
+</div>
+
+<!-- TRANSITION OVERLAY (pass device) -->
+<div class="overlay" id="pass-overlay">
+  <div style="font-size:3rem;" id="pass-icon">📱</div>
+  <div class="overlay-title" id="pass-title"></div>
+  <div class="overlay-subtitle" id="pass-subtitle"></div>
+  <button class="btn-primary" id="pass-ready-btn" style="max-width:240px;" data-i18n="imReady">Ich bin bereit!</button>
+</div>
+
+<script src="/shared/i18n.js"></script>
+<script>
+const TRANSLATIONS = {
+  de: {
+    backToGames: 'Zurück zur Übersicht',
+    tagline: 'Pass & Play Minenduell — 2 Spieler, ein Minengitter, wer überlegt gewinnt!',
+    difficulty: 'Schwierigkeit:',
+    easy: 'Leicht (9×9, 10 Minen)',
+    medium: 'Mittel (9×9, 18 Minen)',
+    hard: 'Schwer (12×12, 30 Minen)',
+    startGame: 'Duell starten! 💣',
+    score: 'Punkte',
+    modeReveal: '🔍 Aufdecken',
+    modeFlag: '🚩 Flaggen',
+    turnIs: 'ist dran ⚡',
+    passDevice: 'Gerät weitergeben',
+    passDeviceMsg: 'Deck das Gerät ab und gib es an weiter!',
+    imReady: 'Ich bin bereit!',
+    minehit: 'MINE! 💥',
+    minehitMsg: ' hat eine Mine erwischt und verliert ein Leben!',
+    playAgain: 'Nochmal!',
+    winnerAnnounce: 'gewinnt! 🏆',
+    draw: 'Unentschieden! 🤝',
+    gameClearReason: 'Alle sicheren Felder aufgedeckt',
+    gameHPReason: 'Kein Leben mehr übrig',
+    hp: 'Leben',
+    flags: 'Flaggen',
+    minesLeft: 'Minen übrig',
+  },
+  en: {
+    backToGames: 'Back to Games',
+    tagline: 'Pass & Play Mine Duel — 2 players, one mine grid, who thinks wins!',
+    difficulty: 'Difficulty:',
+    easy: 'Easy (9×9, 10 mines)',
+    medium: 'Medium (9×9, 18 mines)',
+    hard: 'Hard (12×12, 30 mines)',
+    startGame: 'Start Duel! 💣',
+    score: 'Score',
+    modeReveal: '🔍 Reveal',
+    modeFlag: '🚩 Flag',
+    turnIs: "'s turn ⚡",
+    passDevice: 'Pass the device',
+    passDeviceMsg: 'Cover the screen and pass it on!',
+    imReady: "I'm ready!",
+    minehit: 'MINE HIT! 💥',
+    minehitMsg: ' hit a mine and loses a life!',
+    playAgain: 'Play Again!',
+    winnerAnnounce: 'wins! 🏆',
+    draw: 'Draw! 🤝',
+    gameClearReason: 'All safe cells revealed',
+    gameHPReason: 'No lives left',
+    hp: 'Lives',
+    flags: 'Flags',
+    minesLeft: 'Mines left',
+  },
+  fr: {
+    backToGames: 'Retour aux jeux',
+    tagline: 'Duel de mines pass & play — 2 joueurs, une grille, qui réfléchit gagne!',
+    difficulty: 'Difficulté:',
+    easy: 'Facile (9×9, 10 mines)',
+    medium: 'Moyen (9×9, 18 mines)',
+    hard: 'Difficile (12×12, 30 mines)',
+    startGame: 'Lancer le duel! 💣',
+    score: 'Score',
+    modeReveal: '🔍 Révéler',
+    modeFlag: '🚩 Drapeau',
+    turnIs: ' joue ⚡',
+    passDevice: "Passer l'appareil",
+    passDeviceMsg: "Couvrez l'écran et passez-le!",
+    imReady: 'Je suis prêt!',
+    minehit: 'MINE! 💥',
+    minehitMsg: ' a touché une mine et perd une vie!',
+    playAgain: 'Rejouer!',
+    winnerAnnounce: 'gagne! 🏆',
+    draw: 'Égalité! 🤝',
+    gameClearReason: 'Toutes les cases sûres révélées',
+    gameHPReason: 'Plus de vies',
+    hp: 'Vies',
+    flags: 'Drapeaux',
+    minesLeft: 'Mines restantes',
+  },
+  it: {
+    backToGames: 'Torna ai giochi',
+    tagline: 'Duello di mine pass & play — 2 giocatori, una griglia, chi pensa vince!',
+    difficulty: 'Difficoltà:',
+    easy: 'Facile (9×9, 10 mine)',
+    medium: 'Medio (9×9, 18 mine)',
+    hard: 'Difficile (12×12, 30 mine)',
+    startGame: 'Inizia il duello! 💣',
+    score: 'Punti',
+    modeReveal: '🔍 Rivela',
+    modeFlag: '🚩 Bandiera',
+    turnIs: ' è il tuo turno ⚡',
+    passDevice: 'Passa il dispositivo',
+    passDeviceMsg: "Copri lo schermo e passalo!",
+    imReady: 'Sono pronto!',
+    minehit: 'MINA! 💥',
+    minehitMsg: ' ha toccato una mina e perde una vita!',
+    playAgain: 'Ancora!',
+    winnerAnnounce: 'vince! 🏆',
+    draw: 'Pareggio! 🤝',
+    gameClearReason: 'Tutte le celle sicure rivelate',
+    gameHPReason: 'Nessuna vita rimasta',
+    hp: 'Vite',
+    flags: 'Bandiere',
+    minesLeft: 'Mine rimaste',
+  },
+  es: {
+    backToGames: 'Volver a los juegos',
+    tagline: 'Duelo de minas pass & play — 2 jugadores, una cuadrícula, ¡quien piensa gana!',
+    difficulty: 'Dificultad:',
+    easy: 'Fácil (9×9, 10 minas)',
+    medium: 'Medio (9×9, 18 minas)',
+    hard: 'Difícil (12×12, 30 minas)',
+    startGame: '¡Iniciar duelo! 💣',
+    score: 'Puntos',
+    modeReveal: '🔍 Revelar',
+    modeFlag: '🚩 Bandera',
+    turnIs: ' es tu turno ⚡',
+    passDevice: 'Pasa el dispositivo',
+    passDeviceMsg: '¡Cubre la pantalla y pásalo!',
+    imReady: '¡Estoy listo!',
+    minehit: '¡MINA! 💥',
+    minehitMsg: ' pisó una mina y pierde una vida!',
+    playAgain: '¡Otra vez!',
+    winnerAnnounce: '¡gana! 🏆',
+    draw: '¡Empate! 🤝',
+    gameClearReason: 'Todas las celdas seguras reveladas',
+    gameHPReason: 'Sin vidas',
+    hp: 'Vidas',
+    flags: 'Banderas',
+    minesLeft: 'Minas restantes',
+  },
+};
+
+const { t, lang } = initI18n(TRANSLATIONS);
+
+// ── DIFFICULTY CONFIG ──
+const DIFF_CONFIG = {
+  easy:   { rows: 9,  cols: 9,  mines: 10 },
+  medium: { rows: 9,  cols: 9,  mines: 18 },
+  hard:   { rows: 12, cols: 12, mines: 30 },
+};
+
+// ── STATE ──
+const CELL_STATE = { HIDDEN: 'hidden', REVEALED: 'revealed', FLAGGED: 'flagged', MINE_HIT: 'mine_hit' };
+const GAME_STATE = { PLAYING: 'playing', OVER: 'over' };
+
+let board = null;
+let mode = 'reveal'; // 'reveal' | 'flag'
+let selectedDiff = 'easy';
+let playerNames = ['Spieler 1', 'Spieler 2'];
+
+// ── SETUP ──
+document.querySelectorAll('.diff-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    selectedDiff = btn.dataset.diff;
+  });
+});
+
+document.getElementById('start-btn').addEventListener('click', () => {
+  const p1 = document.getElementById('p1-name').value.trim() || 'Spieler 1';
+  const p2 = document.getElementById('p2-name').value.trim() || 'Spieler 2';
+  playerNames = [p1, p2];
+  startGame();
+});
+
+document.getElementById('play-again-btn').addEventListener('click', () => {
+  showScreen('setup-screen');
+});
+
+// ── MODE BUTTONS ──
+document.getElementById('mode-reveal').addEventListener('click', () => setMode('reveal'));
+document.getElementById('mode-flag').addEventListener('click', () => setMode('flag'));
+
+function setMode(m) {
+  mode = m;
+  document.getElementById('mode-reveal').classList.toggle('active', m === 'reveal');
+  document.getElementById('mode-flag').classList.toggle('active', m === 'flag');
+}
+
+// ── GAME START ──
+function startGame() {
+  const cfg = DIFF_CONFIG[selectedDiff];
+  board = createBoard(cfg.rows, cfg.cols, cfg.mines, playerNames);
+  mode = 'reveal';
+  setMode('reveal');
+  renderGrid();
+  renderScoreboard();
+  updateTurnBanner();
+  showScreen('game-screen');
+}
+
+// ── BOARD CREATION ──
+function createBoard(rows, cols, mineCount, names) {
+  const cells = Array.from({ length: rows }, (_, r) =>
+    Array.from({ length: cols }, (_, c) => ({
+      row: r, col: c, isMine: false,
+      state: CELL_STATE.HIDDEN, adjacentMines: 0,
+    }))
+  );
+  let placed = 0;
+  while (placed < mineCount) {
+    const r = Math.floor(Math.random() * rows);
+    const c = Math.floor(Math.random() * cols);
+    if (!cells[r][c].isMine) { cells[r][c].isMine = true; placed++; }
+  }
+  for (let r = 0; r < rows; r++)
+    for (let c = 0; c < cols; c++)
+      if (!cells[r][c].isMine)
+        cells[r][c].adjacentMines = countAdjacent(cells, rows, cols, r, c);
+
+  return {
+    rows, cols, mineCount, cells,
+    currentPlayer: 0,
+    gameState: GAME_STATE.PLAYING,
+    players: [
+      { hp: 3, score: 0, name: names[0], flags: 0 },
+      { hp: 3, score: 0, name: names[1], flags: 0 },
+    ],
+  };
+}
+
+function countAdjacent(cells, rows, cols, r, c) {
+  let n = 0;
+  for (let dr = -1; dr <= 1; dr++)
+    for (let dc = -1; dc <= 1; dc++) {
+      if (!dr && !dc) continue;
+      const nr = r + dr, nc = c + dc;
+      if (nr >= 0 && nr < rows && nc >= 0 && nc < cols && cells[nr][nc].isMine) n++;
+    }
+  return n;
+}
+
+// ── RENDER GRID ──
+function renderGrid() {
+  const grid = document.getElementById('mine-grid');
+  const cellSize = Math.min(Math.floor((Math.min(window.innerWidth, 480) - 16) / board.cols), 44);
+  grid.style.gridTemplateColumns = `repeat(${board.cols}, ${cellSize}px)`;
+  grid.innerHTML = '';
+  for (let r = 0; r < board.rows; r++) {
+    for (let c = 0; c < board.cols; c++) {
+      const cell = board.cells[r][c];
+      const el = document.createElement('div');
+      el.className = 'cell';
+      el.dataset.r = r;
+      el.dataset.c = c;
+      el.style.width = el.style.height = cellSize + 'px';
+      el.style.fontSize = Math.floor(cellSize * 0.45) + 'px';
+      applyCellVisual(el, cell);
+      el.addEventListener('click', onCellClick);
+      el.addEventListener('contextmenu', e => { e.preventDefault(); onCellRightClick(e); });
+      grid.appendChild(el);
+    }
+  }
+}
+
+function applyCellVisual(el, cell) {
+  el.className = 'cell';
+  el.textContent = '';
+  switch (cell.state) {
+    case CELL_STATE.HIDDEN:
+      break;
+    case CELL_STATE.REVEALED:
+      el.classList.add('revealed');
+      if (!cell.isMine && cell.adjacentMines > 0) {
+        el.textContent = cell.adjacentMines;
+        el.classList.add('n' + cell.adjacentMines);
+      }
+      break;
+    case CELL_STATE.FLAGGED:
+      el.classList.add('flagged');
+      el.textContent = '🚩';
+      break;
+    case CELL_STATE.MINE_HIT:
+      el.classList.add('mine-hit');
+      el.textContent = '💥';
+      break;
+  }
+}
+
+function updateCellVisual(r, c) {
+  const grid = document.getElementById('mine-grid');
+  const el = grid.querySelector(`[data-r="${r}"][data-c="${c}"]`);
+  if (el) applyCellVisual(el, board.cells[r][c]);
+}
+
+// ── CELL INTERACTIONS ──
+function onCellClick(e) {
+  if (board.gameState !== GAME_STATE.PLAYING) return;
+  const r = +e.currentTarget.dataset.r;
+  const c = +e.currentTarget.dataset.c;
+  if (mode === 'flag') {
+    doFlag(r, c);
+  } else {
+    doReveal(r, c);
+  }
+}
+
+function onCellRightClick(e) {
+  if (board.gameState !== GAME_STATE.PLAYING) return;
+  const r = +e.currentTarget.dataset.r;
+  const c = +e.currentTarget.dataset.c;
+  doFlag(r, c);
+}
+
+function doReveal(r, c) {
+  const cell = board.cells[r][c];
+  if (cell.state !== CELL_STATE.HIDDEN) return;
+  const player = board.currentPlayer;
+
+  if (cell.isMine) {
+    cell.state = CELL_STATE.MINE_HIT;
+    board.players[player].hp = Math.max(0, board.players[player].hp - 1);
+    board.currentPlayer = 1 - player;
+    updateCellVisual(r, c);
+    renderScoreboard();
+    const after = checkGameOver();
+    if (after.over) { endGame(after); return; }
+    // Mine hit overlay
+    showMineHit(player, r, c);
+  } else {
+    const revealed = [];
+    floodReveal(r, c, revealed);
+    board.players[player].score += revealed.length;
+    board.currentPlayer = 1 - player;
+    revealed.forEach(({r, c}) => updateCellVisual(r, c));
+    renderScoreboard();
+    const after = checkGameOver();
+    if (after.over) { endGame(after); return; }
+    showPassDevice();
+  }
+}
+
+function floodReveal(r, c, revealed) {
+  const cell = board.cells[r][c];
+  if (cell.state !== CELL_STATE.HIDDEN || cell.isMine) return;
+  cell.state = CELL_STATE.REVEALED;
+  revealed.push({ r, c });
+  if (cell.adjacentMines === 0) {
+    for (let dr = -1; dr <= 1; dr++)
+      for (let dc = -1; dc <= 1; dc++) {
+        if (!dr && !dc) continue;
+        const nr = r + dr, nc = c + dc;
+        if (nr >= 0 && nr < board.rows && nc >= 0 && nc < board.cols)
+          floodReveal(nr, nc, revealed);
+      }
+  }
+}
+
+function doFlag(r, c) {
+  const cell = board.cells[r][c];
+  if (cell.state === CELL_STATE.REVEALED || cell.state === CELL_STATE.MINE_HIT) return;
+  const player = board.currentPlayer;
+
+  if (cell.state === CELL_STATE.FLAGGED) {
+    cell.state = CELL_STATE.HIDDEN;
+    board.players[player].flags = Math.max(0, board.players[player].flags - 1);
+    if (cell.isMine) board.players[player].score = Math.max(0, board.players[player].score - 2);
+  } else {
+    cell.state = CELL_STATE.FLAGGED;
+    board.players[player].flags++;
+    if (cell.isMine) board.players[player].score += 2;
+  }
+  board.currentPlayer = 1 - player;
+  updateCellVisual(r, c);
+  renderScoreboard();
+  const after = checkGameOver();
+  if (after.over) { endGame(after); return; }
+  showPassDevice();
+}
+
+// ── CHECK GAME OVER ──
+function checkGameOver() {
+  for (let i = 0; i < 2; i++) {
+    if (board.players[i].hp <= 0) return { over: true, winner: 1 - i, reason: 'hp' };
+  }
+  let unrevealedSafe = 0;
+  for (let r = 0; r < board.rows; r++)
+    for (let c = 0; c < board.cols; c++) {
+      const cell = board.cells[r][c];
+      if (!cell.isMine && cell.state !== CELL_STATE.REVEALED) unrevealedSafe++;
+    }
+  if (unrevealedSafe === 0) {
+    const p0 = board.players[0].score, p1 = board.players[1].score;
+    return { over: true, winner: p0 > p1 ? 0 : p1 > p0 ? 1 : -1, reason: 'cleared' };
+  }
+  return { over: false, winner: null, reason: null };
+}
+
+// ── SCOREBOARD ──
+function renderScoreboard() {
+  for (let i = 0; i < 2; i++) {
+    const p = board.players[i];
+    document.getElementById(`pname-${i}`).textContent = p.name;
+    document.getElementById(`score-${i}`).textContent = p.score;
+    const hpEl = document.getElementById(`hp-${i}`);
+    hpEl.innerHTML = '';
+    for (let h = 0; h < 3; h++) {
+      const heart = document.createElement('span');
+      heart.className = 'heart' + (h < p.hp ? '' : ' lost');
+      heart.textContent = '❤️';
+      hpEl.appendChild(heart);
+    }
+    document.getElementById(`card-${i}`).classList.toggle('active-turn', board.currentPlayer === i);
+  }
+}
+
+function updateTurnBanner() {
+  const name = board.players[board.currentPlayer].name;
+  document.getElementById('turn-banner').textContent = `⚡ ${name} ${t('turnIs')}`;
+}
+
+// ── OVERLAYS ──
+function showPassDevice() {
+  const nextName = board.players[board.currentPlayer].name;
+  document.getElementById('pass-icon').textContent = '📱';
+  document.getElementById('pass-title').textContent = nextName;
+  document.getElementById('pass-subtitle').textContent = t('passDeviceMsg');
+  document.getElementById('pass-ready-btn').textContent = t('imReady');
+
+  const overlay = document.getElementById('pass-overlay');
+  overlay.classList.add('active');
+  document.getElementById('pass-ready-btn').onclick = () => {
+    overlay.classList.remove('active');
+    updateTurnBanner();
+    renderScoreboard();
+  };
+}
+
+function showMineHit(hitterIndex, r, c) {
+  const hitterName = board.players[hitterIndex].name;
+  document.getElementById('pass-icon').textContent = '💥';
+  document.getElementById('pass-title').textContent = t('minehit');
+  document.getElementById('pass-subtitle').textContent = hitterName + t('minehitMsg');
+  document.getElementById('pass-ready-btn').textContent = t('imReady');
+
+  const overlay = document.getElementById('pass-overlay');
+  overlay.classList.add('active');
+  document.getElementById('pass-ready-btn').onclick = () => {
+    overlay.classList.remove('active');
+    updateTurnBanner();
+    renderScoreboard();
+    // After mine hit, show pass device to next player
+    showPassDevice();
+  };
+}
+
+// ── GAME OVER ──
+function endGame(result) {
+  board.gameState = GAME_STATE.OVER;
+
+  // Reveal all mines
+  for (let r = 0; r < board.rows; r++)
+    for (let c = 0; c < board.cols; c++)
+      if (board.cells[r][c].isMine && board.cells[r][c].state === CELL_STATE.HIDDEN) {
+        board.cells[r][c].state = CELL_STATE.REVEALED;
+        board.cells[r][c].isMine = true; // ensure
+        updateCellVisual(r, c);
+        // Show bomb
+        const grid = document.getElementById('mine-grid');
+        const el = grid.querySelector(`[data-r="${r}"][data-c="${c}"]`);
+        if (el) { el.classList.add('mine-hit'); el.textContent = '💣'; }
+      }
+
+  setTimeout(() => {
+    const p0 = board.players[0], p1 = board.players[1];
+    let title, subtitle;
+    if (result.winner === -1) {
+      title = t('draw');
+      subtitle = t(result.reason === 'cleared' ? 'gameClearReason' : 'gameHPReason');
+    } else {
+      const winName = board.players[result.winner].name;
+      title = `🏆 ${winName} ${t('winnerAnnounce')}`;
+      subtitle = t(result.reason === 'cleared' ? 'gameClearReason' : 'gameHPReason');
+    }
+    document.getElementById('gameover-title').textContent = title;
+    document.getElementById('gameover-subtitle').textContent = subtitle;
+
+    const fsc = document.getElementById('final-scores');
+    fsc.innerHTML = '';
+    for (let i = 0; i < 2; i++) {
+      const p = board.players[i];
+      const card = document.createElement('div');
+      card.className = 'final-card' + (result.winner === i ? ' winner' : '');
+      const hpHearts = '❤️'.repeat(p.hp) + (p.hp < 3 ? '🖤'.repeat(3 - p.hp) : '');
+      card.innerHTML = `
+        <div class="final-name" style="color:${i === 0 ? '#ff6b6b' : '#4ecdc4'}">${p.name}</div>
+        <div class="final-score">${p.score}</div>
+        <div class="mine-stat">${t('score')}</div>
+        <div class="final-hp">${hpHearts}</div>
+      `;
+      fsc.appendChild(card);
+    }
+    showScreen('gameover-screen');
+  }, 800);
+}
+
+// ── SCREENS ──
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+// ── HANDLE LANG CHANGES ──
+window.addEventListener('storage', () => translatePage && translatePage());
+</script>
+</body>
+</html>
