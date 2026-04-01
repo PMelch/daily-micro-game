@@ -1,0 +1,861 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Category Clash 🗂️</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #0d0d1a;
+      color: #eee;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .back-bar {
+      width: 100%;
+      background: #0a0a1a;
+      padding: 0.5rem 1rem;
+      border-bottom: 1px solid #333;
+    }
+    .back-bar a {
+      color: #ffcc00;
+      text-decoration: none;
+      font-size: 0.9rem;
+    }
+    .back-bar a:hover { text-decoration: underline; }
+
+    #app {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+      max-width: 480px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    /* ── SHARED COMPONENTS ── */
+    h1 {
+      font-size: 2rem;
+      font-weight: 900;
+      color: #ffcc00;
+      text-align: center;
+      margin-bottom: 0.5rem;
+    }
+    .subtitle {
+      color: #aaa;
+      text-align: center;
+      font-size: 0.95rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .btn {
+      padding: 0.75rem 2rem;
+      border: none;
+      border-radius: 12px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.1s, opacity 0.2s;
+    }
+    .btn:active { transform: scale(0.96); }
+    .btn-primary { background: #ffcc00; color: #000; }
+    .btn-primary:hover { opacity: 0.9; }
+    .btn-danger { background: #ff4444; color: #fff; }
+    .btn-danger:hover { opacity: 0.9; }
+    .btn-ghost {
+      background: transparent;
+      border: 2px solid #444;
+      color: #ccc;
+    }
+    .btn-ghost:hover { border-color: #888; color: #fff; }
+
+    /* ── SETUP SCREEN ── */
+    #setup-screen { width: 100%; }
+    .player-count-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    .count-btn {
+      width: 40px; height: 40px;
+      border-radius: 50%;
+      background: #222;
+      border: 2px solid #555;
+      color: #fff;
+      font-size: 1.3rem;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .count-btn:hover { border-color: #ffcc00; }
+    #player-count-display {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: #ffcc00;
+      min-width: 30px;
+      text-align: center;
+    }
+    .player-input-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+      margin-bottom: 1.5rem;
+    }
+    .player-input {
+      width: 100%;
+      padding: 0.7rem 1rem;
+      border-radius: 10px;
+      border: 2px solid #333;
+      background: #1a1a2e;
+      color: #fff;
+      font-size: 1rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .player-input:focus { border-color: #ffcc00; }
+
+    /* ── PLAYING SCREEN ── */
+    #playing-screen { width: 100%; text-align: center; }
+
+    .player-info {
+      background: #1a1a2e;
+      border-radius: 14px;
+      padding: 0.8rem 1rem;
+      margin-bottom: 1.2rem;
+      border: 2px solid #2d2d4e;
+    }
+    .active-player-name {
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: #ffcc00;
+    }
+
+    .lives-row {
+      display: flex;
+      justify-content: center;
+      gap: 0.3rem;
+      margin-top: 0.3rem;
+    }
+    .life-icon { font-size: 1.2rem; }
+    .life-icon.lost { opacity: 0.2; }
+
+    .category-box {
+      background: linear-gradient(135deg, #1e1e4a, #2a1a4e);
+      border-radius: 16px;
+      padding: 1.5rem;
+      margin-bottom: 1.2rem;
+      border: 2px solid #4444aa;
+    }
+    .cat-label {
+      font-size: 0.8rem;
+      color: #88f;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 0.4rem;
+    }
+    .cat-name {
+      font-size: 1.8rem;
+      font-weight: 900;
+      color: #fff;
+    }
+
+    .timer-bar-wrap {
+      width: 100%;
+      height: 8px;
+      background: #333;
+      border-radius: 4px;
+      overflow: hidden;
+      margin-bottom: 1.2rem;
+    }
+    #timer-bar {
+      height: 100%;
+      background: #ffcc00;
+      transition: width 0.1s linear, background 0.3s;
+    }
+
+    .answer-row {
+      display: flex;
+      gap: 0.6rem;
+      margin-bottom: 1.2rem;
+    }
+    #answer-input {
+      flex: 1;
+      padding: 0.8rem 1rem;
+      border-radius: 12px;
+      border: 2px solid #444;
+      background: #1a1a2e;
+      color: #fff;
+      font-size: 1.1rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    #answer-input:focus { border-color: #ffcc00; }
+    #answer-input.shake {
+      animation: shake 0.3s;
+      border-color: #ff4444 !important;
+    }
+    #answer-input.correct {
+      border-color: #44ff88 !important;
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-8px); }
+      75% { transform: translateX(8px); }
+    }
+
+    .used-answers {
+      background: #111;
+      border-radius: 10px;
+      padding: 0.7rem;
+      max-height: 120px;
+      overflow-y: auto;
+      margin-bottom: 1rem;
+    }
+    .used-answers-label {
+      font-size: 0.75rem;
+      color: #666;
+      margin-bottom: 0.4rem;
+    }
+    .used-tag {
+      display: inline-block;
+      background: #2a2a3e;
+      color: #aaa;
+      border-radius: 6px;
+      padding: 0.15rem 0.5rem;
+      margin: 0.1rem;
+      font-size: 0.8rem;
+    }
+
+    /* ── PASS DEVICE SCREEN ── */
+    #pass-screen { text-align: center; width: 100%; }
+    .pass-icon { font-size: 4rem; margin-bottom: 1rem; }
+    .pass-title {
+      font-size: 1.5rem;
+      font-weight: 800;
+      margin-bottom: 0.5rem;
+    }
+    .pass-subtitle {
+      color: #aaa;
+      margin-bottom: 2rem;
+      font-size: 0.95rem;
+    }
+
+    /* ── RESULT SCREEN (wrong/timeout) ── */
+    #result-screen { text-align: center; width: 100%; }
+    .result-icon { font-size: 4rem; margin-bottom: 1rem; }
+    .result-title {
+      font-size: 1.5rem;
+      font-weight: 800;
+      margin-bottom: 0.5rem;
+    }
+    .result-detail { color: #aaa; margin-bottom: 2rem; }
+
+    /* ── GAME OVER SCREEN ── */
+    #gameover-screen { text-align: center; width: 100%; }
+    .trophy { font-size: 5rem; margin-bottom: 0.5rem; }
+    .winner-name {
+      font-size: 2rem;
+      font-weight: 900;
+      color: #ffcc00;
+      margin-bottom: 0.5rem;
+    }
+    .scoreboard {
+      background: #1a1a2e;
+      border-radius: 14px;
+      padding: 1rem;
+      margin: 1.5rem 0;
+      width: 100%;
+    }
+    .score-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.5rem 0.7rem;
+      border-radius: 8px;
+      margin-bottom: 0.3rem;
+    }
+    .score-row.winner { background: #2a2a0a; border: 1px solid #ffcc00; }
+    .score-row-name { font-weight: 700; }
+    .score-row-stats { color: #aaa; font-size: 0.9rem; }
+    .score-row-lives { font-size: 1rem; }
+
+    .scoreboard-title {
+      font-size: 0.75rem;
+      color: #666;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 0.5rem;
+      text-align: left;
+    }
+
+    /* ── SCREENS VISIBILITY ── */
+    .screen { display: none; }
+    .screen.active { display: flex; flex-direction: column; align-items: center; width: 100%; }
+
+    /* ── NEW CATEGORY ANNOUNCEMENT ── */
+    #cat-announce {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.85);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      text-align: center;
+    }
+    #cat-announce.visible { display: flex; }
+    .cat-announce-box {
+      background: #1a1a3e;
+      border: 3px solid #4444aa;
+      border-radius: 20px;
+      padding: 2.5rem;
+      max-width: 340px;
+      width: 90%;
+    }
+    .cat-announce-emoji { font-size: 3.5rem; margin-bottom: 0.5rem; }
+    .cat-announce-label { color: #88f; font-size: 0.8rem; letter-spacing: 1px; margin-bottom: 0.4rem; }
+    .cat-announce-name {
+      font-size: 1.8rem;
+      font-weight: 900;
+      color: #fff;
+      margin-bottom: 1rem;
+    }
+    .cat-announce-hint { color: #aaa; font-size: 0.9rem; margin-bottom: 1.5rem; }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 380px) {
+      h1 { font-size: 1.6rem; }
+      .cat-name { font-size: 1.4rem; }
+      .active-player-name { font-size: 1.2rem; }
+    }
+  </style>
+</head>
+<body>
+<div class="back-bar"><a href="/">← Back to Games</a></div>
+
+<!-- Category Announcement Overlay -->
+<div id="cat-announce">
+  <div class="cat-announce-box">
+    <div class="cat-announce-emoji">🗂️</div>
+    <div class="cat-announce-label" data-i18n="catAnnounceLabel">NEUE KATEGORIE</div>
+    <div class="cat-announce-name" id="cat-announce-name">Tiere</div>
+    <div class="cat-announce-hint" data-i18n="catAnnounceHint">Nennt abwechselnd Dinge aus dieser Kategorie!</div>
+    <button class="btn btn-primary" id="cat-announce-ok" data-i18n="catAnnounceOK">Los geht's!</button>
+  </div>
+</div>
+
+<div id="app">
+
+  <!-- SETUP SCREEN -->
+  <div id="setup-screen" class="screen active">
+    <h1>🗂️ Category Clash</h1>
+    <p class="subtitle" data-i18n="setupSubtitle">Pass & Play Wortkategorien-Duell!</p>
+
+    <div class="player-count-row">
+      <button class="count-btn" id="count-minus">−</button>
+      <div id="player-count-display">2</div>
+      <button class="count-btn" id="count-plus">+</button>
+      <span style="color:#aaa; font-size:0.9rem" data-i18n="players">Spieler</span>
+    </div>
+
+    <div class="player-input-list" id="player-inputs"></div>
+
+    <button class="btn btn-primary" id="start-btn" style="width:100%" data-i18n="startGame">Spiel starten!</button>
+  </div>
+
+  <!-- PLAYING SCREEN -->
+  <div id="playing-screen" class="screen">
+    <div class="player-info">
+      <div class="active-player-name" id="active-player-name">Alice</div>
+      <div class="lives-row" id="lives-display"></div>
+    </div>
+
+    <div class="category-box">
+      <div class="cat-label" data-i18n="category">KATEGORIE</div>
+      <div class="cat-name" id="cat-display">Tiere</div>
+    </div>
+
+    <div class="timer-bar-wrap">
+      <div id="timer-bar" style="width:100%"></div>
+    </div>
+
+    <div class="answer-row">
+      <input type="text" id="answer-input" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-i18n-placeholder="answerPlaceholder" />
+      <button class="btn btn-primary" id="submit-btn" data-i18n="submit">OK</button>
+    </div>
+
+    <div class="used-answers" id="used-answers-box">
+      <div class="used-answers-label" data-i18n="usedAnswers">Bereits genannte Antworten:</div>
+      <div id="used-tags"></div>
+    </div>
+
+    <button class="btn btn-ghost" id="pass-btn" style="font-size:0.85rem;padding:0.5rem 1rem" data-i18n="passBtn">Passen / Zeit läuft ab</button>
+  </div>
+
+  <!-- PASS DEVICE SCREEN -->
+  <div id="pass-screen" class="screen">
+    <div class="pass-icon">📱</div>
+    <div class="pass-title" id="pass-title">Gib das Gerät weiter!</div>
+    <div class="pass-subtitle" id="pass-subtitle">Antwort akzeptiert! ✅</div>
+    <button class="btn btn-primary" id="pass-ok-btn" data-i18n="passOK">Bereit!</button>
+  </div>
+
+  <!-- RESULT SCREEN (wrong/timeout) -->
+  <div id="result-screen" class="screen">
+    <div class="result-icon" id="result-icon">💥</div>
+    <div class="result-title" id="result-title">Falsch!</div>
+    <div class="result-detail" id="result-detail">Leben -1</div>
+    <button class="btn btn-primary" id="result-ok-btn" data-i18n="resultOK">Weiter</button>
+  </div>
+
+  <!-- GAME OVER SCREEN -->
+  <div id="gameover-screen" class="screen">
+    <div class="trophy">🏆</div>
+    <div data-i18n="winner" style="color:#aaa;font-size:0.9rem">Gewinner!</div>
+    <div class="winner-name" id="winner-name">Alice</div>
+    <div class="scoreboard">
+      <div class="scoreboard-title" data-i18n="finalScores">Endstand</div>
+      <div id="score-list"></div>
+    </div>
+    <div style="display:flex;gap:0.8rem;width:100%">
+      <button class="btn btn-primary" id="play-again-btn" style="flex:1" data-i18n="playAgain">Nochmal!</button>
+      <button class="btn btn-ghost" id="new-players-btn" style="flex:1" data-i18n="newPlayers">Neue Spieler</button>
+    </div>
+  </div>
+
+</div><!-- #app -->
+
+<script src="/shared/i18n.js"></script>
+<script type="module">
+import {
+  CATEGORIES, generateCategory, createGameState, startGame,
+  submitAnswer, nextTurn, isGameOver, getWinner, checkAnswer
+} from './game-logic.js';
+
+// ─── i18n ─────────────────────────────────────────────────────────────────────
+const TRANSLATIONS = {
+
+  de: {
+    setupSubtitle: 'Pass & Play Wortkategorien-Duell!',
+    players: 'Spieler',
+    startGame: 'Spiel starten!',
+    category: 'KATEGORIE',
+    answerPlaceholder: 'Antwort eingeben...',
+    submit: 'OK',
+    usedAnswers: 'Bereits genannte:',
+    passBtn: 'Passen / Zeit läuft ab',
+    passOK: 'Bereit!',
+    resultOK: 'Weiter',
+    winner: 'Gewinner! 🏆',
+    finalScores: 'ENDSTAND',
+    playAgain: 'Nochmal!',
+    newPlayers: 'Neue Spieler',
+    catAnnounceLabel: 'NEUE KATEGORIE',
+    catAnnounceHint: 'Nennt abwechselnd Dinge aus dieser Kategorie!',
+    catAnnounceOK: "Los geht's!",
+    lives: 'Leben',
+    correct: '✅ Richtig!',
+    wrong: '❌ Falsch!',
+    timeout: '⏱️ Zeit abgelaufen!',
+    livesLost: 'Leben -1',
+    passDevice: 'Gib das Gerät weiter!',
+    passDeviceTo: 'Gib das Gerät an {{name}}!',
+    passAccepted: 'Antwort akzeptiert! ✅',
+    defaultPlayer: 'Spieler',
+  },
+  en: {
+    setupSubtitle: 'Pass & Play Word Category Duel!',
+    players: 'Players',
+    startGame: 'Start Game!',
+    category: 'CATEGORY',
+    answerPlaceholder: 'Type your answer...',
+    submit: 'OK',
+    usedAnswers: 'Used answers:',
+    passBtn: 'Pass / Time out',
+    passOK: "Ready!",
+    resultOK: 'Continue',
+    winner: 'Winner! 🏆',
+    finalScores: 'FINAL SCORES',
+    playAgain: 'Play Again!',
+    newPlayers: 'New Players',
+    catAnnounceLabel: 'NEW CATEGORY',
+    catAnnounceHint: 'Take turns naming things in this category!',
+    catAnnounceOK: "Let's Go!",
+    lives: 'Lives',
+    correct: '✅ Correct!',
+    wrong: '❌ Wrong!',
+    timeout: '⏱️ Time\'s up!',
+    livesLost: 'Life -1',
+    passDevice: 'Pass the device!',
+    passDeviceTo: 'Pass the device to {{name}}!',
+    passAccepted: 'Answer accepted! ✅',
+    defaultPlayer: 'Player',
+  },
+  fr: {
+    setupSubtitle: 'Duel de catégories pass & play !',
+    players: 'Joueurs',
+    startGame: 'Démarrer !',
+    category: 'CATÉGORIE',
+    answerPlaceholder: 'Tapez votre réponse...',
+    submit: 'OK',
+    usedAnswers: 'Déjà dites :',
+    passBtn: 'Passer / Temps écoulé',
+    passOK: 'Prêt !',
+    resultOK: 'Continuer',
+    winner: 'Gagnant ! 🏆',
+    finalScores: 'SCORES FINAUX',
+    playAgain: 'Rejouer !',
+    newPlayers: 'Nouveaux joueurs',
+    catAnnounceLabel: 'NOUVELLE CATÉGORIE',
+    catAnnounceHint: 'Nommez chacun à votre tour des éléments de cette catégorie !',
+    catAnnounceOK: 'C\'est parti !',
+    lives: 'Vies',
+    correct: '✅ Correct !',
+    wrong: '❌ Faux !',
+    timeout: '⏱️ Temps écoulé !',
+    livesLost: 'Vie -1',
+    passDevice: 'Passe l\'appareil !',
+    passDeviceTo: 'Passe l\'appareil à {{name}} !',
+    passAccepted: 'Réponse acceptée ! ✅',
+    defaultPlayer: 'Joueur',
+  },
+  it: {
+    setupSubtitle: 'Duello di categorie pass & play!',
+    players: 'Giocatori',
+    startGame: 'Inizia!',
+    category: 'CATEGORIA',
+    answerPlaceholder: 'Scrivi la tua risposta...',
+    submit: 'OK',
+    usedAnswers: 'Già dette:',
+    passBtn: 'Passa / Tempo scaduto',
+    passOK: 'Pronto!',
+    resultOK: 'Continua',
+    winner: 'Vincitore! 🏆',
+    finalScores: 'PUNTEGGI FINALI',
+    playAgain: 'Ancora!',
+    newPlayers: 'Nuovi giocatori',
+    catAnnounceLabel: 'NUOVA CATEGORIA',
+    catAnnounceHint: 'Nominate a turno elementi di questa categoria!',
+    catAnnounceOK: 'Andiamo!',
+    lives: 'Vite',
+    correct: '✅ Corretto!',
+    wrong: '❌ Sbagliato!',
+    timeout: '⏱️ Tempo scaduto!',
+    livesLost: 'Vita -1',
+    passDevice: 'Passa il dispositivo!',
+    passDeviceTo: 'Passa il dispositivo a {{name}}!',
+    passAccepted: 'Risposta accettata! ✅',
+    defaultPlayer: 'Giocatore',
+  },
+  es: {
+    setupSubtitle: '¡Duelo de categorías pass & play!',
+    players: 'Jugadores',
+    startGame: '¡Empezar!',
+    category: 'CATEGORÍA',
+    answerPlaceholder: 'Escribe tu respuesta...',
+    submit: 'OK',
+    usedAnswers: 'Ya usadas:',
+    passBtn: 'Pasar / Tiempo agotado',
+    passOK: '¡Listo!',
+    resultOK: 'Continuar',
+    winner: '¡Ganador! 🏆',
+    finalScores: 'PUNTUACIÓN FINAL',
+    playAgain: '¡Otra vez!',
+    newPlayers: 'Nuevos jugadores',
+    catAnnounceLabel: 'NUEVA CATEGORÍA',
+    catAnnounceHint: '¡Nombrad por turnos elementos de esta categoría!',
+    catAnnounceOK: '¡Vamos!',
+    lives: 'Vidas',
+    correct: '✅ ¡Correcto!',
+    wrong: '❌ ¡Incorrecto!',
+    timeout: '⏱️ ¡Tiempo agotado!',
+    livesLost: 'Vida -1',
+    passDevice: '¡Pasa el dispositivo!',
+    passDeviceTo: '¡Pasa el dispositivo a {{name}}!',
+    passAccepted: '¡Respuesta aceptada! ✅',
+    defaultPlayer: 'Jugador',
+  },
+};
+
+const { t, lang, onLangChange, translatePage } = initI18n(TRANSLATIONS);
+translatePage();
+onLangChange(() => { translatePage(); refreshUI(); });
+
+// ─── STATE ─────────────────────────────────────────────────────────────────
+let playerCount = 2;
+let gameState = null;
+let timerInterval = null;
+const TURN_DURATION = 15; // seconds per turn
+
+// ─── SETUP SCREEN ─────────────────────────────────────────────────────────
+function renderPlayerInputs() {
+  const list = document.getElementById('player-inputs');
+  list.innerHTML = '';
+  for (let i = 0; i < playerCount; i++) {
+    const inp = document.createElement('input');
+    inp.type = 'text';
+    inp.className = 'player-input';
+    inp.placeholder = `${t('defaultPlayer')} ${i + 1}`;
+    inp.value = list.children[i]?.value || '';
+    list.appendChild(inp);
+  }
+  document.getElementById('player-count-display').textContent = playerCount;
+}
+
+document.getElementById('count-minus').addEventListener('click', () => {
+  if (playerCount > 2) { playerCount--; renderPlayerInputs(); }
+});
+document.getElementById('count-plus').addEventListener('click', () => {
+  if (playerCount < 4) { playerCount++; renderPlayerInputs(); }
+});
+
+document.getElementById('start-btn').addEventListener('click', () => {
+  const inputs = document.querySelectorAll('.player-input');
+  const names = Array.from(inputs).map((inp, i) =>
+    inp.value.trim() || `${t('defaultPlayer')} ${i + 1}`
+  );
+  gameState = createGameState(names);
+  showScreen('playing-screen');
+  startNewRound();
+});
+
+// ─── GAME FLOW ─────────────────────────────────────────────────────────────
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function startNewRound() {
+  gameState = startGame(gameState);
+  showCategoryAnnounce(() => {
+    showScreen('playing-screen');
+    renderPlayingScreen();
+    startTimer();
+  });
+}
+
+function showCategoryAnnounce(callback) {
+  const cat = CATEGORIES[gameState.currentCategory];
+  const catName = cat.label[lang()] || cat.label.de;
+  document.getElementById('cat-announce-name').textContent = catName;
+  translatePage(); // refresh data-i18n
+  const overlay = document.getElementById('cat-announce');
+  overlay.classList.add('visible');
+  document.getElementById('cat-announce-ok').onclick = () => {
+    overlay.classList.remove('visible');
+    callback();
+  };
+}
+
+function renderPlayingScreen() {
+  const player = gameState.players[gameState.activePlayerIndex];
+  const cat = CATEGORIES[gameState.currentCategory];
+
+  // Player info
+  document.getElementById('active-player-name').textContent = player.name;
+  const livesBox = document.getElementById('lives-display');
+  livesBox.innerHTML = '';
+  for (let i = 0; i < 3; i++) {
+    const span = document.createElement('span');
+    span.className = 'life-icon' + (i < player.lives ? '' : ' lost');
+    span.textContent = '❤️';
+    livesBox.appendChild(span);
+  }
+
+  // Category
+  const catName = cat.label[lang()] || cat.label.de;
+  document.getElementById('cat-display').textContent = catName;
+
+  // Used answers
+  renderUsedAnswers();
+
+  // Reset input
+  const inp = document.getElementById('answer-input');
+  inp.value = '';
+  inp.className = '';
+  inp.focus();
+}
+
+function renderUsedAnswers() {
+  const tags = document.getElementById('used-tags');
+  tags.innerHTML = '';
+  gameState.usedAnswers.forEach(ans => {
+    const span = document.createElement('span');
+    span.className = 'used-tag';
+    span.textContent = ans;
+    tags.appendChild(span);
+  });
+}
+
+// ─── TIMER ────────────────────────────────────────────────────────────────
+function startTimer() {
+  clearInterval(timerInterval);
+  const bar = document.getElementById('timer-bar');
+  const start = Date.now();
+  bar.style.width = '100%';
+  bar.style.background = '#ffcc00';
+
+  timerInterval = setInterval(() => {
+    const elapsed = (Date.now() - start) / 1000;
+    const frac = Math.max(0, 1 - elapsed / TURN_DURATION);
+    bar.style.width = (frac * 100) + '%';
+    if (frac < 0.3) bar.style.background = '#ff4444';
+    else if (frac < 0.6) bar.style.background = '#ff8800';
+    else bar.style.background = '#ffcc00';
+
+    if (elapsed >= TURN_DURATION) {
+      clearInterval(timerInterval);
+      handleAnswer('', true);
+    }
+  }, 50);
+}
+
+function stopTimer() {
+  clearInterval(timerInterval);
+}
+
+// ─── ANSWER HANDLING ──────────────────────────────────────────────────────
+function handleAnswer(answer, isTimeout = false) {
+  stopTimer();
+  const result = submitAnswer(gameState, answer, isTimeout);
+  gameState = result.state;
+
+  if (result.correct) {
+    const inp = document.getElementById('answer-input');
+    inp.classList.add('correct');
+    setTimeout(() => showPassScreen(), 400);
+  } else {
+    const inp = document.getElementById('answer-input');
+    inp.classList.add('shake');
+    setTimeout(() => showResultScreen(isTimeout ? 'timeout' : 'wrong'), 300);
+  }
+}
+
+document.getElementById('submit-btn').addEventListener('click', () => {
+  const inp = document.getElementById('answer-input');
+  handleAnswer(inp.value.trim());
+});
+
+document.getElementById('answer-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') {
+    const inp = document.getElementById('answer-input');
+    handleAnswer(inp.value.trim());
+  }
+});
+
+document.getElementById('pass-btn').addEventListener('click', () => {
+  handleAnswer('', true);
+});
+
+// ─── PASS DEVICE SCREEN ───────────────────────────────────────────────────
+function showPassScreen() {
+  const nextIndex = getNextAliveIndex();
+  const nextPlayer = gameState.players[nextIndex];
+  document.getElementById('pass-title').textContent =
+    t('passDeviceTo').replace('{{name}}', nextPlayer.name);
+  document.getElementById('pass-subtitle').textContent = t('passAccepted');
+  showScreen('pass-screen');
+}
+
+function getNextAliveIndex() {
+  const total = gameState.players.length;
+  let next = (gameState.activePlayerIndex + 1) % total;
+  let tries = 0;
+  while (gameState.players[next].lives === 0 && tries < total) {
+    next = (next + 1) % total;
+    tries++;
+  }
+  return next;
+}
+
+document.getElementById('pass-ok-btn').addEventListener('click', () => {
+  if (isGameOver(gameState)) {
+    showGameOver();
+    return;
+  }
+  gameState = nextTurn(gameState);
+  renderPlayingScreen();
+  showScreen('playing-screen');
+  startTimer();
+});
+
+// ─── RESULT SCREEN (wrong/timeout) ───────────────────────────────────────
+function showResultScreen(type) {
+  document.getElementById('result-icon').textContent = type === 'timeout' ? '⏱️' : '💥';
+  document.getElementById('result-title').textContent = t(type === 'timeout' ? 'timeout' : 'wrong');
+  document.getElementById('result-detail').textContent = t('livesLost');
+  showScreen('result-screen');
+}
+
+document.getElementById('result-ok-btn').addEventListener('click', () => {
+  if (isGameOver(gameState)) {
+    showGameOver();
+    return;
+  }
+  gameState = nextTurn(gameState);
+  renderPlayingScreen();
+  showScreen('playing-screen');
+  startTimer();
+});
+
+// ─── GAME OVER ────────────────────────────────────────────────────────────
+function showGameOver() {
+  stopTimer();
+  const winner = getWinner(gameState);
+  document.getElementById('winner-name').textContent = winner ? winner.name : '?';
+
+  const list = document.getElementById('score-list');
+  list.innerHTML = '';
+  const sorted = [...gameState.players].sort((a, b) =>
+    b.lives !== a.lives ? b.lives - a.lives : b.score - a.score
+  );
+  sorted.forEach(p => {
+    const row = document.createElement('div');
+    row.className = 'score-row' + (p === winner ? ' winner' : '');
+    const hearts = '❤️'.repeat(p.lives) + (p.lives < 3 ? '🖤'.repeat(3 - p.lives) : '');
+    row.innerHTML = `
+      <span class="score-row-name">${p.name}</span>
+      <span class="score-row-stats">${p.score} ✅</span>
+      <span class="score-row-lives">${hearts}</span>
+    `;
+    list.appendChild(row);
+  });
+
+  showScreen('gameover-screen');
+}
+
+document.getElementById('play-again-btn').addEventListener('click', () => {
+  // Same players, new game
+  const names = gameState.players.map(p => p.name);
+  gameState = createGameState(names);
+  showScreen('playing-screen');
+  startNewRound();
+});
+
+document.getElementById('new-players-btn').addEventListener('click', () => {
+  showScreen('setup-screen');
+  renderPlayerInputs();
+});
+
+// ─── INIT ─────────────────────────────────────────────────────────────────
+function refreshUI() {
+  // Re-render active screen labels when language changes
+  if (gameState && gameState.phase === 'playing') {
+    renderPlayingScreen();
+  }
+}
+
+renderPlayerInputs();
+</script>
+</body>
+</html>
