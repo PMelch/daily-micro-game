@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Roll Call – Daily Game #050</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#0d0d1a;color:#eee;font-family:system-ui,sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;overflow-x:hidden}
+  .back-bar{width:100%;background:#0a0a1a;padding:0.5rem 1rem;border-bottom:1px solid #333;}
+  .back-bar a{color:#ffcc00;text-decoration:none;font-size:0.9rem;}
+  .back-bar a:hover{text-decoration:underline}
+
+  #game-wrap{display:flex;flex-direction:column;align-items:center;width:100%;max-width:520px;padding:0 12px 80px}
+
+  h1{font-size:1.6rem;font-weight:900;letter-spacing:2px;color:#ffcc00;margin:14px 0 2px;text-transform:uppercase}
+  .tagline{font-size:0.78rem;color:#888;margin-bottom:10px;letter-spacing:1px;text-transform:uppercase}
+
+  /* Die 3D */
+  #die-container{perspective:400px;width:72px;height:72px;margin:8px auto}
+  #die{width:72px;height:72px;position:relative;transform-style:preserve-3d;transition:transform 0.25s ease;transform:rotateX(-20deg) rotateY(20deg)}
+  .die-face{position:absolute;width:72px;height:72px;border:2px solid #444;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:2.2rem;font-weight:900;backface-visibility:hidden;user-select:none}
+  .face-top{background:#1e1e2e;color:#ffcc00;transform:rotateX(90deg) translateZ(36px)}
+  .face-bottom{background:#2a0a0a;color:#ff4466;transform:rotateX(-90deg) translateZ(36px)}
+  .face-front{background:#0d1a2a;color:#44aaff;transform:translateZ(36px)}
+  .face-back{background:#1a2a0d;color:#44ff88;transform:rotateY(180deg) translateZ(36px)}
+  .face-right{background:#1a0d2a;color:#cc88ff;transform:rotateY(90deg) translateZ(36px)}
+  .face-left{background:#2a1a0d;color:#ff8844;transform:rotateY(-90deg) translateZ(36px)}
+
+  #die-info{text-align:center;font-size:0.72rem;color:#666;margin:4px 0 8px;min-height:18px}
+
+  /* Level info */
+  .level-bar{display:flex;align-items:center;justify-content:space-between;width:100%;background:#111122;border-radius:10px;padding:8px 14px;margin:8px 0;border:1px solid #222}
+  .level-num{font-size:1rem;font-weight:700;color:#ffcc00}
+  .level-title{font-size:0.8rem;color:#999}
+  .level-stars{font-size:1.2rem;letter-spacing:2px}
+  .moves-info{font-size:0.82rem;color:#aaa}
+
+  /* Grid */
+  #grid-container{position:relative;margin:8px 0}
+  canvas#grid-canvas{display:block;border-radius:12px;touch-action:none}
+
+  /* Arrow controls */
+  #controls{display:grid;grid-template-columns:56px 56px 56px;grid-template-rows:56px 56px;gap:8px;margin:14px auto}
+  .ctrl-btn{width:56px;height:56px;border-radius:12px;border:2px solid #333;background:#161628;color:#fff;font-size:1.5rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background 0.12s,transform 0.1s;user-select:none;-webkit-tap-highlight-color:transparent}
+  .ctrl-btn:active{background:#2a2a48;transform:scale(0.93)}
+  #btn-up{grid-column:2;grid-row:1}
+  #btn-left{grid-column:1;grid-row:2}
+  #btn-down{grid-column:2;grid-row:2}
+  #btn-right{grid-column:3;grid-row:2}
+
+  /* Instruction panel */
+  #instructions{background:#111122;border:1px solid #222;border-radius:10px;padding:10px 14px;font-size:0.75rem;color:#888;line-height:1.6;width:100%;margin:6px 0}
+  #instructions span{color:#ffcc00;font-weight:600}
+
+  /* Screens */
+  .screen{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.88);align-items:center;justify-content:center;z-index:100;flex-direction:column;text-align:center;padding:24px}
+  .screen.active{display:flex}
+  .screen h2{font-size:2rem;font-weight:900;color:#ffcc00;margin-bottom:12px}
+  .screen p{color:#bbb;font-size:0.92rem;margin:6px 0;max-width:340px}
+  .big-btn{margin-top:18px;padding:14px 36px;border:none;border-radius:12px;background:#ffcc00;color:#0a0a1a;font-size:1.1rem;font-weight:900;cursor:pointer;letter-spacing:1px;transition:transform 0.1s}
+  .big-btn:active{transform:scale(0.96)}
+  .big-btn.secondary{background:#222;color:#eee;border:2px solid #444;margin-top:10px}
+
+  /* Win level flash */
+  @keyframes flash-in{from{opacity:0;transform:scale(0.6)}to{opacity:1;transform:scale(1)}}
+  .flash{animation:flash-in 0.35s ease-out}
+
+  /* Progress dots */
+  #level-dots{display:flex;gap:8px;margin:6px 0}
+  .dot{width:12px;height:12px;border-radius:50%;border:2px solid #444;background:transparent;transition:background 0.3s}
+  .dot.done{background:#ffcc00;border-color:#ffcc00}
+  .dot.current{border-color:#ffcc00}
+  .dot.perfect{background:#ff8844;border-color:#ff8844}
+</style>
+</head>
+<body>
+<div class="back-bar"><a href="/">← <span data-i18n="back">Zurück</span></a></div>
+
+<div id="game-wrap">
+  <h1>🎲 Roll Call</h1>
+  <p class="tagline" data-i18n="tagline">Würfelpuzzle · Day #050</p>
+
+  <!-- 3D die preview -->
+  <div id="die-container">
+    <div id="die">
+      <div class="die-face face-top"  id="f-top">1</div>
+      <div class="die-face face-bottom" id="f-bot">6</div>
+      <div class="die-face face-front" id="f-frt">2</div>
+      <div class="die-face face-back"  id="f-bck">5</div>
+      <div class="die-face face-right" id="f-rgt">3</div>
+      <div class="die-face face-left"  id="f-lft">4</div>
+    </div>
+  </div>
+  <div id="die-info"><span data-i18n="bottom_label">Unterseite:</span> <span id="bottom-val">6</span></div>
+
+  <!-- Level bar -->
+  <div class="level-bar">
+    <div>
+      <div class="level-num" id="level-display">Level 1</div>
+      <div class="level-title" id="level-title-display">Tutorial</div>
+    </div>
+    <div id="level-dots"></div>
+    <div class="moves-info"><span data-i18n="moves">Züge</span>: <span id="moves-count">0</span> / <span id="par-display">–</span></div>
+  </div>
+
+  <!-- Grid -->
+  <div id="grid-container">
+    <canvas id="grid-canvas"></canvas>
+  </div>
+
+  <!-- D-Pad -->
+  <div id="controls">
+    <button class="ctrl-btn" id="btn-up">↑</button>
+    <button class="ctrl-btn" id="btn-left">←</button>
+    <button class="ctrl-btn" id="btn-down">↓</button>
+    <button class="ctrl-btn" id="btn-right">→</button>
+  </div>
+
+  <div id="instructions">
+    <span data-i18n="inst_title">Ziel:</span> <span data-i18n="inst_body">Bewege den Würfel zum Ausgang ✦. Tore 🔒 lassen nur eine bestimmte Zahl durch – sorge dafür, dass die Unterseite des Würfels stimmt!</span>
+  </div>
+</div>
+
+<!-- Intro Screen -->
+<div class="screen active" id="intro-screen">
+  <h2 data-i18n="intro_title">🎲 Roll Call</h2>
+  <p data-i18n="intro_sub">Würfelpuzzle — Spatial Thinking</p>
+  <p data-i18n="intro_body">Rolle den Würfel zum Ausgang. Tore brauchen die richtige Zahl auf der Unterseite des Würfels. Echte Würfelphysik — jede Bewegung dreht alle Seiten!</p>
+  <button class="big-btn" id="start-btn" data-i18n="start_btn">Spielen!</button>
+</div>
+
+<!-- Level Clear Screen -->
+<div class="screen" id="clear-screen">
+  <h2 class="flash" id="clear-title">✅ Geschafft!</h2>
+  <div id="clear-stars" style="font-size:2rem;margin:8px 0">⭐⭐⭐</div>
+  <p id="clear-msg"></p>
+  <button class="big-btn" id="next-btn" data-i18n="next_level">Nächstes Level</button>
+</div>
+
+<!-- Win Screen -->
+<div class="screen" id="win-screen">
+  <h2 data-i18n="win_title">🏆 Alle Level geschafft!</h2>
+  <p data-i18n="win_body">Du hast alle 8 Roll Call Rätsel gelöst. Nicht schlecht für heute!</p>
+  <div id="win-stars" style="font-size:1.4rem;margin:12px 0"></div>
+  <button class="big-btn" id="replay-btn" data-i18n="replay">Nochmal spielen</button>
+</div>
+
+<script src="/shared/i18n.js"></script>
+<script>
+// ========================
+// TRANSLATIONS
+// ========================
+const TRANSLATIONS = {
+  de: {
+    back: 'Zurück', tagline: 'Würfelpuzzle · Tag #050',
+    bottom_label: 'Unterseite:', moves: 'Züge',
+    inst_title: 'Ziel:', inst_body: 'Bewege den Würfel zum Ausgang ✦. Tore 🔒 lassen nur eine bestimmte Zahl durch – die Unterseite muss stimmen!',
+    intro_title: '🎲 Roll Call', intro_sub: 'Würfelpuzzle — Räumliches Denken',
+    intro_body: 'Rolle den Würfel zum Ausgang. Tore brauchen die richtige Zahl auf der Unterseite. Echte Würfelphysik — jede Bewegung dreht alle Seiten!',
+    start_btn: 'Spielen!', next_level: 'Nächstes Level',
+    win_title: '🏆 Alle Level geschafft!', win_body: 'Du hast alle 8 Roll Call Rätsel gelöst. Nicht schlecht für heute!',
+    replay: 'Nochmal spielen',
+    clear_perfect: '🔥 Perfekt! Unter Par-Zügen!',
+    clear_great: '⭐ Gut gemacht!',
+    clear_ok: 'Geschafft!',
+    move_blocker: 'Wand blockiert!',
+    gate_blocked: 'Tor braucht Unterseite:',
+    level_label: 'Level',
+  },
+  en: {
+    back: 'Back', tagline: 'Dice Puzzle · Day #050',
+    bottom_label: 'Bottom face:', moves: 'Moves',
+    inst_title: 'Goal:', inst_body: 'Roll the die to the exit ✦. Gates 🔒 only let a specific number through — the bottom face must match!',
+    intro_title: '🎲 Roll Call', intro_sub: 'Dice Puzzle — Spatial Thinking',
+    intro_body: 'Roll the die to the exit. Gates require the correct number on the bottom face. Real die physics — every move rotates all sides!',
+    start_btn: 'Play!', next_level: 'Next Level',
+    win_title: '🏆 All Levels Complete!', win_body: 'You solved all 8 Roll Call puzzles. Well done!',
+    replay: 'Play Again',
+    clear_perfect: '🔥 Perfect! Under par!',
+    clear_great: '⭐ Well done!',
+    clear_ok: 'Completed!',
+    move_blocker: 'Wall blocked!',
+    gate_blocked: 'Gate needs bottom:',
+    level_label: 'Level',
+  },
+  fr: {
+    back: 'Retour', tagline: 'Puzzle de dé · Jour #050',
+    bottom_label: 'Face du bas :', moves: 'Coups',
+    inst_title: 'But :', inst_body: 'Faites rouler le dé vers la sortie ✦. Les portes 🔒 ne laissent passer qu\'un certain numéro — la face du bas doit correspondre !',
+    intro_title: '🎲 Roll Call', intro_sub: 'Puzzle de dé — Pensée spatiale',
+    intro_body: 'Faites rouler le dé vers la sortie. Les portes exigent le bon numéro sur la face du bas. Physique réelle — chaque mouvement tourne toutes les faces !',
+    start_btn: 'Jouer !', next_level: 'Niveau suivant',
+    win_title: '🏆 Tous les niveaux terminés !', win_body: 'Vous avez résolu les 8 puzzles Roll Call. Bravo !',
+    replay: 'Rejouer',
+    clear_perfect: '🔥 Parfait ! Sous le par !',
+    clear_great: '⭐ Bien joué !',
+    clear_ok: 'Terminé !',
+    move_blocker: 'Mur bloqué !',
+    gate_blocked: 'La porte a besoin :',
+    level_label: 'Niveau',
+  },
+  it: {
+    back: 'Indietro', tagline: 'Puzzle con dado · Giorno #050',
+    bottom_label: 'Faccia in basso:', moves: 'Mosse',
+    inst_title: 'Obiettivo:', inst_body: 'Fai rotolare il dado verso l\'uscita ✦. I cancelli 🔒 permettono solo un numero specifico — la faccia in basso deve corrispondere!',
+    intro_title: '🎲 Roll Call', intro_sub: 'Puzzle con dado — Pensiero spaziale',
+    intro_body: 'Fai rotolare il dado verso l\'uscita. I cancelli richiedono il numero corretto sulla faccia inferiore. Fisica reale — ogni mossa ruota tutte le facce!',
+    start_btn: 'Gioca!', next_level: 'Livello successivo',
+    win_title: '🏆 Tutti i livelli completati!', win_body: 'Hai risolto tutti gli 8 puzzle Roll Call. Bravissimo!',
+    replay: 'Rigioca',
+    clear_perfect: '🔥 Perfetto! Sotto il par!',
+    clear_great: '⭐ Ben fatto!',
+    clear_ok: 'Completato!',
+    move_blocker: 'Muro bloccato!',
+    gate_blocked: 'Il cancello richiede:',
+    level_label: 'Livello',
+  },
+  es: {
+    back: 'Volver', tagline: 'Puzzle de dado · Día #050',
+    bottom_label: 'Cara inferior:', moves: 'Movs',
+    inst_title: 'Objetivo:', inst_body: 'Rueda el dado hasta la salida ✦. Las puertas 🔒 solo dejan pasar un número específico — ¡la cara inferior debe coincidir!',
+    intro_title: '🎲 Roll Call', intro_sub: 'Puzzle de dado — Pensamiento espacial',
+    intro_body: 'Rueda el dado hacia la salida. Las puertas requieren el número correcto en la cara inferior. Física real — ¡cada movimiento gira todas las caras!',
+    start_btn: '¡Jugar!', next_level: 'Siguiente nivel',
+    win_title: '🏆 ¡Todos los niveles completados!', win_body: 'Has resuelto los 8 puzzles de Roll Call. ¡Muy bien!',
+    replay: 'Jugar de nuevo',
+    clear_perfect: '🔥 ¡Perfecto! ¡Bajo el par!',
+    clear_great: '⭐ ¡Bien hecho!',
+    clear_ok: '¡Completado!',
+    move_blocker: '¡Pared bloqueada!',
+    gate_blocked: 'La puerta necesita:',
+    level_label: 'Nivel',
+  }
+};
+const { t, lang, onLangChange, translatePage } = initI18n(TRANSLATIONS);
+
+// ========================
+// DIE LOGIC
+// ========================
+class Die {
+  constructor() { this.faces = [1,6,2,5,3,4]; } // top,bottom,front,back,right,left
+  get top()    { return this.faces[0]; }
+  get bottom() { return this.faces[1]; }
+  rollRight() { const [t,b,f,bk,r,l]=this.faces; this.faces=[l,r,f,bk,t,b]; return this; }
+  rollLeft()  { const [t,b,f,bk,r,l]=this.faces; this.faces=[r,l,f,bk,b,t]; return this; }
+  rollUp()    { const [t,b,f,bk,r,l]=this.faces; this.faces=[f,bk,b,t,r,l]; return this; }
+  rollDown()  { const [t,b,f,bk,r,l]=this.faces; this.faces=[bk,f,t,b,r,l]; return this; }
+  clone()     { const d=new Die(); d.faces=[...this.faces]; return d; }
+}
+
+// ========================
+// LEVELS
+// ========================
+// Cell types: 0=floor, 1=wall, 2=start, 3=exit
+// Gates: [{x,y,need}] - die must have 'need' on bottom to pass
+// Grid is rows×cols
+const LEVELS = [
+  {
+    name: {de:'Einführung',en:'Introduction',fr:'Introduction',it:'Introduzione',es:'Introducción'},
+    grid: [
+      [0,0,0,0,0],
+      [0,2,0,3,0],
+      [0,0,0,0,0],
+    ],
+    gates: [],
+    par: 4,
+    hint: {de:'Gehe einfach zum Ausgang!',en:'Just reach the exit!',fr:'Allez à la sortie!',it:'Vai all\'uscita!',es:'¡Solo llega a la salida!'}
+  },
+  {
+    name: {de:'Erstes Tor',en:'First Gate',fr:'Première porte',it:'Primo cancello',es:'Primera puerta'},
+    grid: [
+      [0,0,0,0,0],
+      [0,2,0,0,3],
+      [0,0,0,0,0],
+    ],
+    gates: [{x:3,y:1,need:3}],
+    par: 4,
+    hint: {de:'Das Tor braucht eine 3 unten. Rolle rechts zum Tor!',en:'Gate needs 3 on bottom. Roll right to gate!',fr:'Porte besoin de 3. Roulez!',it:'Il cancello ha bisogno di 3.',es:'La puerta necesita 3 abajo.'}
+  },
+  {
+    name: {de:'Umweg',en:'Detour',fr:'Détour',it:'Deviazione',es:'Rodeo'},
+    grid: [
+      [0,0,0,0,0,0],
+      [0,2,1,1,0,0],
+      [0,0,0,0,0,0],
+      [0,0,1,1,0,3],
+      [0,0,0,0,0,0],
+    ],
+    gates: [{x:4,y:3,need:5}],
+    par: 10,
+    hint: {de:'Mauern zwingen zum Umweg. Plane die Rotationen!',en:'Walls force a detour. Plan your rotations!',fr:'Murs forcent un détour.',it:'I muri forzano un giro.',es:'Las paredes fuerzan un rodeo.'}
+  },
+  {
+    name: {de:'Zwei Tore',en:'Two Gates',fr:'Deux portes',it:'Due cancelli',es:'Dos puertas'},
+    grid: [
+      [0,0,0,0,0,0,0],
+      [0,2,0,0,0,0,0],
+      [0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,3],
+    ],
+    gates: [{x:3,y:2,need:4},{x:5,y:3,need:2}],
+    par: 10,
+    hint: {de:'Zwei Tore! Denke voraus: welche Seite ist unten nach dem ersten Tor?',en:'Two gates! Think ahead: what\'s on the bottom after the first gate?',fr:'Deux portes! Pensez en avance.',it:'Due cancelli! Pensa in anticipo.',es:'¡Dos puertas! Piensa por adelantado.'}
+  },
+  {
+    name: {de:'Schlangenweg',en:'Snake Path',fr:'Chemin serpent',it:'Percorso serpente',es:'Camino serpiente'},
+    grid: [
+      [0,2,0,0,0,0,0],
+      [0,1,1,1,1,1,0],
+      [0,0,0,0,0,1,0],
+      [0,1,1,1,0,1,0],
+      [0,1,0,0,0,1,0],
+      [0,1,0,1,1,1,0],
+      [0,0,0,0,0,0,3],
+    ],
+    gates: [{x:2,y:2,need:1},{x:4,y:4,need:6}],
+    par: 16,
+    hint: {de:'Schlangenförmiger Pfad. Präzision zählt!',en:'Snake-shaped path. Precision counts!',fr:'Chemin en serpent. La précision compte!',it:'Percorso a serpente. La precisione conta!',es:'Camino en serpiente. ¡La precisión cuenta!'}
+  },
+  {
+    name: {de:'Labyrinth',en:'Labyrinth',fr:'Labyrinthe',it:'Labirinto',es:'Laberinto'},
+    grid: [
+      [0,0,1,0,0,1,0],
+      [0,2,1,0,1,1,0],
+      [0,0,0,0,0,0,0],
+      [1,1,0,1,0,1,1],
+      [0,0,0,1,0,0,0],
+      [0,1,0,0,0,1,3],
+      [0,0,1,1,1,0,0],
+    ],
+    gates: [{x:2,y:4,need:2},{x:4,y:5,need:5}],
+    par: 14,
+    hint: {de:'Ein echtes Labyrinth. Finde den Weg!',en:'A real labyrinth. Find the way!',fr:'Un vrai labyrinthe. Trouvez la voie!',it:'Un vero labirinto. Trova la strada!',es:'Un laberinto real. ¡Encuentra el camino!'}
+  },
+  {
+    name: {de:'Drei Tore',en:'Three Gates',fr:'Trois portes',it:'Tre cancelli',es:'Tres puertas'},
+    grid: [
+      [0,0,0,0,0,0,0,0],
+      [0,2,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,3],
+    ],
+    gates: [{x:2,y:1,need:3},{x:4,y:2,need:1},{x:6,y:3,need:4}],
+    par: 12,
+    hint: {de:'Drei Tore! Du musst exakt die richtige Route wählen.',en:'Three gates! You must pick exactly the right route.',fr:'Trois portes! Choisissez la bonne route.',it:'Tre cancelli! Scegli esattamente il percorso giusto.',es:'¡Tres puertas! Debes elegir exactamente la ruta correcta.'}
+  },
+  {
+    name: {de:'Meister',en:'Master',fr:'Maître',it:'Maestro',es:'Maestro'},
+    grid: [
+      [0,0,1,0,0,1,0,0],
+      [0,2,1,0,1,0,0,0],
+      [0,0,0,0,1,0,1,0],
+      [1,0,1,0,0,0,1,0],
+      [0,0,1,0,1,0,0,0],
+      [0,1,0,0,1,0,1,3],
+      [0,0,0,1,0,0,1,0],
+    ],
+    gates: [{x:1,y:4,need:6},{x:3,y:2,need:2},{x:5,y:5,need:4}],
+    par: 18,
+    hint: {de:'Das Master-Rätsel. Viel Glück!',en:'The master puzzle. Good luck!',fr:'Le puzzle maître. Bonne chance!',it:'Il puzzle maestro. Buona fortuna!',es:'El puzzle maestro. ¡Buena suerte!'}
+  }
+];
+
+// ========================
+// GAME STATE
+// ========================
+let currentLevel = 0;
+let die = new Die();
+let diePos = {x:0,y:0};
+let moves = 0;
+let levelStars = new Array(LEVELS.length).fill(0);
+let flashMsg = '';
+let flashTimer = 0;
+
+const canvas = document.getElementById('grid-canvas');
+const ctx = canvas.getContext('2d');
+const CELL = 62;
+const PAD = 8;
+
+function getGrid() { return LEVELS[currentLevel].grid; }
+function getGates() { return LEVELS[currentLevel].gates || []; }
+
+function initLevel(idx) {
+  currentLevel = idx;
+  die = new Die();
+  moves = 0;
+  flashMsg = '';
+  const g = getGrid();
+  const rows = g.length;
+  const cols = g[0].length;
+  // Find start position
+  for(let r=0;r<rows;r++) for(let c=0;c<cols;c++) {
+    if(g[r][c]===2) { diePos={x:c,y:r}; break; }
+  }
+  canvas.width = cols*CELL + PAD*2;
+  canvas.height = rows*CELL + PAD*2;
+  canvas.style.width = Math.min(canvas.width, 420)+'px';
+  canvas.style.height = (canvas.height * Math.min(canvas.width,420)/canvas.width)+'px';
+  updateUI();
+  drawGrid();
+  updateDie3D();
+}
+
+function updateUI() {
+  const lv = LEVELS[currentLevel];
+  document.getElementById('level-display').textContent = t('level_label')+' '+(currentLevel+1);
+  document.getElementById('level-title-display').textContent = lv.name[lang()] || lv.name.en;
+  document.getElementById('moves-count').textContent = moves;
+  document.getElementById('par-display').textContent = lv.par;
+
+  // Dots
+  const dotsEl = document.getElementById('level-dots');
+  dotsEl.innerHTML = '';
+  LEVELS.forEach((_,i)=>{
+    const d=document.createElement('div');
+    d.className='dot'+(i<currentLevel?' done':(i===currentLevel?' current':''));
+    if(levelStars[i]===3) d.className='dot perfect';
+    dotsEl.appendChild(d);
+  });
+}
+
+function updateDie3D() {
+  document.getElementById('f-top').textContent = die.faces[0];
+  document.getElementById('f-bot').textContent = die.faces[1];
+  document.getElementById('f-frt').textContent = die.faces[2];
+  document.getElementById('f-bck').textContent = die.faces[3];
+  document.getElementById('f-rgt').textContent = die.faces[4];
+  document.getElementById('f-lft').textContent = die.faces[5];
+  document.getElementById('bottom-val').textContent = die.bottom;
+}
+
+function getGateAt(x,y) {
+  return getGates().find(g=>g.x===x&&g.y===y);
+}
+
+function tryMove(dx, dy) {
+  const g = getGrid();
+  const nx = diePos.x+dx;
+  const ny = diePos.y+dy;
+  if(nx<0||ny<0||ny>=g.length||nx>=g[0].length) return;
+  if(g[ny][nx]===1) { flashMsg=t('move_blocker'); flashTimer=60; drawGrid(); return; }
+  // Check gate
+  const gate = getGateAt(nx,ny);
+  if(gate && gate.need!==die.bottom && g[ny][nx]!==3) {
+    // Check if it's a gate tile (not exit)
+    if(die.bottom!==gate.need){
+      flashMsg=t('gate_blocked')+' '+gate.need; flashTimer=90; drawGrid(); return;
+    }
+  }
+  // Roll die
+  if(dx===1)  die.rollRight();
+  if(dx===-1) die.rollLeft();
+  if(dy===-1) die.rollUp();
+  if(dy===1)  die.rollDown();
+  
+  // Check gate after rolling to that cell
+  if(gate && gate.need!==die.top) {
+    // Actually we check BOTTOM before moving. Let's revert to previous
+    // (already checked above - but gates check before roll)
+  }
+  
+  diePos={x:nx,y:ny};
+  moves++;
+  flashMsg='';
+  updateDie3D();
+  updateUI();
+
+  // Check exit
+  if(g[ny][nx]===3) {
+    const gate2 = getGateAt(nx,ny);
+    if(gate2 && die.bottom!==gate2.need) {
+      // Exit also has gate requirement
+      flashMsg=t('gate_blocked')+' '+gate2.need; flashTimer=90;
+      // revert
+      diePos={x:nx-dx,y:ny-dy};
+      moves--;
+      if(dx===1)  die.rollLeft();
+      if(dx===-1) die.rollRight();
+      if(dy===-1) die.rollDown();
+      if(dy===1)  die.rollUp();
+      updateDie3D(); updateUI(); drawGrid();
+      return;
+    }
+    setTimeout(showLevelClear, 300);
+  }
+  drawGrid();
+}
+
+// ========================
+// DRAWING
+// ========================
+const COLORS = {
+  floor: '#1a1a2e',
+  wall:  '#0d0d18',
+  start: '#0d2a1a',
+  exit:  '#2a1a0d',
+  gate:  '#1a0d2a',
+  die:   '#ffcc00',
+  dieText: '#0a0a1a',
+  gateStroke: '#cc44ff',
+  exitStroke: '#ff8844',
+};
+
+function drawGrid() {
+  const g = getGrid();
+  const rows=g.length, cols=g[0].length;
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  
+  for(let r=0;r<rows;r++) for(let c=0;c<cols;c++) {
+    const cx=PAD+c*CELL, cy=PAD+r*CELL;
+    const cell=g[r][c];
+    const gate=getGateAt(c,r);
+    
+    // Cell background
+    ctx.fillStyle = cell===1?COLORS.wall : cell===2?COLORS.start : cell===3?COLORS.exit : gate?COLORS.gate : COLORS.floor;
+    ctx.strokeStyle = '#2a2a44';
+    ctx.lineWidth=1;
+    roundRect(cx+1,cy+1,CELL-2,CELL-2,8);
+    ctx.fill();
+    ctx.stroke();
+
+    // Wall texture
+    if(cell===1){
+      ctx.fillStyle='#0a0a14';
+      for(let i=0;i<3;i++) for(let j=0;j<3;j++){
+        ctx.fillRect(cx+8+i*16,cy+8+j*16,4,4);
+      }
+    }
+
+    // Exit marker
+    if(cell===3){
+      ctx.fillStyle=COLORS.exitStroke;
+      ctx.font=`bold ${CELL*0.42}px sans-serif`;
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText('✦',cx+CELL/2,cy+CELL/2);
+    }
+
+    // Gate
+    if(gate){
+      const open = die.bottom===gate.need;
+      ctx.strokeStyle=open?'#44ff88':COLORS.gateStroke;
+      ctx.lineWidth=2.5;
+      roundRect(cx+3,cy+3,CELL-6,CELL-6,6);
+      ctx.stroke();
+      ctx.fillStyle=open?'#44ff88':COLORS.gateStroke;
+      ctx.font=`bold ${CELL*0.32}px sans-serif`;
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText(open?'🔓':'🔒',cx+CELL/2,cy+CELL/2-8);
+      ctx.font=`bold ${CELL*0.3}px monospace`;
+      ctx.fillText(gate.need,cx+CELL/2,cy+CELL/2+10);
+    }
+  }
+
+  // Die
+  const dc=PAD+diePos.x*CELL, dr=PAD+diePos.y*CELL;
+  // Shadow
+  ctx.fillStyle='rgba(0,0,0,0.4)';
+  ctx.beginPath();
+  ctx.ellipse(dc+CELL/2+3,dr+CELL-4,CELL/2-10,10,0,0,Math.PI*2);
+  ctx.fill();
+  // Die body
+  ctx.fillStyle=COLORS.die;
+  ctx.shadowColor='#ffcc00';
+  ctx.shadowBlur=12;
+  roundRect(dc+8,dr+6,CELL-16,CELL-14,10);
+  ctx.fill();
+  ctx.shadowBlur=0;
+  ctx.strokeStyle='#aa8800';
+  ctx.lineWidth=2;
+  ctx.stroke();
+  // Die number (top face)
+  ctx.fillStyle=COLORS.dieText;
+  ctx.font=`bold ${CELL*0.46}px monospace`;
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText(die.top, dc+CELL/2+2, dr+CELL/2);
+  // Small bottom indicator
+  ctx.fillStyle='rgba(255,200,0,0.7)';
+  ctx.font=`${CELL*0.2}px sans-serif`;
+  ctx.fillText('⬇'+die.bottom, dc+CELL/2+2, dr+CELL-9);
+
+  // Flash message
+  if(flashTimer>0){
+    flashTimer--;
+    const alpha=Math.min(flashTimer/20,1);
+    ctx.fillStyle=`rgba(255,60,60,${alpha})`;
+    ctx.font='bold 14px system-ui';
+    ctx.textAlign='center';
+    ctx.fillText(flashMsg, canvas.width/2, canvas.height/2+CELL);
+    if(flashTimer>0) requestAnimationFrame(drawGrid);
+  }
+}
+
+function roundRect(x,y,w,h,r){
+  ctx.beginPath();
+  ctx.moveTo(x+r,y);
+  ctx.lineTo(x+w-r,y); ctx.arcTo(x+w,y,x+w,y+r,r);
+  ctx.lineTo(x+w,y+h-r); ctx.arcTo(x+w,y+h,x+w-r,y+h,r);
+  ctx.lineTo(x+r,y+h); ctx.arcTo(x,y+h,x,y+h-r,r);
+  ctx.lineTo(x,y+r); ctx.arcTo(x,y,x+r,y,r);
+  ctx.closePath();
+}
+
+// ========================
+// LEVEL CLEAR
+// ========================
+function showLevelClear() {
+  const lv = LEVELS[currentLevel];
+  const stars = moves<=lv.par ? 3 : moves<=lv.par*1.5 ? 2 : 1;
+  levelStars[currentLevel] = Math.max(levelStars[currentLevel], stars);
+  
+  document.getElementById('clear-stars').textContent = '⭐'.repeat(stars) + '☆'.repeat(3-stars);
+  document.getElementById('clear-msg').textContent = 
+    stars===3 ? t('clear_perfect') : stars===2 ? t('clear_great') : t('clear_ok');
+  document.getElementById('clear-title').textContent = moves+' '+ t('moves');
+  
+  const nextBtn = document.getElementById('next-btn');
+  if(currentLevel >= LEVELS.length-1){
+    nextBtn.textContent = t('win_title').split('!')[0]+'!';
+    nextBtn.onclick = showWin;
+  } else {
+    nextBtn.textContent = t('next_level');
+    nextBtn.onclick = () => { hideScreen('clear-screen'); initLevel(currentLevel+1); };
+  }
+  showScreen('clear-screen');
+}
+
+function showWin() {
+  hideScreen('clear-screen');
+  const total = levelStars.reduce((a,b)=>a+b,0);
+  const max = LEVELS.length*3;
+  document.getElementById('win-stars').textContent = 
+    `⭐ ${total} / ${max} `+('★'.repeat(Math.floor(total/max*5)));
+  showScreen('win-screen');
+}
+
+function showScreen(id){ document.getElementById(id).classList.add('active'); }
+function hideScreen(id){ document.getElementById(id).classList.remove('active'); }
+
+// ========================
+// CONTROLS
+// ========================
+document.getElementById('btn-up').addEventListener('click',()=>tryMove(0,-1));
+document.getElementById('btn-down').addEventListener('click',()=>tryMove(0,1));
+document.getElementById('btn-left').addEventListener('click',()=>tryMove(-1,0));
+document.getElementById('btn-right').addEventListener('click',()=>tryMove(1,0));
+
+document.addEventListener('keydown',e=>{
+  if(e.key==='ArrowUp'||e.key==='w') { e.preventDefault(); tryMove(0,-1); }
+  if(e.key==='ArrowDown'||e.key==='s') { e.preventDefault(); tryMove(0,1); }
+  if(e.key==='ArrowLeft'||e.key==='a') { e.preventDefault(); tryMove(-1,0); }
+  if(e.key==='ArrowRight'||e.key==='d') { e.preventDefault(); tryMove(1,0); }
+});
+
+// Touch swipe
+let touchStart=null;
+canvas.addEventListener('touchstart',e=>{touchStart={x:e.touches[0].clientX,y:e.touches[0].clientY};},{passive:true});
+canvas.addEventListener('touchend',e=>{
+  if(!touchStart) return;
+  const dx=e.changedTouches[0].clientX-touchStart.x;
+  const dy=e.changedTouches[0].clientY-touchStart.y;
+  const adx=Math.abs(dx), ady=Math.abs(dy);
+  if(Math.max(adx,ady)<20) return;
+  if(adx>ady) { tryMove(dx>0?1:-1,0); } else { tryMove(0,dy>0?1:-1); }
+  touchStart=null;
+},{passive:true});
+
+// Start button
+document.getElementById('start-btn').addEventListener('click',()=>{
+  hideScreen('intro-screen');
+  initLevel(0);
+});
+document.getElementById('replay-btn').addEventListener('click',()=>{
+  hideScreen('win-screen');
+  levelStars.fill(0);
+  initLevel(0);
+});
+
+// Language change triggers redraw
+onLangChange(()=>{ translatePage(); updateUI(); drawGrid(); });
+
+// Init (shown on intro screen, grid ready in bg)
+initLevel(0);
+</script>
+</body>
+</html>
