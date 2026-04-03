@@ -24,14 +24,17 @@ function createApp() {
     if (!filePath.startsWith(dir)) { res.writeHead(403); res.end(); return true; }
     if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
       const ext = path.extname(filePath);
-      res.writeHead(200, { 'Content-Type': MIME[ext] || 'application/octet-stream' });
+      const headers = { 'Content-Type': MIME[ext] || 'application/octet-stream' };
+      // Prevent caching for HTML files so updates are seen immediately
+      if (ext === '.html') headers['Cache-Control'] = 'no-cache, no-store, must-revalidate';
+      res.writeHead(200, headers);
       fs.createReadStream(filePath).pipe(res);
       return true;
     }
     // Try index.html for directories
     const indexPath = path.join(filePath, 'index.html');
     if (fs.existsSync(indexPath)) {
-      res.writeHead(200, { 'Content-Type': 'text/html' });
+      res.writeHead(200, { 'Content-Type': 'text/html', 'Cache-Control': 'no-cache, no-store, must-revalidate' });
       fs.createReadStream(indexPath).pipe(res);
       return true;
     }
