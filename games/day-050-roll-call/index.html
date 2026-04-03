@@ -256,109 +256,125 @@ class Die {
 // Gates: [{x,y,need}] - die must have 'need' on bottom to pass
 // Grid is rows×cols
 const LEVELS = [
+  // Level 1: Tutorial — straight line, no gates
   {
     name: {de:'Einführung',en:'Introduction',fr:'Introduction',it:'Introduzione',es:'Introducción'},
     grid: [
-      [0,0,0,0,0],
-      [0,2,0,3,0],
-      [0,0,0,0,0],
+      [1,1,1,1,1],
+      [1,2,0,3,1],
+      [1,1,1,1,1],
     ],
     gates: [],
-    par: 4,
+    par: 2,
     hint: {de:'Gehe einfach zum Ausgang!',en:'Just reach the exit!',fr:'Allez à la sortie!',it:'Vai all\'uscita!',es:'¡Solo llega a la salida!'}
   },
+  // Level 2: One gate in a corridor — must pass through
   {
     name: {de:'Erstes Tor',en:'First Gate',fr:'Première porte',it:'Primo cancello',es:'Primera puerta'},
     grid: [
-      [0,0,0,0,0],
-      [0,2,0,0,3],
-      [0,0,0,0,0],
+      [1,1,1,1,1,1],
+      [1,2,0,0,3,1],
+      [1,1,1,1,1,1],
     ],
-    gates: [{x:3,y:1,need:3}],
-    par: 4,
-    hint: {de:'Das Tor braucht eine 3 unten. Rolle rechts zum Tor!',en:'Gate needs 3 on bottom. Roll right to gate!',fr:'Porte besoin de 3. Roulez!',it:'Il cancello ha bisogno di 3.',es:'La puerta necesita 3 abajo.'}
+    gates: [{x:2,y:1,need:3}],
+    par: 3,
+    hint: {de:'Das Tor braucht eine 3 unten. Rolle rechts!',en:'Gate needs 3 on bottom. Roll right!',fr:'Porte: besoin de 3 dessous.',it:'Il cancello ha bisogno di 3 sotto.',es:'La puerta necesita 3 abajo.'}
   },
+  // Level 3: L-shaped corridor with one gate at the corner
   {
     name: {de:'Umweg',en:'Detour',fr:'Détour',it:'Deviazione',es:'Rodeo'},
     grid: [
-      [0,0,0,0,0,0],
-      [0,2,1,1,0,0],
-      [0,0,0,0,0,0],
-      [0,0,1,1,0,3],
-      [0,0,0,0,0,0],
+      [1,1,1,1,1,1],
+      [1,2,0,0,0,1],
+      [1,1,1,1,0,1],
+      [1,1,1,1,0,1],
+      [1,3,0,0,0,1],
+      [1,1,1,1,1,1],
     ],
-    gates: [{x:4,y:3,need:5}],
-    par: 10,
-    hint: {de:'Mauern zwingen zum Umweg. Plane die Rotationen!',en:'Walls force a detour. Plan your rotations!',fr:'Murs forcent un détour.',it:'I muri forzano un giro.',es:'Las paredes fuerzan un rodeo.'}
+    gates: [{x:4,y:2,need:2}],
+    par: 9,
+    hint: {de:'Plane die Rotationen um die Ecke!',en:'Plan your rotations around the corner!',fr:'Planifiez les rotations!',it:'Pianifica le rotazioni!',es:'¡Planifica las rotaciones!'}
   },
+  // Level 4: Two gates in a forced corridor
   {
     name: {de:'Zwei Tore',en:'Two Gates',fr:'Deux portes',it:'Due cancelli',es:'Dos puertas'},
     grid: [
-      [0,0,0,0,0,0,0],
-      [0,2,0,0,0,0,0],
-      [0,0,0,0,0,0,0],
-      [0,0,0,0,0,0,3],
+      [1,1,1,1,1,1,1],
+      [1,2,0,0,0,0,1],
+      [1,1,1,1,1,0,1],
+      [1,3,0,0,0,0,1],
+      [1,1,1,1,1,1,1],
     ],
-    gates: [{x:3,y:2,need:4},{x:5,y:3,need:2}],
+    gates: [{x:3,y:1,need:1},{x:3,y:3,need:6}],
     par: 10,
-    hint: {de:'Zwei Tore! Denke voraus: welche Seite ist unten nach dem ersten Tor?',en:'Two gates! Think ahead: what\'s on the bottom after the first gate?',fr:'Deux portes! Pensez en avance.',it:'Due cancelli! Pensa in anticipo.',es:'¡Dos puertas! Piensa por adelantado.'}
+    hint: {de:'Zwei Tore! Plane voraus: welche Seite ist nach dem ersten Tor unten?',en:'Two gates! Plan ahead: what face is on the bottom after the first gate?',fr:'Deux portes! Pensez en avance.',it:'Due cancelli! Pensa in anticipo.',es:'¡Dos puertas! Piensa por adelantado.'}
   },
+  // Level 5: Snake path with two gates at chokepoints
   {
     name: {de:'Schlangenweg',en:'Snake Path',fr:'Chemin serpent',it:'Percorso serpente',es:'Camino serpiente'},
     grid: [
-      [0,2,0,0,0,0,0],
-      [0,1,1,1,1,1,0],
-      [0,0,0,0,0,1,0],
-      [0,1,1,1,0,1,0],
-      [0,1,0,0,0,1,0],
-      [0,1,0,1,1,1,0],
-      [0,0,0,0,0,0,3],
+      [1,2,0,0,0,1,1],
+      [1,1,1,1,0,1,1],
+      [1,0,0,0,0,1,1],
+      [1,0,1,1,1,1,1],
+      [1,0,0,0,0,0,1],
+      [1,1,1,1,1,0,1],
+      [1,1,1,1,3,0,1],
     ],
-    gates: [{x:2,y:2,need:1},{x:4,y:4,need:6}],
-    par: 16,
+    gates: [{x:2,y:2,need:4},{x:3,y:4,need:6}],
+    par: 17,
     hint: {de:'Schlangenförmiger Pfad. Präzision zählt!',en:'Snake-shaped path. Precision counts!',fr:'Chemin en serpent. La précision compte!',it:'Percorso a serpente. La precisione conta!',es:'Camino en serpiente. ¡La precisión cuenta!'}
   },
+  // Level 6: Labyrinth with two gates blocking the only routes
   {
     name: {de:'Labyrinth',en:'Labyrinth',fr:'Labyrinthe',it:'Labirinto',es:'Laberinto'},
     grid: [
-      [0,0,1,0,0,1,0],
-      [0,2,1,0,1,1,0],
-      [0,0,0,0,0,0,0],
+      [1,1,1,1,1,1,1],
+      [1,2,0,1,0,0,1],
       [1,1,0,1,0,1,1],
-      [0,0,0,1,0,0,0],
-      [0,1,0,0,0,1,3],
-      [0,0,1,1,1,0,0],
+      [1,0,0,0,0,0,1],
+      [1,0,1,1,1,0,1],
+      [1,0,0,0,1,0,1],
+      [1,1,1,0,1,3,1],
+      [1,1,1,1,1,1,1],
     ],
-    gates: [{x:2,y:4,need:2},{x:4,y:5,need:5}],
-    par: 14,
+    gates: [{x:2,y:3,need:4},{x:5,y:5,need:1}],
+    par: 11,
     hint: {de:'Ein echtes Labyrinth. Finde den Weg!',en:'A real labyrinth. Find the way!',fr:'Un vrai labyrinthe. Trouvez la voie!',it:'Un vero labirinto. Trova la strada!',es:'Un laberinto real. ¡Encuentra el camino!'}
   },
+  // Level 7: Three gates in sequence — narrow corridor
   {
     name: {de:'Drei Tore',en:'Three Gates',fr:'Trois portes',it:'Tre cancelli',es:'Tres puertas'},
     grid: [
-      [0,0,0,0,0,0,0,0],
-      [0,2,0,0,0,0,0,0],
-      [0,0,0,0,0,0,0,0],
-      [0,0,0,0,0,0,0,0],
-      [0,0,0,0,0,0,0,3],
+      [1,1,1,1,1,1,1,1],
+      [1,2,0,0,1,1,1,1],
+      [1,1,1,0,1,1,1,1],
+      [1,1,1,0,0,0,1,1],
+      [1,1,1,1,1,0,1,1],
+      [1,1,1,1,0,0,1,1],
+      [1,1,1,1,0,1,1,1],
+      [1,1,1,1,3,1,1,1],
     ],
-    gates: [{x:2,y:1,need:3},{x:4,y:2,need:1},{x:6,y:3,need:4}],
+    gates: [{x:3,y:1,need:1},{x:3,y:3,need:6},{x:4,y:5,need:4}],
     par: 12,
-    hint: {de:'Drei Tore! Du musst exakt die richtige Route wählen.',en:'Three gates! You must pick exactly the right route.',fr:'Trois portes! Choisissez la bonne route.',it:'Tre cancelli! Scegli esattamente il percorso giusto.',es:'¡Tres puertas! Debes elegir exactamente la ruta correcta.'}
+    hint: {de:'Drei Tore nacheinander! Jede Drehung zählt.',en:'Three gates in sequence! Every rotation matters.',fr:'Trois portes en séquence!',it:'Tre cancelli in sequenza!',es:'¡Tres puertas en secuencia!'}
   },
+  // Level 8: Master — complex maze with three gates at critical chokepoints
   {
     name: {de:'Meister',en:'Master',fr:'Maître',it:'Maestro',es:'Maestro'},
     grid: [
-      [0,0,1,0,0,1,0,0],
-      [0,2,1,0,1,0,0,0],
-      [0,0,0,0,1,0,1,0],
-      [1,0,1,0,0,0,1,0],
-      [0,0,1,0,1,0,0,0],
-      [0,1,0,0,1,0,1,3],
-      [0,0,0,1,0,0,1,0],
+      [1,1,1,1,1,1,1,1],
+      [1,2,0,1,0,0,0,1],
+      [1,1,0,1,0,1,0,1],
+      [1,0,0,0,0,1,0,1],
+      [1,0,1,1,1,1,0,1],
+      [1,0,1,0,0,0,0,1],
+      [1,0,1,0,1,1,1,1],
+      [1,0,0,0,1,1,1,1],
+      [1,1,1,3,1,1,1,1],
     ],
-    gates: [{x:1,y:4,need:6},{x:3,y:2,need:2},{x:5,y:5,need:4}],
-    par: 18,
+    gates: [{x:1,y:3,need:6},{x:4,y:1,need:2},{x:3,y:5,need:4}],
+    par: 14,
     hint: {de:'Das Master-Rätsel. Viel Glück!',en:'The master puzzle. Good luck!',fr:'Le puzzle maître. Bonne chance!',it:'Il puzzle maestro. Buona fortuna!',es:'El puzzle maestro. ¡Buena suerte!'}
   }
 ];
@@ -441,24 +457,23 @@ function tryMove(dx, dy) {
   const ny = diePos.y+dy;
   if(nx<0||ny<0||ny>=g.length||nx>=g[0].length) return;
   if(g[ny][nx]===1) { flashMsg=t('move_blocker'); flashTimer=60; drawGrid(); return; }
-  // Check gate
-  const gate = getGateAt(nx,ny);
-  if(gate && gate.need!==die.bottom && g[ny][nx]!==3) {
-    // Check if it's a gate tile (not exit)
-    if(die.bottom!==gate.need){
-      flashMsg=t('gate_blocked')+' '+gate.need; flashTimer=90; drawGrid(); return;
-    }
-  }
-  // Roll die
+  
+  // Roll die FIRST (physically moving changes die orientation)
   if(dx===1)  die.rollRight();
   if(dx===-1) die.rollLeft();
   if(dy===-1) die.rollUp();
   if(dy===1)  die.rollDown();
   
-  // Check gate after rolling to that cell
-  if(gate && gate.need!==die.top) {
-    // Actually we check BOTTOM before moving. Let's revert to previous
-    // (already checked above - but gates check before roll)
+  // Check gate AFTER rolling (bottom face must match when arriving)
+  const gate = getGateAt(nx,ny);
+  if(gate && die.bottom!==gate.need && g[ny][nx]!==3) {
+    flashMsg=t('gate_blocked')+' '+gate.need; flashTimer=90;
+    // Revert the roll
+    if(dx===1)  die.rollLeft();
+    if(dx===-1) die.rollRight();
+    if(dy===-1) die.rollDown();
+    if(dy===1)  die.rollUp();
+    drawGrid(); return;
   }
   
   diePos={x:nx,y:ny};
@@ -471,9 +486,8 @@ function tryMove(dx, dy) {
   if(g[ny][nx]===3) {
     const gate2 = getGateAt(nx,ny);
     if(gate2 && die.bottom!==gate2.need) {
-      // Exit also has gate requirement
+      // Exit also has gate requirement — revert
       flashMsg=t('gate_blocked')+' '+gate2.need; flashTimer=90;
-      // revert
       diePos={x:nx-dx,y:ny-dy};
       moves--;
       if(dx===1)  die.rollLeft();
