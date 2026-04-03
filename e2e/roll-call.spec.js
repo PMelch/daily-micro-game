@@ -49,12 +49,13 @@ test.describe('Roll Call — E2E Tests', () => {
     await page.locator('#btn-right').click();
     await page.locator('#next-btn').click();
     
-    // Level 2 solution from BFS: RRRRDDDD
-    for (const dir of ['right','right','right','right','down','down','down','down']) {
-      await page.locator(`#btn-${dir}`).click();
+    // Level 2 solution from BFS: RRDRULDDDRRD
+    for (const dir of 'RRDRULDDDRRD'.split('')) {
+      const btn = {R:'right',L:'left',U:'up',D:'down'}[dir];
+      await page.locator(`#btn-${btn}`).click();
     }
     
-    await expect(page.locator('#clear-screen')).toBeVisible({ timeout: 2000 });
+    await expect(page.locator('#clear-screen')).toBeVisible({ timeout: 3000 });
   });
 
   test('keyboard controls work', async ({ page }) => {
