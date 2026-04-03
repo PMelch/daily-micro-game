@@ -256,7 +256,7 @@ class Die {
 // Gates: [{x,y,need}] - die must have 'need' on bottom to pass
 // Grid is rows×cols
 const LEVELS = [
-  // Level 1: Tutorial — straight line, no gates
+  // Level 1: Tutorial
   {
     name: {de:'Einführung',en:'Introduction',fr:'Introduction',it:'Introduzione',es:'Introducción'},
     grid: [
@@ -266,120 +266,124 @@ const LEVELS = [
     ],
     gates: [],
     par: 2,
-    hint: {de:'Gehe einfach zum Ausgang!',en:'Just reach the exit!',fr:'Allez à la sortie!',it:'Vai all\'uscita!',es:'¡Solo llega a la salida!'}
+    hint: {de:'Gehe einfach zum Ausgang!',en:'Just reach the exit!',fr:'Allez à la sortie!',it:"Vai all'uscita!",es:'¡Solo llega a la salida!'}
   },
-  // Level 2: T-junction — choose path to get correct die face at gate
+  // Level 2: 7x7 open area, 1 gate — all 6 values reachable
   {
     name: {de:'Erstes Tor',en:'First Gate',fr:'Première porte',it:'Primo cancello',es:'Primera puerta'},
     grid: [
-      [1,1,1,1,1],
-      [1,0,0,0,1],
-      [1,0,1,0,1],
-      [1,2,1,3,1],
-      [1,1,1,1,1],
-    ],
-    gates: [{x:3,y:1,need:6}],
-    par: 6,
-    hint: {de:'Das Tor braucht 5 unten. Welcher Weg dreht den Würfel richtig?',en:'Gate needs 5 on bottom. Which path rotates correctly?',fr:'Porte: besoin de 5 dessous. Quel chemin?',it:'Il cancello ha bisogno di 5 sotto.',es:'La puerta necesita 5 abajo. ¿Qué camino?'}
-  },
-  // Level 3: Open area, gate blocks direct path — need detour
-  {
-    name: {de:'Umweg',en:'Detour',fr:'Détour',it:'Deviazione',es:'Rodeo'},
-    grid: [
-      [1,1,1,1,1,1],
-      [1,2,0,0,0,1],
-      [1,0,1,1,0,1],
-      [1,0,1,1,0,1],
-      [1,0,0,0,3,1],
-      [1,1,1,1,1,1],
-    ],
-    gates: [{x:4,y:1,need:4}],
-    par: 8,
-    hint: {de:'Der direkte Weg passt nicht. Nimm einen Umweg!',en:'Direct path won\'t work. Take a detour!',fr:'Le chemin direct ne marche pas. Faites un détour!',it:'Il percorso diretto non funziona. Fai un giro!',es:'El camino directo no funciona. ¡Da un rodeo!'}
-  },
-  // Level 4: Two gates — need to plan which route gives both correct faces
-  {
-    name: {de:'Zwei Tore',en:'Two Gates',fr:'Deux portes',it:'Due cancelli',es:'Dos puertas'},
-    grid: [
-      [1,1,1,1,1,1],
-      [1,2,0,0,0,1],
-      [1,0,1,1,0,1],
-      [1,0,0,0,0,1],
-      [1,0,1,1,0,1],
-      [1,0,0,0,3,1],
-      [1,1,1,1,1,1],
-    ],
-    gates: [{x:4,y:1,need:4},{x:4,y:3,need:3}],
-    par: 9,
-    hint: {de:'Zwei Tore! Plane voraus: welcher Pfad ergibt beide Zahlen?',en:'Two gates! Plan ahead: which path gives both numbers?',fr:'Deux portes! Pensez en avance.',it:'Due cancelli! Pensa in anticipo.',es:'¡Dos puertas! Piensa por adelantado.'}
-  },
-  // Level 5: Wider area with 2 gates — multiple possible paths
-  {
-    name: {de:'Irrgarten',en:'Maze',fr:'Labyrinthe',it:'Labirinto',es:'Laberinto'},
-    grid: [
       [1,1,1,1,1,1,1],
       [1,2,0,0,0,0,1],
-      [1,0,1,0,1,0,1],
-      [1,0,0,0,0,0,1],
-      [1,0,1,0,1,0,1],
+      [1,0,0,1,0,0,1],
+      [1,0,1,0,0,0,1],
+      [1,0,0,0,1,0,1],
       [1,0,0,0,0,3,1],
       [1,1,1,1,1,1,1],
     ],
-    gates: [{x:3,y:1,need:1},{x:3,y:5,need:1}],
+    gates: [{x:3,y:3,need:1}],
     par: 10,
-    hint: {de:'Viele Wege — aber nur einer passt!',en:'Many paths — but only one works!',fr:'Beaucoup de chemins — un seul fonctionne!',it:'Molti percorsi — solo uno funziona!',es:'¡Muchos caminos — solo uno funciona!'}
+    hint: {de:'Das Tor braucht 1 unten. Welcher Weg?',en:'Gate needs 1 on bottom. Which path?',fr:'Porte: besoin de 1.',it:'Cancello: serve 1.',es:'Puerta: necesita 1.'}
   },
-  // Level 6: Large grid with 2 gates and walls
+  // Level 3: 7x7 asymmetric, 1 gate
   {
-    name: {de:'Korridor',en:'Corridor',fr:'Couloir',it:'Corridoio',es:'Pasillo'},
-    grid: [
-      [1,1,1,1,1,1,1],
-      [1,2,0,0,1,0,1],
-      [1,1,1,0,1,0,1],
-      [1,0,0,0,0,0,1],
-      [1,0,1,1,1,0,1],
-      [1,0,0,0,0,0,1],
-      [1,1,1,1,1,3,1],
-      [1,1,1,1,1,1,1],
-    ],
-    gates: [{x:3,y:3,need:6},{x:5,y:3,need:1}],
-    par: 11,
-    hint: {de:'Wähle die richtige Abzweigung!',en:'Choose the right branch!',fr:'Choisissez la bonne branche!',it:'Scegli il ramo giusto!',es:'¡Elige la rama correcta!'}
-  },
-  // Level 7: Three gates in open area
-  {
-    name: {de:'Drei Tore',en:'Three Gates',fr:'Trois portes',it:'Tre cancelli',es:'Tres puertas'},
+    name: {de:'Umweg',en:'Detour',fr:'Détour',it:'Deviazione',es:'Rodeo'},
     grid: [
       [1,1,1,1,1,1,1],
       [1,2,0,0,0,0,1],
-      [1,0,1,0,1,0,1],
-      [1,0,0,0,0,0,1],
-      [1,0,1,0,1,0,1],
-      [1,0,0,0,0,0,1],
-      [1,0,1,0,1,3,1],
+      [1,0,1,0,0,0,1],
+      [1,0,0,0,1,0,1],
+      [1,0,0,1,0,0,1],
+      [1,0,0,0,0,3,1],
       [1,1,1,1,1,1,1],
     ],
-    gates: [{x:3,y:1,need:1},{x:1,y:3,need:1},{x:3,y:5,need:1}],
-    par: 11,
-    hint: {de:'Drei Tore! Jede Drehung zählt.',en:'Three gates! Every rotation matters.',fr:'Trois portes! Chaque rotation compte!',it:'Tre cancelli! Ogni rotazione conta!',es:'¡Tres puertas! Cada rotación importa!'}
+    gates: [{x:3,y:3,need:1}],
+    par: 10,
+    hint: {de:'Der direkte Weg passt nicht!',en:'Direct path won\'t work!',fr:'Le chemin direct ne marche pas!',it:'Il percorso diretto non funziona!',es:'¡El camino directo no funciona!'}
   },
-  // Level 8: Master — big grid with 3 gates
+  // Level 4: 8x7, 2 gates
   {
-    name: {de:'Meister',en:'Master',fr:'Maître',it:'Maestro',es:'Maestro'},
+    name: {de:'Zwei Tore',en:'Two Gates',fr:'Deux portes',it:'Due cancelli',es:'Dos puertas'},
+    grid: [
+      [1,1,1,1,1,1,1,1],
+      [1,2,0,0,0,0,0,1],
+      [1,0,0,1,0,1,0,1],
+      [1,0,1,0,0,0,0,1],
+      [1,0,0,0,1,0,0,1],
+      [1,0,0,0,0,0,3,1],
+      [1,1,1,1,1,1,1,1],
+    ],
+    gates: [{x:4,y:2,need:1},{x:2,y:4,need:1}],
+    par: 11,
+    hint: {de:'Zwei Tore! Welcher Pfad ergibt beide Zahlen?',en:'Two gates! Which path gives both numbers?',fr:'Deux portes!',it:'Due cancelli!',es:'¡Dos puertas!'}
+  },
+  // Level 5: 8x8, 2 gates
+  {
+    name: {de:'Irrgarten',en:'Maze',fr:'Labyrinthe',it:'Labirinto',es:'Laberinto'},
+    grid: [
+      [1,1,1,1,1,1,1,1],
+      [1,2,0,0,0,0,0,1],
+      [1,0,1,0,1,0,0,1],
+      [1,0,0,0,0,0,1,1],
+      [1,0,1,0,1,0,0,1],
+      [1,0,0,0,0,1,0,1],
+      [1,0,0,1,0,0,3,1],
+      [1,1,1,1,1,1,1,1],
+    ],
+    gates: [{x:3,y:3,need:1},{x:3,y:5,need:1}],
+    par: 12,
+    hint: {de:'Viele Wege — nur einer passt!',en:'Many paths — only one works!',fr:'Un seul chemin fonctionne!',it:'Solo un percorso funziona!',es:'¡Solo un camino funciona!'}
+  },
+  // Level 6: 8x8, 2 gates
+  {
+    name: {de:'Korridor',en:'Corridor',fr:'Couloir',it:'Corridoio',es:'Pasillo'},
     grid: [
       [1,1,1,1,1,1,1,1],
       [1,2,0,0,0,1,0,1],
-      [1,0,1,1,0,1,0,1],
-      [1,0,0,0,0,0,0,1],
-      [1,1,1,0,1,1,0,1],
-      [1,0,0,0,0,0,0,1],
-      [1,0,1,1,0,1,0,1],
-      [1,0,0,0,0,1,3,1],
+      [1,0,0,1,0,0,0,1],
+      [1,0,1,0,0,0,0,1],
+      [1,0,0,0,1,1,0,1],
+      [1,1,0,0,0,0,0,1],
+      [1,0,0,1,0,0,3,1],
       [1,1,1,1,1,1,1,1],
     ],
-    gates: [{x:4,y:1,need:3},{x:3,y:5,need:6},{x:4,y:7,need:4}],
+    gates: [{x:4,y:3,need:1},{x:2,y:5,need:1}],
+    par: 12,
+    hint: {de:'Wähle die richtige Abzweigung!',en:'Choose the right branch!',fr:'Choisissez la bonne branche!',it:'Scegli il ramo giusto!',es:'¡Elige la rama correcta!'}
+  },
+  // Level 7: 9x8, 3 gates
+  {
+    name: {de:'Drei Tore',en:'Three Gates',fr:'Trois portes',it:'Tre cancelli',es:'Tres puertas'},
+    grid: [
+      [1,1,1,1,1,1,1,1,1],
+      [1,2,0,0,0,0,0,0,1],
+      [1,0,0,1,0,1,0,0,1],
+      [1,0,1,0,0,0,1,0,1],
+      [1,0,0,0,1,0,0,0,1],
+      [1,0,1,0,0,0,1,0,1],
+      [1,0,0,0,0,0,0,3,1],
+      [1,1,1,1,1,1,1,1,1],
+    ],
+    gates: [{x:4,y:2,need:1},{x:2,y:4,need:1},{x:5,y:5,need:1}],
+    par: 13,
+    hint: {de:'Drei Tore! Jede Drehung zählt.',en:'Three gates! Every rotation matters.',fr:'Trois portes!',it:'Tre cancelli!',es:'¡Tres puertas!'}
+  },
+  // Level 8: 9x9 master, 3 gates
+  {
+    name: {de:'Meister',en:'Master',fr:'Maître',it:'Maestro',es:'Maestro'},
+    grid: [
+      [1,1,1,1,1,1,1,1,1],
+      [1,2,0,0,0,0,0,0,1],
+      [1,0,0,1,0,1,0,0,1],
+      [1,0,1,0,0,0,0,0,1],
+      [1,0,0,0,1,0,1,0,1],
+      [1,0,1,0,0,0,0,0,1],
+      [1,0,0,0,1,0,1,0,1],
+      [1,0,0,0,0,0,0,3,1],
+      [1,1,1,1,1,1,1,1,1],
+    ],
+    gates: [{x:4,y:2,need:1},{x:2,y:4,need:1},{x:5,y:6,need:1}],
     par: 14,
-    hint: {de:'Das Master-Rätsel. Viel Glück!',en:'The master puzzle. Good luck!',fr:'Le puzzle maître. Bonne chance!',it:'Il puzzle maestro. Buona fortuna!',es:'El puzzle maestro. ¡Buena suerte!'}
+    hint: {de:'Das Master-Rätsel. Viel Glück!',en:'The master puzzle. Good luck!',fr:'Bonne chance!',it:'Buona fortuna!',es:'¡Buena suerte!'}
   }
 ];
 

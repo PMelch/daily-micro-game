@@ -41,7 +41,7 @@ test.describe('Roll Call — E2E Tests', () => {
     await expect(page.locator('#clear-screen')).toBeVisible({ timeout: 2000 });
   });
 
-  test('Level 2: gate blocks wrong face, correct path solves', async ({ page }) => {
+  test('Level 2: BFS-verified solution works', async ({ page }) => {
     await page.locator('#start-btn').click();
     
     // Solve level 1
@@ -49,13 +49,10 @@ test.describe('Roll Call — E2E Tests', () => {
     await page.locator('#btn-right').click();
     await page.locator('#next-btn').click();
     
-    // Level 2 solution: UURRDD (need to go around to get correct die face)
-    await page.locator('#btn-up').click();
-    await page.locator('#btn-up').click();
-    await page.locator('#btn-right').click();
-    await page.locator('#btn-right').click();
-    await page.locator('#btn-down').click();
-    await page.locator('#btn-down').click();
+    // Level 2 solution from BFS: RRRRDDDD
+    for (const dir of ['right','right','right','right','down','down','down','down']) {
+      await page.locator(`#btn-${dir}`).click();
+    }
     
     await expect(page.locator('#clear-screen')).toBeVisible({ timeout: 2000 });
   });
