@@ -41,7 +41,7 @@ test.describe('Roll Call — E2E Tests', () => {
     await expect(page.locator('#clear-screen')).toBeVisible({ timeout: 2000 });
   });
 
-  test('Level 2: can solve with three right moves', async ({ page }) => {
+  test('Level 2: gate blocks wrong face, correct path solves', async ({ page }) => {
     await page.locator('#start-btn').click();
     
     // Solve level 1
@@ -49,10 +49,13 @@ test.describe('Roll Call — E2E Tests', () => {
     await page.locator('#btn-right').click();
     await page.locator('#next-btn').click();
     
-    // Solve level 2: RRR
+    // Level 2 solution: UURRDD (need to go around to get correct die face)
+    await page.locator('#btn-up').click();
+    await page.locator('#btn-up').click();
     await page.locator('#btn-right').click();
     await page.locator('#btn-right').click();
-    await page.locator('#btn-right').click();
+    await page.locator('#btn-down').click();
+    await page.locator('#btn-down').click();
     
     await expect(page.locator('#clear-screen')).toBeVisible({ timeout: 2000 });
   });
