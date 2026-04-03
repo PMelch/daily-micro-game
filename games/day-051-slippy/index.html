@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Slippy! 🐧</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #0a1628;
+    color: #e0f0ff;
+    font-family: system-ui, sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .back-bar {
+    width: 100%;
+    background: #0a0a1a;
+    padding: 0.5rem 1rem;
+    border-bottom: 1px solid #333;
+  }
+  .back-bar a {
+    color: #ffcc00;
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-family: system-ui, sans-serif;
+  }
+  .back-bar a:hover { text-decoration: underline; }
+
+  /* ===== SCREENS ===== */
+  .screen { display: none; flex-direction: column; align-items: center; padding: 1rem; width: 100%; max-width: 520px; }
+  .screen.active { display: flex; }
+
+  h1 { font-size: 2.5rem; text-align: center; margin: 0.5rem 0; }
+  .subtitle { color: #88bbdd; text-align: center; margin-bottom: 1rem; }
+
+  /* Setup */
+  .setup-card {
+    background: #0d2040;
+    border: 1px solid #1a3a60;
+    border-radius: 12px;
+    padding: 1.2rem;
+    width: 100%;
+    margin-bottom: 1rem;
+  }
+  .setup-card h2 { color: #ffcc00; margin-bottom: 0.8rem; font-size: 1rem; }
+  .player-count-btns { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
+  .cnt-btn {
+    flex: 1; padding: 0.7rem; background: #1a3a60; border: 2px solid #2a5080;
+    border-radius: 8px; color: #e0f0ff; font-size: 1.1rem; cursor: pointer; transition: all .15s;
+  }
+  .cnt-btn.active { background: #0a5080; border-color: #ffcc00; color: #ffcc00; }
+  .player-name-inputs { display: flex; flex-direction: column; gap: 0.5rem; }
+  .name-row { display: flex; align-items: center; gap: 0.5rem; }
+  .penguin-icon { font-size: 1.4rem; }
+  .name-input {
+    flex: 1; padding: 0.5rem 0.7rem; background: #0a1628; border: 1px solid #2a5080;
+    border-radius: 6px; color: #e0f0ff; font-size: 0.95rem;
+  }
+  .name-input:focus { outline: none; border-color: #ffcc00; }
+
+  .btn-primary {
+    background: #ffcc00; color: #0a0a1a; border: none; border-radius: 10px;
+    padding: 0.8rem 2rem; font-size: 1.1rem; font-weight: bold; cursor: pointer;
+    width: 100%; margin-top: 0.5rem; transition: all .15s;
+  }
+  .btn-primary:hover { background: #ffe040; transform: translateY(-1px); }
+  .btn-secondary {
+    background: transparent; color: #88bbdd; border: 1px solid #2a5080; border-radius: 8px;
+    padding: 0.5rem 1rem; font-size: 0.9rem; cursor: pointer; transition: all .15s;
+  }
+  .btn-secondary:hover { border-color: #ffcc00; color: #ffcc00; }
+
+  /* Handoff */
+  .handoff-screen {
+    min-height: 60vh;
+    justify-content: center;
+    gap: 1.5rem;
+  }
+  .handoff-emoji { font-size: 5rem; }
+  .handoff-name { font-size: 2rem; font-weight: bold; }
+  .handoff-msg { color: #88bbdd; text-align: center; font-size: 1rem; }
+
+  /* Game screen */
+  #game-screen { padding: 0.5rem; }
+  .game-header {
+    display: flex; align-items: center; justify-content: space-between;
+    width: 100%; max-width: 520px; margin-bottom: 0.5rem;
+    background: #0d2040; border-radius: 10px; padding: 0.5rem 0.8rem;
+  }
+  .turn-indicator { font-size: 0.85rem; color: #88bbdd; }
+  .turn-name { font-size: 1rem; font-weight: bold; }
+  .fish-count { font-size: 0.85rem; }
+
+  /* Player scores strip */
+  .scores-strip {
+    display: flex; gap: 0.4rem; width: 100%; max-width: 520px; margin-bottom: 0.4rem;
+  }
+  .score-chip {
+    flex: 1; background: #0d2040; border: 2px solid transparent;
+    border-radius: 8px; padding: 0.3rem 0.4rem; text-align: center; font-size: 0.8rem;
+    transition: all .2s;
+  }
+  .score-chip.active { border-color: #ffcc00; background: #1a3a20; }
+  .score-chip .sc-name { font-size: 0.7rem; color: #88bbdd; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .score-chip .sc-fish { font-size: 1rem; }
+
+  /* Grid */
+  #grid-container {
+    width: 100%;
+    max-width: 440px;
+    aspect-ratio: 1;
+    position: relative;
+    background: #1a3a60;
+    border: 2px solid #2a6090;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  canvas#game-canvas { width: 100%; height: 100%; display: block; }
+
+  /* Direction pad */
+  .dpad {
+    display: grid;
+    grid-template-columns: repeat(3, 3.5rem);
+    grid-template-rows: repeat(3, 3.5rem);
+    gap: 0.3rem;
+    margin-top: 0.8rem;
+  }
+  .dpad-btn {
+    background: #0d2040; border: 2px solid #1a5080;
+    border-radius: 10px; color: #e0f0ff; font-size: 1.5rem;
+    cursor: pointer; transition: all .1s; display: flex; align-items: center; justify-content: center;
+  }
+  .dpad-btn:active { background: #1a5080; transform: scale(0.92); }
+  .dpad-center { background: #1a3a60 !important; cursor: default; border-color: #0d2040 !important; }
+
+  /* Toast */
+  #toast {
+    position: fixed; bottom: 5rem; left: 50%; transform: translateX(-50%);
+    background: #ffcc00; color: #0a0a1a; border-radius: 20px;
+    padding: 0.5rem 1.5rem; font-weight: bold; font-size: 0.9rem;
+    opacity: 0; transition: opacity .3s; pointer-events: none; z-index: 100;
+  }
+  #toast.show { opacity: 1; }
+
+  /* End screen */
+  .end-card {
+    background: #0d2040; border: 2px solid #ffcc00;
+    border-radius: 16px; padding: 1.5rem; width: 100%; text-align: center;
+    margin-bottom: 1rem;
+  }
+  .end-card h2 { font-size: 1.8rem; color: #ffcc00; margin-bottom: 0.5rem; }
+  .end-card .winner-name { font-size: 2rem; font-weight: bold; margin: 0.3rem 0; }
+  .final-scores { width: 100%; margin-top: 1rem; }
+  .final-row {
+    display: flex; align-items: center; gap: 0.5rem;
+    padding: 0.4rem 0.5rem; border-bottom: 1px solid #1a3a60;
+  }
+  .final-row:last-child { border-bottom: none; }
+  .final-rank { font-size: 1.2rem; width: 2rem; }
+  .final-pname { flex: 1; font-weight: bold; }
+  .final-fish { font-size: 1rem; color: #88bbdd; }
+
+  /* Animations */
+  @keyframes fishPop { 0%{transform:scale(1)} 50%{transform:scale(1.8)} 100%{transform:scale(1)} }
+  .fish-pop { animation: fishPop 0.3s ease; }
+</style>
+</head>
+<body>
+<div class="back-bar"><a href="/">← <span data-i18n="backToGames">Back to Games</span></a></div>
+
+<!-- SETUP SCREEN -->
+<div id="setup-screen" class="screen active">
+  <h1>🐧 Slippy!</h1>
+  <p class="subtitle" data-i18n="subtitle">Rutsch, sammel Fische, bump die anderen!</p>
+
+  <div class="setup-card">
+    <h2 data-i18n="numPlayers">Anzahl Spieler</h2>
+    <div class="player-count-btns">
+      <button class="cnt-btn active" data-count="2">2</button>
+      <button class="cnt-btn" data-count="3">3</button>
+      <button class="cnt-btn" data-count="4">4</button>
+    </div>
+    <div class="player-name-inputs" id="name-inputs"></div>
+  </div>
+
+  <button class="btn-primary" id="start-btn" data-i18n="startGame">Spiel starten</button>
+
+  <div style="margin-top:1rem;background:#0d2040;border-radius:10px;padding:1rem;width:100%;">
+    <p style="font-size:0.8rem;color:#88bbdd;margin-bottom:0.4rem;font-weight:bold;" data-i18n="howToPlayTitle">Wie spielen?</p>
+    <p style="font-size:0.8rem;color:#88bbdd;" data-i18n="howToPlayText">
+      Wähle eine Richtung – dein Pinguin rutscht auf dem Eis bis er gegen einen Eisberg oder eine Wand stößt. Sammle Fische 🐟 auf dem Weg! Wer beim Rutsche einen anderen Pinguin trifft, schubst ihn einen Schritt weiter. Nach allen Fischen gewinnt der Spieler mit den meisten.
+    </p>
+  </div>
+</div>
+
+<!-- HANDOFF SCREEN -->
+<div id="handoff-screen" class="screen handoff-screen">
+  <div class="handoff-emoji" id="handoff-emoji">🐧</div>
+  <div class="handoff-name" id="handoff-name">Spieler</div>
+  <div class="handoff-msg" id="handoff-msg" data-i18n="handoffMsg">Gib das Gerät weiter!</div>
+  <button class="btn-primary" id="handoff-ok" data-i18n="readyBtn">Bereit!</button>
+</div>
+
+<!-- GAME SCREEN -->
+<div id="game-screen" class="screen">
+  <div class="scores-strip" id="scores-strip"></div>
+  <div id="grid-container">
+    <canvas id="game-canvas"></canvas>
+  </div>
+  <div class="game-header" style="margin-top:0.5rem;">
+    <div>
+      <div class="turn-indicator" data-i18n="turnOf">Dran:</div>
+      <div class="turn-name" id="turn-name">-</div>
+    </div>
+    <div class="fish-count" id="fish-remaining"></div>
+  </div>
+  <div class="dpad">
+    <div></div>
+    <button class="dpad-btn" id="btn-up">↑</button>
+    <div></div>
+    <button class="dpad-btn" id="btn-left">←</button>
+    <div class="dpad-btn dpad-center">🐧</div>
+    <button class="dpad-btn" id="btn-right">→</button>
+    <div></div>
+    <button class="dpad-btn" id="btn-down">↓</button>
+    <div></div>
+  </div>
+</div>
+
+<!-- END SCREEN -->
+<div id="end-screen" class="screen">
+  <div class="end-card">
+    <div style="font-size:3rem;">🏆</div>
+    <h2 data-i18n="winner">Gewinner</h2>
+    <div class="winner-name" id="winner-name"></div>
+    <div style="color:#88bbdd;font-size:0.9rem;" id="winner-fish"></div>
+    <div class="final-scores" id="final-scores"></div>
+  </div>
+  <button class="btn-primary" id="play-again-btn" data-i18n="playAgain">Nochmal spielen</button>
+</div>
+
+<div id="toast"></div>
+
+<script src="/shared/i18n.js"></script>
+<script>
+const TRANSLATIONS = {
+  de: {
+    backToGames: 'Zurück zur Übersicht',
+    subtitle: 'Rutsch, sammel Fische, bump die anderen!',
+    numPlayers: 'Anzahl Spieler',
+    startGame: 'Spiel starten',
+    howToPlayTitle: 'Wie spielen?',
+    howToPlayText: 'Wähle eine Richtung – dein Pinguin rutscht auf dem Eis bis er gegen einen Eisberg oder eine Wand stößt. Sammle Fische 🐟 auf dem Weg! Wer beim Rutsche einen anderen Pinguin trifft, schubst ihn einen Schritt weiter. Nach allen Fischen gewinnt der Spieler mit den meisten.',
+    handoffMsg: 'Gib das Gerät weiter!',
+    readyBtn: 'Bereit!',
+    turnOf: 'Dran:',
+    fishLeft: 'Fische übrig:',
+    winner: 'Gewinner! 🎉',
+    tieWinner: 'Unentschieden! 🤝',
+    playAgain: 'Nochmal spielen',
+    defPlayerNames: ['Spieler 1','Spieler 2','Spieler 3','Spieler 4'],
+    fishCollected: 'Fisch gesammelt! 🐟',
+    bump: 'Schubs! 🐧💥',
+  },
+  en: {
+    backToGames: 'Back to Games',
+    subtitle: 'Slide, collect fish, bump the others!',
+    numPlayers: 'Number of Players',
+    startGame: 'Start Game',
+    howToPlayTitle: 'How to play?',
+    howToPlayText: 'Choose a direction – your penguin slides on ice until hitting an iceberg or wall. Collect fish 🐟 along the way! If you slide into another penguin, you bump them one step further. After all fish are gone, the player with the most wins.',
+    handoffMsg: 'Pass the device!',
+    readyBtn: 'Ready!',
+    turnOf: 'Turn:',
+    fishLeft: 'Fish left:',
+    winner: 'Winner! 🎉',
+    tieWinner: "It's a tie! 🤝",
+    playAgain: 'Play again',
+    defPlayerNames: ['Player 1','Player 2','Player 3','Player 4'],
+    fishCollected: 'Fish collected! 🐟',
+    bump: 'Bump! 🐧💥',
+  },
+  fr: {
+    backToGames: 'Retour aux jeux',
+    subtitle: 'Glisse, ramasse des poissons, bouscule les autres !',
+    numPlayers: 'Nombre de joueurs',
+    startGame: 'Démarrer',
+    howToPlayTitle: 'Comment jouer ?',
+    howToPlayText: 'Choisissez une direction – votre pingouin glisse sur la glace jusqu\'à heurter un iceberg ou un mur. Ramassez des poissons 🐟 en chemin ! Si vous glissez sur un autre pingouin, vous le poussez d\'un pas. Quand tous les poissons sont pris, celui qui en a le plus gagne.',
+    handoffMsg: 'Passez l\'appareil !',
+    readyBtn: 'Prêt !',
+    turnOf: 'Tour de :',
+    fishLeft: 'Poissons restants :',
+    winner: 'Gagnant ! 🎉',
+    tieWinner: 'Égalité ! 🤝',
+    playAgain: 'Rejouer',
+    defPlayerNames: ['Joueur 1','Joueur 2','Joueur 3','Joueur 4'],
+    fishCollected: 'Poisson pêché ! 🐟',
+    bump: 'Poussé ! 🐧💥',
+  },
+  it: {
+    backToGames: 'Torna ai giochi',
+    subtitle: 'Scivola, raccogli pesci, spingi gli altri!',
+    numPlayers: 'Numero di giocatori',
+    startGame: 'Avvia',
+    howToPlayTitle: 'Come si gioca?',
+    howToPlayText: 'Scegli una direzione – il tuo pinguino scivola sul ghiaccio fino a colpire un iceberg o un muro. Raccogli pesci 🐟 lungo la strada! Se scivoli su un altro pinguino, lo spingi di un passo. Finiti tutti i pesci, vince chi ne ha di più.',
+    handoffMsg: 'Passa il dispositivo!',
+    readyBtn: 'Pronto!',
+    turnOf: 'Turno di:',
+    fishLeft: 'Pesci rimasti:',
+    winner: 'Vincitore! 🎉',
+    tieWinner: 'Pareggio! 🤝',
+    playAgain: 'Gioca ancora',
+    defPlayerNames: ['Giocatore 1','Giocatore 2','Giocatore 3','Giocatore 4'],
+    fishCollected: 'Pesce raccolto! 🐟',
+    bump: 'Spinto! 🐧💥',
+  },
+  es: {
+    backToGames: 'Volver a los juegos',
+    subtitle: '¡Deslízate, recoge peces, choca con los demás!',
+    numPlayers: 'Número de jugadores',
+    startGame: 'Iniciar juego',
+    howToPlayTitle: '¿Cómo jugar?',
+    howToPlayText: 'Elige una dirección – tu pingüino se desliza por el hielo hasta chocar con un iceberg o una pared. ¡Recoge peces 🐟 por el camino! Si te deslizas hacia otro pingüino, lo empujas un paso. Cuando se recogen todos los peces, gana quien tenga más.',
+    handoffMsg: '¡Pasa el dispositivo!',
+    readyBtn: '¡Listo!',
+    turnOf: 'Turno de:',
+    fishLeft: 'Peces restantes:',
+    winner: '¡Ganador! 🎉',
+    tieWinner: '¡Empate! 🤝',
+    playAgain: 'Jugar de nuevo',
+    defPlayerNames: ['Jugador 1','Jugador 2','Jugador 3','Jugador 4'],
+    fishCollected: '¡Pez recogido! 🐟',
+    bump: '¡Choque! 🐧💥',
+  },
+};
+
+const { t, onLangChange } = initI18n(TRANSLATIONS);
+
+// ======================== GAME LOGIC (inline, mirrors game.js) ========================
+const CELL_ICE = 1, CELL_ROCK = 2, CELL_FISH = 3;
+const DIRS = { up:{dx:0,dy:-1}, down:{dx:0,dy:1}, left:{dx:-1,dy:0}, right:{dx:1,dy:0} };
+
+function createGrid(rows, cols) {
+  return Array.from({length:rows}, () => Array(cols).fill(CELL_ICE));
+}
+
+function getPlayerAt(state, r, c, excl=-1) {
+  return state.players.findIndex((p,i) => i!==excl && !p.eliminated && p.r===r && p.c===c);
+}
+
+function initGame(playerNames) {
+  const ROWS=8, COLS=8;
+  const grid = createGrid(ROWS, COLS);
+  const rocks = [[2,2],[2,5],[5,2],[5,5],[1,4],[4,1],[3,6],[6,3],[0,3],[7,4]];
+  for (const [r,c] of rocks) grid[r][c] = CELL_ROCK;
+  const fishPos = [[0,1],[0,5],[1,2],[1,6],[2,0],[2,7],[3,3],[3,4],[4,3],[4,4],[5,0],[5,7],[6,1],[6,6],[7,2],[7,5]];
+  for (const [r,c] of fishPos) grid[r][c] = CELL_FISH;
+  const starts = [{r:0,c:0},{r:7,c:7},{r:7,c:0},{r:0,c:7}];
+  const players = playerNames.slice(0,4).map((name,i) => ({name, r:starts[i].r, c:starts[i].c, fish:0, eliminated:false}));
+  return { grid, players, currentPlayer:0, rows:ROWS, cols:COLS, totalFish:fishPos.length, fishCollected:0, gameOver:false, winner:null, lastMove:null };
+}
+
+function slidePlayer(state, playerIndex, dir) {
+  if (state.gameOver) return state;
+  const {dx,dy} = DIRS[dir];
+  const player = state.players[playerIndex];
+  if (!player || player.eliminated) return state;
+  const ns = JSON.parse(JSON.stringify(state));
+  const p = ns.players[playerIndex];
+  let nr = p.r+dy, nc = p.c+dx, fishGot=0, bumpedPlayer=null;
+  while (nr>=0 && nr<ns.rows && nc>=0 && nc<ns.cols) {
+    const cell = ns.grid[nr][nc];
+    const otherIdx = getPlayerAt(ns, nr, nc, playerIndex);
+    if (otherIdx !== -1) {
+      const other = ns.players[otherIdx];
+      const pr=other.r+dy, pc=other.c+dx;
+      const canPush = pr>=0&&pr<ns.rows&&pc>=0&&pc<ns.cols&&ns.grid[pr][pc]!==CELL_ROCK&&getPlayerAt(ns,pr,pc)===-1;
+      if (canPush) {
+        if (ns.grid[pr][pc]===CELL_FISH) { ns.grid[pr][pc]=CELL_ICE; other.fish+=1; ns.fishCollected+=1; }
+        other.r=pr; other.c=pc; bumpedPlayer=otherIdx;
+      }
+      break;
+    }
+    if (cell===CELL_ROCK) break;
+    p.r=nr; p.c=nc;
+    if (cell===CELL_FISH) { ns.grid[nr][nc]=CELL_ICE; fishGot++; ns.fishCollected++; }
+    nr+=dy; nc+=dx;
+  }
+  p.fish += fishGot;
+  ns.lastMove = { playerIndex, dir, from:{r:state.players[playerIndex].r, c:state.players[playerIndex].c}, to:{r:p.r,c:p.c}, fishCollected:fishGot, bumpedPlayer };
+  if (ns.fishCollected >= ns.totalFish) {
+    ns.gameOver = true;
+    let mx=-1;
+    ns.players.forEach((pl,i)=>{ if(pl.fish>mx){mx=pl.fish;ns.winner=i;} });
+    if (ns.players.filter(pl=>pl.fish===mx).length>1) ns.winner=-1;
+  }
+  const np = ns.players.length;
+  ns.currentPlayer = (playerIndex+1)%np;
+  return ns;
+}
+
+// ======================== PLAYER COLORS ========================
+const PLAYER_COLORS = ['#00ccff','#ff6644','#44dd88','#ffcc00'];
+const PLAYER_EMOJIS = ['🐧','🐦','🦜','🦢'];
+const PLAYER_DARK   = ['#006688','#883322','#227744','#886600'];
+
+// ======================== STATE ========================
+let gameState = null;
+let numPlayers = 2;
+let animQueue = [];
+let isAnimating = false;
+
+// ======================== SETUP UI ========================
+const cntBtns = document.querySelectorAll('.cnt-btn');
+const nameInputsEl = document.getElementById('name-inputs');
+
+function rebuildNameInputs() {
+  const defNames = t('defPlayerNames');
+  nameInputsEl.innerHTML = '';
+  for (let i=0; i<numPlayers; i++) {
+    const row = document.createElement('div');
+    row.className = 'name-row';
+    row.innerHTML = `<span class="penguin-icon" style="color:${PLAYER_COLORS[i]}">${PLAYER_EMOJIS[i]}</span>
+      <input class="name-input" id="pname-${i}" placeholder="${Array.isArray(defNames)?defNames[i]:('Spieler '+(i+1))}" maxlength="14">`;
+    nameInputsEl.appendChild(row);
+  }
+}
+
+cntBtns.forEach(btn => {
+  btn.addEventListener('click', () => {
+    cntBtns.forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    numPlayers = parseInt(btn.dataset.count);
+    rebuildNameInputs();
+  });
+});
+
+onLangChange(() => rebuildNameInputs());
+rebuildNameInputs();
+
+document.getElementById('start-btn').addEventListener('click', () => {
+  const defNames = t('defPlayerNames');
+  const names = [];
+  for (let i=0; i<numPlayers; i++) {
+    const inp = document.getElementById('pname-'+i);
+    const def = Array.isArray(defNames) ? defNames[i] : ('Spieler '+(i+1));
+    names.push((inp && inp.value.trim()) || inp.placeholder || def);
+  }
+  startGame(names);
+});
+
+// ======================== GAME FLOW ========================
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function startGame(names) {
+  gameState = initGame(names);
+  renderScores();
+  renderGrid();
+  updateTurnDisplay();
+  showHandoff(gameState.currentPlayer, true);
+}
+
+// ======================== HANDOFF ========================
+function showHandoff(playerIdx, isFirst) {
+  const p = gameState.players[playerIdx];
+  document.getElementById('handoff-emoji').textContent = PLAYER_EMOJIS[playerIdx];
+  document.getElementById('handoff-emoji').style.filter = `drop-shadow(0 0 10px ${PLAYER_COLORS[playerIdx]})`;
+  document.getElementById('handoff-name').textContent = p.name;
+  document.getElementById('handoff-name').style.color = PLAYER_COLORS[playerIdx];
+  document.getElementById('handoff-msg').textContent = isFirst ? t('readyBtn') + ' ?' : t('handoffMsg');
+  showScreen('handoff-screen');
+}
+
+document.getElementById('handoff-ok').addEventListener('click', () => {
+  showScreen('game-screen');
+  renderGrid();
+  updateTurnDisplay();
+});
+
+// ======================== CANVAS RENDERING ========================
+const canvas = document.getElementById('game-canvas');
+const ctx = canvas.getContext('2d');
+
+function resizeCanvas() {
+  const cont = document.getElementById('grid-container');
+  canvas.width = cont.offsetWidth;
+  canvas.height = cont.offsetHeight;
+  if (gameState) renderGrid();
+}
+window.addEventListener('resize', resizeCanvas);
+setTimeout(resizeCanvas, 50);
+
+function renderGrid() {
+  if (!gameState) return;
+  const W = canvas.width, H = canvas.height;
+  const ROWS = gameState.rows, COLS = gameState.cols;
+  const cellW = W / COLS, cellH = H / ROWS;
+  ctx.clearRect(0,0,W,H);
+
+  for (let r=0; r<ROWS; r++) {
+    for (let c=0; c<COLS; c++) {
+      const x=c*cellW, y=r*cellH;
+      const cell = gameState.grid[r][c];
+
+      // Cell bg
+      const isDark = (r+c)%2===0;
+      ctx.fillStyle = isDark ? '#1a4a80' : '#1a3a6a';
+      ctx.fillRect(x,y,cellW,cellH);
+
+      if (cell===CELL_ROCK) {
+        // Iceberg
+        ctx.fillStyle = '#a0d0f0';
+        const pad=2;
+        const cx=x+cellW/2, cy=y+cellH/2;
+        ctx.beginPath();
+        ctx.moveTo(cx, y+pad);
+        ctx.lineTo(x+cellW-pad, cy+cellH*0.15);
+        ctx.lineTo(x+cellW-pad*2, y+cellH-pad);
+        ctx.lineTo(x+pad*2, y+cellH-pad);
+        ctx.lineTo(x+pad, cy+cellH*0.15);
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle='#c8e8ff';ctx.lineWidth=1;ctx.stroke();
+      } else if (cell===CELL_FISH) {
+        // Fish emoji
+        ctx.font = `${Math.min(cellW,cellH)*0.55}px serif`;
+        ctx.textAlign='center'; ctx.textBaseline='middle';
+        ctx.fillText('🐟', x+cellW/2, y+cellH/2);
+      }
+    }
+  }
+
+  // Draw grid lines
+  ctx.strokeStyle='rgba(255,255,255,0.05)'; ctx.lineWidth=0.5;
+  for (let r=0;r<=ROWS;r++) { ctx.beginPath(); ctx.moveTo(0,r*cellH); ctx.lineTo(W,r*cellH); ctx.stroke(); }
+  for (let c=0;c<=COLS;c++) { ctx.beginPath(); ctx.moveTo(c*cellW,0); ctx.lineTo(c*cellW,H); ctx.stroke(); }
+
+  // Draw players
+  gameState.players.forEach((p, i) => {
+    if (p.eliminated) return;
+    const x=p.c*cellW, y=p.r*cellH;
+    const cx=x+cellW/2, cy=y+cellH/2;
+    const rad=Math.min(cellW,cellH)*0.38;
+    
+    // Glow for current player
+    if (i===gameState.currentPlayer && !gameState.gameOver) {
+      ctx.shadowBlur=12; ctx.shadowColor=PLAYER_COLORS[i];
+    }
+    
+    ctx.fillStyle=PLAYER_COLORS[i];
+    ctx.beginPath(); ctx.arc(cx,cy,rad,0,Math.PI*2); ctx.fill();
+    ctx.strokeStyle=PLAYER_DARK[i]; ctx.lineWidth=2; ctx.stroke();
+    ctx.shadowBlur=0;
+    
+    // Penguin emoji
+    ctx.font = `${rad*1.3}px serif`;
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(PLAYER_EMOJIS[i], cx, cy);
+  });
+}
+
+// ======================== SCORES & HUD ========================
+function renderScores() {
+  const strip = document.getElementById('scores-strip');
+  strip.innerHTML = '';
+  gameState.players.forEach((p,i) => {
+    const chip = document.createElement('div');
+    chip.className = 'score-chip' + (i===gameState.currentPlayer?' active':'');
+    chip.id = `sc-${i}`;
+    chip.style.borderColor = i===gameState.currentPlayer ? PLAYER_COLORS[i] : 'transparent';
+    chip.innerHTML = `<div class="sc-name" style="color:${PLAYER_COLORS[i]}">${p.name}</div><div class="sc-fish">${'🐟'.repeat(p.fish) || '0'}</div>`;
+    strip.appendChild(chip);
+  });
+}
+
+function updateTurnDisplay() {
+  if (!gameState) return;
+  const p = gameState.players[gameState.currentPlayer];
+  document.getElementById('turn-name').textContent = p.name;
+  document.getElementById('turn-name').style.color = PLAYER_COLORS[gameState.currentPlayer];
+  const rem = gameState.totalFish - gameState.fishCollected;
+  document.getElementById('fish-remaining').textContent = `🐟 ×${rem}`;
+  
+  // Update score chips
+  gameState.players.forEach((pl, i) => {
+    const chip = document.getElementById('sc-'+i);
+    if (!chip) return;
+    chip.className = 'score-chip' + (i===gameState.currentPlayer?' active':'');
+    chip.style.borderColor = i===gameState.currentPlayer ? PLAYER_COLORS[i] : 'transparent';
+    chip.querySelector('.sc-fish').textContent = pl.fish > 0 ? '🐟'.repeat(Math.min(pl.fish,8))+(pl.fish>8?'+':'') : '–';
+  });
+}
+
+// ======================== INPUT ========================
+function doMove(dir) {
+  if (!gameState || gameState.gameOver) return;
+  const prevState = gameState;
+  gameState = slidePlayer(gameState, prevState.currentPlayer, dir);
+  
+  const mv = gameState.lastMove;
+  if (mv && mv.fishCollected > 0) showToast(t('fishCollected'));
+  if (mv && mv.bumpedPlayer !== null) showToast(t('bump'));
+  
+  renderGrid();
+  renderScores();
+
+  if (gameState.gameOver) {
+    setTimeout(showEndScreen, 800);
+  } else {
+    updateTurnDisplay();
+    // Show handoff screen after a brief pause
+    setTimeout(() => showHandoff(gameState.currentPlayer, false), 400);
+  }
+}
+
+document.getElementById('btn-up').addEventListener('click', ()=>doMove('up'));
+document.getElementById('btn-down').addEventListener('click', ()=>doMove('down'));
+document.getElementById('btn-left').addEventListener('click', ()=>doMove('left'));
+document.getElementById('btn-right').addEventListener('click', ()=>doMove('right'));
+
+document.addEventListener('keydown', e => {
+  if (document.getElementById('game-screen').classList.contains('active')) {
+    const map = { ArrowUp:'up', ArrowDown:'down', ArrowLeft:'left', ArrowRight:'right', w:'up', s:'down', a:'left', d:'right' };
+    if (map[e.key]) { e.preventDefault(); doMove(map[e.key]); }
+  }
+  if (document.getElementById('handoff-screen').classList.contains('active') && e.key==='Enter') {
+    document.getElementById('handoff-ok').click();
+  }
+});
+
+// Touch swipe
+let touchStartX=0, touchStartY=0;
+document.getElementById('game-screen').addEventListener('touchstart', e=>{
+  touchStartX=e.touches[0].clientX; touchStartY=e.touches[0].clientY;
+},{passive:true});
+document.getElementById('game-screen').addEventListener('touchend', e=>{
+  const dx=e.changedTouches[0].clientX-touchStartX;
+  const dy=e.changedTouches[0].clientY-touchStartY;
+  if (Math.max(Math.abs(dx),Math.abs(dy))<20) return;
+  if (Math.abs(dx)>Math.abs(dy)) doMove(dx>0?'right':'left');
+  else doMove(dy>0?'down':'up');
+},{passive:true});
+
+// ======================== TOAST ========================
+let toastTimer = null;
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>el.classList.remove('show'), 1200);
+}
+
+// ======================== END SCREEN ========================
+function showEndScreen() {
+  renderGrid(); // Final state
+  const w = gameState.winner;
+  let winnerText = '';
+  if (w === -1) {
+    winnerText = t('tieWinner');
+    document.getElementById('winner-name').textContent = '🤝';
+  } else {
+    winnerText = t('winner');
+    document.getElementById('winner-name').textContent = gameState.players[w].name;
+    document.getElementById('winner-name').style.color = PLAYER_COLORS[w];
+  }
+  document.querySelector('#end-screen .end-card h2').textContent = winnerText;
+  document.getElementById('winner-fish').textContent = w>=0 ? `🐟 × ${gameState.players[w].fish}` : '';
+
+  // Sorted scores
+  const sorted = [...gameState.players].map((p,i)=>({...p,idx:i})).sort((a,b)=>b.fish-a.fish);
+  const rankEmoji = ['🥇','🥈','🥉','4️⃣'];
+  const fEl = document.getElementById('final-scores');
+  fEl.innerHTML = sorted.map((p,ri) => `
+    <div class="final-row">
+      <span class="final-rank">${rankEmoji[ri]}</span>
+      <span class="final-pname" style="color:${PLAYER_COLORS[p.idx]}">${PLAYER_EMOJIS[p.idx]} ${p.name}</span>
+      <span class="final-fish">🐟 × ${p.fish}</span>
+    </div>
+  `).join('');
+
+  showScreen('end-screen');
+}
+
+document.getElementById('play-again-btn').addEventListener('click', ()=>{
+  showScreen('setup-screen');
+  rebuildNameInputs();
+});
+</script>
+</body>
+</html>
