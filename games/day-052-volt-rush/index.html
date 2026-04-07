@@ -1,0 +1,868 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Volt Rush ⚡</title>
+  <script src="/shared/i18n.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    .back-bar {
+      width: 100%;
+      background: #0a0a1a;
+      padding: 0.5rem 1rem;
+      border-bottom: 1px solid #333;
+    }
+    .back-bar a {
+      color: #ffcc00;
+      text-decoration: none;
+      font-size: 0.9rem;
+      font-family: system-ui, sans-serif;
+    }
+    .back-bar a:hover { text-decoration: underline; }
+
+    body {
+      background: #0a0a1a;
+      color: #e0e0e0;
+      font-family: system-ui, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    #game-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+      gap: 1rem;
+    }
+
+    /* ── SETUP SCREEN ── */
+    #setup-screen {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1.2rem;
+      width: 100%;
+      max-width: 420px;
+    }
+    .game-title {
+      font-size: 2.5rem;
+      font-weight: 900;
+      letter-spacing: 2px;
+      color: #ffcc00;
+      text-shadow: 0 0 20px #ffcc0088;
+    }
+    .subtitle {
+      font-size: 0.95rem;
+      color: #aaa;
+      text-align: center;
+    }
+    .player-count-row {
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+    }
+    .player-count-row label {
+      color: #aaa;
+      font-size: 0.95rem;
+    }
+    .cnt-btn {
+      width: 36px; height: 36px;
+      background: #1a1a2e;
+      border: 1px solid #333;
+      border-radius: 6px;
+      color: #fff;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .cnt-btn:hover, .cnt-btn.active {
+      background: #ffcc00;
+      color: #000;
+      border-color: #ffcc00;
+    }
+    #player-name-inputs {
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+      width: 100%;
+    }
+    .name-input {
+      padding: 0.7rem 1rem;
+      background: #111;
+      border: 1px solid #333;
+      border-radius: 8px;
+      color: #fff;
+      font-size: 1rem;
+      width: 100%;
+    }
+    .name-input:focus {
+      outline: none;
+      border-color: #ffcc00;
+    }
+    .start-btn {
+      padding: 0.9rem 2.5rem;
+      background: #ffcc00;
+      color: #000;
+      border: none;
+      border-radius: 12px;
+      font-size: 1.2rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.1s, box-shadow 0.1s;
+      box-shadow: 0 4px 20px #ffcc0044;
+    }
+    .start-btn:hover { transform: scale(1.04); box-shadow: 0 6px 28px #ffcc0066; }
+    .start-btn:active { transform: scale(0.97); }
+
+    /* ── PASS DEVICE SCREEN ── */
+    #pass-screen {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 1.5rem;
+      text-align: center;
+      padding: 2rem;
+    }
+    .pass-emoji { font-size: 3rem; }
+    .pass-title {
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: #ffcc00;
+    }
+    .pass-subtitle {
+      font-size: 1rem;
+      color: #aaa;
+    }
+    .ready-btn {
+      padding: 1rem 3rem;
+      background: #4caf50;
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      font-size: 1.2rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.1s;
+      box-shadow: 0 4px 20px #4caf5044;
+    }
+    .ready-btn:hover { transform: scale(1.04); }
+    .ready-btn:active { transform: scale(0.97); }
+
+    /* ── GAME SCREEN ── */
+    #game-screen {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 1.2rem;
+      width: 100%;
+      max-width: 480px;
+    }
+    .hud {
+      display: flex;
+      justify-content: space-between;
+      width: 100%;
+      align-items: center;
+    }
+    .hud-round {
+      font-size: 0.85rem;
+      color: #aaa;
+    }
+    .hud-turn {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #ffcc00;
+    }
+    .hud-scores {
+      display: flex;
+      gap: 1rem;
+    }
+    .score-chip {
+      background: #111;
+      border: 1px solid #333;
+      border-radius: 20px;
+      padding: 0.3rem 0.8rem;
+      font-size: 0.85rem;
+      color: #ccc;
+    }
+    .score-chip.active {
+      border-color: #ffcc00;
+      color: #ffcc00;
+    }
+
+    /* Oscilloscope / meter */
+    .meter-wrap {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .zone-label {
+      font-size: 0.85rem;
+      color: #aaa;
+      letter-spacing: 1px;
+    }
+    #meter-canvas {
+      width: 100%;
+      max-width: 440px;
+      border-radius: 12px;
+      background: #0d1117;
+      border: 1px solid #1e3a1e;
+      display: block;
+      box-shadow: 0 0 30px #00ff0022 inset;
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+
+    /* Zone type indicator */
+    .zone-info {
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+    }
+    .zone-badge {
+      padding: 0.3rem 0.8rem;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #000;
+    }
+    .zone-pts {
+      font-size: 0.9rem;
+      color: #aaa;
+    }
+
+    /* Tap button */
+    .tap-btn {
+      padding: 1.4rem 3rem;
+      background: #1e3a1e;
+      border: 2px solid #4caf50;
+      border-radius: 16px;
+      color: #4caf50;
+      font-size: 1.3rem;
+      font-weight: 700;
+      cursor: pointer;
+      letter-spacing: 1px;
+      transition: background 0.08s, color 0.08s, transform 0.08s;
+      width: 100%;
+      max-width: 300px;
+      user-select: none;
+      -webkit-user-select: none;
+      box-shadow: 0 0 20px #4caf5033;
+    }
+    .tap-btn:hover { background: #2a4a2a; }
+    .tap-btn:active, .tap-btn.pressed {
+      background: #4caf50;
+      color: #000;
+      transform: scale(0.97);
+    }
+    .tap-btn:disabled {
+      opacity: 0.4;
+      cursor: default;
+      transform: none;
+    }
+
+    /* Result flash */
+    .result-flash {
+      font-size: 2rem;
+      font-weight: 900;
+      min-height: 2.5rem;
+      transition: opacity 0.3s;
+    }
+    .result-flash.hit { color: #ffcc00; text-shadow: 0 0 20px #ffcc0088; }
+    .result-flash.miss { color: #f44336; }
+
+    /* ── RESULT SCREEN ── */
+    #result-screen {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 1.2rem;
+      text-align: center;
+      width: 100%;
+      max-width: 420px;
+    }
+    .result-title {
+      font-size: 2rem;
+      font-weight: 900;
+      color: #ffcc00;
+      text-shadow: 0 0 20px #ffcc0066;
+    }
+    .result-winner {
+      font-size: 1.3rem;
+      color: #fff;
+    }
+    .scoreboard {
+      width: 100%;
+      background: #111;
+      border: 1px solid #222;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    .sb-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.8rem 1.2rem;
+      border-bottom: 1px solid #1e1e1e;
+      font-size: 1rem;
+    }
+    .sb-row:last-child { border-bottom: none; }
+    .sb-row.winner {
+      background: #1e1a00;
+      color: #ffcc00;
+      font-weight: 700;
+    }
+    .sb-rank { color: #aaa; font-size: 0.85rem; min-width: 1.5rem; }
+    .sb-name { flex: 1; text-align: left; padding-left: 0.5rem; }
+    .sb-score { font-weight: 700; font-size: 1.1rem; }
+    .play-again-btn {
+      padding: 0.9rem 2.5rem;
+      background: #ffcc00;
+      color: #000;
+      border: none;
+      border-radius: 12px;
+      font-size: 1.1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.1s;
+    }
+    .play-again-btn:hover { transform: scale(1.04); }
+  </style>
+</head>
+<body>
+  <div class="back-bar"><a href="/">← Back to Games</a></div>
+
+  <div id="game-container">
+
+    <!-- SETUP SCREEN -->
+    <div id="setup-screen">
+      <div class="game-title">⚡ VOLT RUSH</div>
+      <div class="subtitle" data-i18n="subtitle"></div>
+
+      <div class="player-count-row">
+        <label data-i18n="playerCount"></label>
+        <button class="cnt-btn active" data-count="2">2</button>
+        <button class="cnt-btn" data-count="3">3</button>
+        <button class="cnt-btn" data-count="4">4</button>
+      </div>
+
+      <div id="player-name-inputs"></div>
+
+      <button class="start-btn" id="start-btn" data-i18n="startGame"></button>
+    </div>
+
+    <!-- PASS DEVICE SCREEN -->
+    <div id="pass-screen">
+      <div class="pass-emoji">📱</div>
+      <div class="pass-title" id="pass-title"></div>
+      <div class="pass-subtitle" id="pass-result"></div>
+      <button class="ready-btn" id="ready-btn" data-i18n="ready"></button>
+    </div>
+
+    <!-- GAME SCREEN -->
+    <div id="game-screen">
+      <div class="hud">
+        <div class="hud-round" id="round-indicator"></div>
+        <div class="hud-turn" id="turn-indicator"></div>
+      </div>
+
+      <div class="hud-scores" id="scores-hud"></div>
+
+      <div class="meter-wrap">
+        <div class="zone-label" data-i18n="hitTarget"></div>
+        <canvas id="meter-canvas" width="440" height="160"></canvas>
+        <div class="zone-info">
+          <div class="zone-badge" id="zone-badge"></div>
+          <div class="zone-pts" id="zone-pts"></div>
+        </div>
+      </div>
+
+      <button class="tap-btn" id="tap-btn" data-i18n="tapStop"></button>
+
+      <div class="result-flash" id="result-flash"></div>
+    </div>
+
+    <!-- RESULT SCREEN -->
+    <div id="result-screen">
+      <div class="result-title" data-i18n="gameOver"></div>
+      <div class="result-winner" id="winner-text"></div>
+      <div class="scoreboard" id="scoreboard"></div>
+      <button class="play-again-btn" id="play-again-btn" data-i18n="playAgain"></button>
+    </div>
+
+  </div>
+
+  <script type="module">
+    import {
+      createGameState,
+      generateZone,
+      computeScore,
+      recordAttempt,
+      nextRound,
+      isGameOver,
+      getWinner,
+      TOTAL_ROUNDS,
+      ZONE_TYPES,
+    } from './game-logic.js';
+
+    // ── i18n ──────────────────────────────────────────────────────────────────
+    const TRANSLATIONS = {
+      de: {
+        subtitle: 'Stoppe die Nadel in der Zielzone! Wer den höchsten Score erreicht, gewinnt.',
+        playerCount: 'Spieler:',
+        startGame: 'Spiel starten',
+        hitTarget: 'ZIELZONE TREFFEN',
+        tapStop: '⚡ STOP!',
+        ready: 'Bereit!',
+        gameOver: '🏆 Spielende!',
+        playAgain: 'Nochmal spielen',
+        round: 'Runde',
+        of: 'von',
+        yourTurn: 'Dein Zug:',
+        score: 'Punkte',
+        pts: 'Pkt',
+        hitMsg: 'TREFFER!',
+        missMsg: 'DANEBEN!',
+        passTo: 'Gib das Gerät an',
+        passToSuffix: '!',
+        lastWas: 'Letztes Ergebnis:',
+        pts_label: 'Punkte',
+        winner: 'Gewinner:',
+        zoneLabels: { safe: 'SICHER', good: 'GUT', great: 'SUPER', perfect: 'PERFEKT' },
+        playerDefault: 'Spieler',
+      },
+      en: {
+        subtitle: 'Stop the needle in the target zone! Highest score wins.',
+        playerCount: 'Players:',
+        startGame: 'Start Game',
+        hitTarget: 'HIT THE TARGET ZONE',
+        tapStop: '⚡ STOP!',
+        ready: 'Ready!',
+        gameOver: '🏆 Game Over!',
+        playAgain: 'Play Again',
+        round: 'Round',
+        of: 'of',
+        yourTurn: 'Your turn:',
+        score: 'Score',
+        pts: 'pts',
+        hitMsg: 'HIT!',
+        missMsg: 'MISS!',
+        passTo: 'Pass the device to',
+        passToSuffix: '!',
+        lastWas: 'Last result:',
+        pts_label: 'points',
+        winner: 'Winner:',
+        zoneLabels: { safe: 'SAFE', good: 'GOOD', great: 'GREAT', perfect: 'PERFECT' },
+        playerDefault: 'Player',
+      },
+      fr: {
+        subtitle: 'Arrêtez l\'aiguille dans la zone cible ! Le score le plus élevé gagne.',
+        playerCount: 'Joueurs :',
+        startGame: 'Commencer',
+        hitTarget: 'VISER LA ZONE CIBLE',
+        tapStop: '⚡ STOP !',
+        ready: 'Prêt !',
+        gameOver: '🏆 Fin de partie !',
+        playAgain: 'Rejouer',
+        round: 'Manche',
+        of: 'sur',
+        yourTurn: 'Ton tour :',
+        score: 'Score',
+        pts: 'pts',
+        hitMsg: 'TOUCHÉ !',
+        missMsg: 'RATÉ !',
+        passTo: 'Passe l\'appareil à',
+        passToSuffix: ' !',
+        lastWas: 'Dernier résultat :',
+        pts_label: 'points',
+        winner: 'Gagnant :',
+        zoneLabels: { safe: 'SÛR', good: 'BON', great: 'SUPER', perfect: 'PARFAIT' },
+        playerDefault: 'Joueur',
+      },
+      it: {
+        subtitle: 'Ferma l\'ago nella zona bersaglio! Vince il punteggio più alto.',
+        playerCount: 'Giocatori:',
+        startGame: 'Inizia il gioco',
+        hitTarget: 'COLPISCI LA ZONA BERSAGLIO',
+        tapStop: '⚡ STOP!',
+        ready: 'Pronto!',
+        gameOver: '🏆 Fine del gioco!',
+        playAgain: 'Gioca ancora',
+        round: 'Round',
+        of: 'di',
+        yourTurn: 'Il tuo turno:',
+        score: 'Punteggio',
+        pts: 'pti',
+        hitMsg: 'COLPITO!',
+        missMsg: 'MANCATO!',
+        passTo: 'Passa il dispositivo a',
+        passToSuffix: '!',
+        lastWas: 'Ultimo risultato:',
+        pts_label: 'punti',
+        winner: 'Vincitore:',
+        zoneLabels: { safe: 'SICURO', good: 'BUONO', great: 'OTTIMO', perfect: 'PERFETTO' },
+        playerDefault: 'Giocatore',
+      },
+      es: {
+        subtitle: '¡Detén la aguja en la zona objetivo! Gana el puntaje más alto.',
+        playerCount: 'Jugadores:',
+        startGame: 'Iniciar juego',
+        hitTarget: 'APUNTA A LA ZONA OBJETIVO',
+        tapStop: '⚡ ¡STOP!',
+        ready: '¡Listo!',
+        gameOver: '🏆 ¡Fin del juego!',
+        playAgain: 'Jugar de nuevo',
+        round: 'Ronda',
+        of: 'de',
+        yourTurn: 'Tu turno:',
+        score: 'Puntuación',
+        pts: 'pts',
+        hitMsg: '¡GOLPE!',
+        missMsg: '¡FALLO!',
+        passTo: 'Pasa el dispositivo a',
+        passToSuffix: '!',
+        lastWas: 'Último resultado:',
+        pts_label: 'puntos',
+        winner: 'Ganador:',
+        zoneLabels: { safe: 'SEGURO', good: 'BIEN', great: 'GENIAL', perfect: 'PERFECTO' },
+        playerDefault: 'Jugador',
+      },
+    };
+
+    const { t, lang, onLangChange, translatePage } = initI18n(TRANSLATIONS);
+
+    // ── STATE ─────────────────────────────────────────────────────────────────
+    let gameState = null;
+    let playerCount = 2;
+    let animFrame = null;
+    let needlePos = 0;       // 0..1
+    let needleDir = 1;
+    let needleSpeed = 0.012; // per frame ~60fps
+    let gameActive = false;
+    let resultTimeout = null;
+
+    // ── SETUP SCREEN ──────────────────────────────────────────────────────────
+    const cntBtns = document.querySelectorAll('.cnt-btn');
+    cntBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        playerCount = parseInt(btn.dataset.count);
+        cntBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        renderNameInputs();
+      });
+    });
+
+    function renderNameInputs() {
+      const container = document.getElementById('player-name-inputs');
+      container.innerHTML = '';
+      for (let i = 0; i < playerCount; i++) {
+        const inp = document.createElement('input');
+        inp.type = 'text';
+        inp.className = 'name-input';
+        inp.placeholder = `${t('playerDefault')} ${i + 1}`;
+        inp.value = inp.placeholder;
+        inp.addEventListener('focus', () => { if (inp.value === inp.placeholder) inp.value = ''; });
+        inp.addEventListener('blur', () => { if (!inp.value.trim()) inp.value = inp.placeholder; });
+        container.appendChild(inp);
+      }
+    }
+    renderNameInputs();
+
+    onLangChange(() => {
+      translatePage();
+      renderNameInputs();
+    });
+
+    document.getElementById('start-btn').addEventListener('click', () => {
+      const inputs = document.querySelectorAll('.name-input');
+      const names = Array.from(inputs).map((inp, i) => {
+        const v = inp.value.trim();
+        return v || `${t('playerDefault')} ${i + 1}`;
+      });
+      gameState = createGameState(names);
+      startFirstTurn();
+    });
+
+    // ── GAME FLOW ─────────────────────────────────────────────────────────────
+    function showScreen(id) {
+      ['setup-screen', 'pass-screen', 'game-screen', 'result-screen'].forEach(s => {
+        document.getElementById(s).style.display = 'none';
+      });
+      const el = document.getElementById(id);
+      el.style.display = 'flex';
+    }
+
+    function startFirstTurn() {
+      // Generate zone and begin first turn
+      gameState = { ...gameState, phase: 'playing', currentZone: generateZone(0) };
+      showTurn();
+    }
+
+    function showTurn() {
+      const player = gameState.players[gameState.activePlayerIndex];
+      updateHUD();
+      renderZoneInfo();
+      resetNeedle();
+      gameActive = true;
+      showScreen('game-screen');
+      document.getElementById('tap-btn').disabled = false;
+      document.getElementById('result-flash').textContent = '';
+      startAnimation();
+    }
+
+    function updateHUD() {
+      const player = gameState.players[gameState.activePlayerIndex];
+      document.getElementById('round-indicator').textContent =
+        `${t('round')} ${gameState.round} ${t('of')} ${TOTAL_ROUNDS}`;
+      document.getElementById('turn-indicator').textContent =
+        `${t('yourTurn')} ${player.name}`;
+
+      const scoresHud = document.getElementById('scores-hud');
+      scoresHud.innerHTML = '';
+      gameState.players.forEach((p, i) => {
+        const chip = document.createElement('div');
+        chip.className = 'score-chip' + (i === gameState.activePlayerIndex ? ' active' : '');
+        chip.textContent = `${p.name.split(' ')[0]}: ${p.score}`;
+        scoresHud.appendChild(chip);
+      });
+    }
+
+    function renderZoneInfo() {
+      const zone = gameState.currentZone;
+      const badgeEl = document.getElementById('zone-badge');
+      const ptsEl = document.getElementById('zone-pts');
+      const zoneLabels = t('zoneLabels');
+      badgeEl.textContent = zoneLabels[zone.type.label] || zone.type.label.toUpperCase();
+      badgeEl.style.background = zone.type.color;
+      ptsEl.textContent = `${zone.type.points} ${t('pts')}`;
+    }
+
+    // ── CANVAS ANIMATION ──────────────────────────────────────────────────────
+    const canvas = document.getElementById('meter-canvas');
+    const ctx = canvas.getContext('2d');
+    const W = 440, H = 160;
+
+    function resetNeedle() {
+      needlePos = 0.05;
+      needleDir = 1;
+      // Speed varies by zone difficulty
+      const zone = gameState.currentZone;
+      const zi = ZONE_TYPES.indexOf(zone.type);
+      needleSpeed = 0.010 + zi * 0.003; // faster for higher-value zones
+    }
+
+    function drawMeter(zone, pos) {
+      ctx.clearRect(0, 0, W, H);
+
+      // Background grid
+      ctx.strokeStyle = '#1a2a1a';
+      ctx.lineWidth = 1;
+      for (let x = 0; x <= W; x += 44) {
+        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
+      }
+      for (let y = 0; y <= H; y += 32) {
+        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+      }
+
+      // Zone band
+      const half = zone.type.width / 2;
+      const zoneLeft = (zone.center - half) * W;
+      const zoneRight = (zone.center + half) * W;
+      const zoneW = zoneRight - zoneLeft;
+
+      // Outer glow
+      ctx.fillStyle = zone.type.color + '22';
+      ctx.fillRect(zoneLeft - 10, 0, zoneW + 20, H);
+
+      // Zone rect
+      ctx.fillStyle = zone.type.color + '55';
+      ctx.fillRect(zoneLeft, 0, zoneW, H);
+
+      // Zone border
+      ctx.strokeStyle = zone.type.color;
+      ctx.lineWidth = 2;
+      ctx.strokeRect(zoneLeft, 0, zoneW, H);
+
+      // Center tick
+      const centerX = zone.center * W;
+      ctx.strokeStyle = zone.type.color;
+      ctx.lineWidth = 1;
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath(); ctx.moveTo(centerX, 0); ctx.lineTo(centerX, H); ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Oscilloscope sine wave
+      ctx.strokeStyle = '#00ff0033';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      for (let x = 0; x <= W; x++) {
+        const y = H / 2 + Math.sin((x / W) * Math.PI * 6 + Date.now() * 0.002) * 18;
+        x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+
+      // Needle (vertical bar)
+      const nx = pos * W;
+      // Needle glow
+      const grad = ctx.createLinearGradient(nx - 8, 0, nx + 8, 0);
+      grad.addColorStop(0, 'transparent');
+      grad.addColorStop(0.5, '#00ff0088');
+      grad.addColorStop(1, 'transparent');
+      ctx.fillStyle = grad;
+      ctx.fillRect(nx - 8, 0, 16, H);
+
+      // Main needle line
+      ctx.strokeStyle = '#00ff00';
+      ctx.lineWidth = 3;
+      ctx.shadowColor = '#00ff00';
+      ctx.shadowBlur = 12;
+      ctx.beginPath();
+      ctx.moveTo(nx, 0);
+      ctx.lineTo(nx, H);
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+
+      // Needle arrowhead
+      ctx.fillStyle = '#00ff00';
+      ctx.beginPath();
+      ctx.moveTo(nx, H - 6);
+      ctx.lineTo(nx - 6, H - 18);
+      ctx.lineTo(nx + 6, H - 18);
+      ctx.fill();
+    }
+
+    let lastTime = 0;
+    function animate(time) {
+      if (!gameActive) return;
+      const dt = Math.min(time - lastTime, 50) / 16.67; // normalize to ~60fps
+      lastTime = time;
+
+      needlePos += needleDir * needleSpeed * dt;
+      if (needlePos >= 0.97) { needlePos = 0.97; needleDir = -1; }
+      if (needlePos <= 0.03) { needlePos = 0.03; needleDir = 1; }
+
+      drawMeter(gameState.currentZone, needlePos);
+      animFrame = requestAnimationFrame(animate);
+    }
+
+    function startAnimation() {
+      if (animFrame) cancelAnimationFrame(animFrame);
+      lastTime = performance.now();
+      animFrame = requestAnimationFrame(t => { lastTime = t; animate(t); });
+    }
+
+    function stopAnimation() {
+      if (animFrame) { cancelAnimationFrame(animFrame); animFrame = null; }
+      gameActive = false;
+    }
+
+    // ── TAP / STOP ────────────────────────────────────────────────────────────
+    function handleTap() {
+      if (!gameActive) return;
+      stopAnimation();
+
+      const stoppedAt = needlePos;
+      gameState = recordAttempt(gameState, stoppedAt);
+
+      // Draw frozen needle
+      drawMeter(gameState.currentZone, stoppedAt);
+
+      const tapBtn = document.getElementById('tap-btn');
+      tapBtn.disabled = true;
+      tapBtn.classList.add('pressed');
+
+      const flash = document.getElementById('result-flash');
+      if (gameState.lastWasHit) {
+        const zone = gameState.currentZone;
+        const zoneLabels = t('zoneLabels');
+        flash.textContent = `${zoneLabels[zone.type.label]}! +${zone.type.points} ${t('pts')}`;
+        flash.className = 'result-flash hit';
+      } else {
+        flash.textContent = t('missMsg');
+        flash.className = 'result-flash miss';
+      }
+
+      // After brief pause, show pass screen or game over
+      resultTimeout = setTimeout(() => {
+        tapBtn.classList.remove('pressed');
+        if (isGameOver(gameState)) {
+          showResult();
+        } else {
+          showPassScreen();
+        }
+      }, 1200);
+    }
+
+    document.getElementById('tap-btn').addEventListener('click', handleTap);
+    document.getElementById('tap-btn').addEventListener('touchstart', e => {
+      e.preventDefault();
+      handleTap();
+    }, { passive: false });
+
+    // Also tap anywhere on canvas
+    canvas.addEventListener('click', handleTap);
+    canvas.addEventListener('touchstart', e => { e.preventDefault(); handleTap(); }, { passive: false });
+
+    // ── PASS SCREEN ───────────────────────────────────────────────────────────
+    function showPassScreen() {
+      // Determine who plays next
+      const tempState = nextRound(gameState);
+      const nextPlayer = tempState.players[tempState.activePlayerIndex];
+
+      document.getElementById('pass-title').textContent =
+        `${t('passTo')} ${nextPlayer.name}${t('passToSuffix')}`;
+
+      const lastScore = gameState.lastWasHit ? gameState.currentZone.type.points : 0;
+      const currentPlayer = gameState.players[gameState.activePlayerIndex];
+      document.getElementById('pass-result').textContent =
+        `${t('lastWas')} ${currentPlayer.name}: ${lastScore > 0 ? '+' + lastScore : 0} ${t('pts_label')}`;
+
+      showScreen('pass-screen');
+    }
+
+    document.getElementById('ready-btn').addEventListener('click', () => {
+      gameState = nextRound(gameState);
+      showTurn();
+    });
+
+    // ── RESULT SCREEN ─────────────────────────────────────────────────────────
+    function showResult() {
+      const winner = getWinner(gameState);
+      document.getElementById('winner-text').textContent =
+        `${t('winner')} ${winner.name} 🏆`;
+
+      // Sort players by score
+      const sorted = [...gameState.players].sort((a, b) => b.score - a.score);
+      const sb = document.getElementById('scoreboard');
+      sb.innerHTML = '';
+      sorted.forEach((p, i) => {
+        const row = document.createElement('div');
+        row.className = 'sb-row' + (p.name === winner.name && i === 0 ? ' winner' : '');
+        row.innerHTML = `
+          <span class="sb-rank">${i + 1}.</span>
+          <span class="sb-name">${p.name}</span>
+          <span class="sb-score">${p.score} ${t('pts')}</span>
+        `;
+        sb.appendChild(row);
+      });
+
+      showScreen('result-screen');
+    }
+
+    document.getElementById('play-again-btn').addEventListener('click', () => {
+      // Reset back to setup
+      showScreen('setup-screen');
+      renderNameInputs();
+    });
+
+  </script>
+</body>
+</html>
