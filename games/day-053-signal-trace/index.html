@@ -1,0 +1,878 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Signal Trace</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: #050d18;
+  color: #c8e8ff;
+  font-family: system-ui, sans-serif;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.back-bar {
+  width: 100%;
+  background: #0a0a1a;
+  padding: 0.5rem 1rem;
+  border-bottom: 1px solid #333;
+}
+.back-bar a {
+  color: #ffcc00;
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-family: system-ui, sans-serif;
+}
+.back-bar a:hover { text-decoration: underline; }
+
+/* Screens */
+.screen { display: none; flex-direction: column; align-items: center; padding: 1.2rem 1rem; width: 100%; max-width: 540px; }
+.screen.active { display: flex; }
+
+/* Start screen */
+h1 {
+  font-size: 2.2rem;
+  font-weight: 900;
+  letter-spacing: 2px;
+  margin: 0.5rem 0 0.2rem;
+  background: linear-gradient(135deg, #00ffcc, #0088ff, #aa44ff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.subtitle {
+  font-size: 1rem;
+  color: #88aacc;
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+.how-to-card {
+  background: #0a1828;
+  border: 1px solid #1a3050;
+  border-radius: 14px;
+  padding: 1.2rem 1.4rem;
+  width: 100%;
+  margin-bottom: 1.5rem;
+}
+
+.how-to-card h2 {
+  color: #00ffcc;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 0.8rem;
+}
+
+.how-to-card ul {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.how-to-card li {
+  display: flex;
+  gap: 0.6rem;
+  align-items: flex-start;
+  font-size: 0.92rem;
+  color: #aaccee;
+  line-height: 1.4;
+}
+
+.how-to-card li .icon { font-size: 1.1rem; flex-shrink: 0; }
+
+.demo-pipe {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  margin: 1rem 0;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #00ccaa, #0066cc);
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  padding: 0.9rem 2.5rem;
+  font-size: 1.15rem;
+  font-weight: bold;
+  cursor: pointer;
+  width: 100%;
+  letter-spacing: 1px;
+  transition: all 0.15s;
+  box-shadow: 0 0 20px rgba(0,200,170,0.3);
+}
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 30px rgba(0,200,170,0.5);
+}
+
+.btn-secondary {
+  background: transparent;
+  color: #88aacc;
+  border: 1px solid #2a4060;
+  border-radius: 8px;
+  padding: 0.55rem 1.2rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.btn-secondary:hover { border-color: #ffcc00; color: #ffcc00; }
+
+/* Game screen */
+.game-header {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0;
+  margin-bottom: 0.5rem;
+}
+
+.level-label {
+  font-size: 0.85rem;
+  color: #88aacc;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.level-num {
+  font-size: 1.3rem;
+  font-weight: 900;
+  color: #00ffcc;
+}
+
+.moves-label {
+  font-size: 0.8rem;
+  color: #88aacc;
+  text-align: right;
+}
+
+.moves-num {
+  font-size: 1.3rem;
+  font-weight: 900;
+  color: #ffcc00;
+  text-align: right;
+}
+
+/* Grid canvas */
+#gameCanvas {
+  border-radius: 12px;
+  cursor: pointer;
+  touch-action: none;
+  border: 2px solid #1a3050;
+  transition: border-color 0.3s;
+}
+
+#gameCanvas.solved {
+  border-color: #00ffcc;
+  box-shadow: 0 0 30px rgba(0,255,200,0.4);
+}
+
+.solving-hint {
+  font-size: 0.8rem;
+  color: #446688;
+  text-align: center;
+  margin-top: 0.5rem;
+}
+
+/* Win screen */
+.win-card {
+  background: #0a1828;
+  border: 2px solid #00ffcc;
+  border-radius: 16px;
+  padding: 2rem 1.5rem;
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 0 40px rgba(0,255,200,0.2);
+}
+
+.win-title {
+  font-size: 2.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.win-level-name {
+  font-size: 1.1rem;
+  color: #00ffcc;
+  margin-bottom: 1.5rem;
+  font-weight: bold;
+}
+
+.win-stats {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  margin-bottom: 1.5rem;
+}
+
+.win-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+.win-stat-num {
+  font-size: 2rem;
+  font-weight: 900;
+  color: #ffcc00;
+}
+
+.win-stat-label {
+  font-size: 0.75rem;
+  color: #88aacc;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.stars {
+  font-size: 2rem;
+  letter-spacing: 4px;
+  margin-bottom: 1.2rem;
+}
+
+.btn-row {
+  display: flex;
+  gap: 0.8rem;
+  margin-top: 0.5rem;
+}
+
+.btn-row .btn-secondary { flex: 1; }
+.btn-row .btn-primary { flex: 2; }
+</style>
+</head>
+<body>
+
+<div class="back-bar"><a href="/">← <span data-i18n="back">Zurück</span></a></div>
+
+<!-- START SCREEN -->
+<div class="screen active" id="startScreen">
+  <h1>⚡ Signal Trace</h1>
+  <p class="subtitle" data-i18n="subtitle">Verbinde Quelle und Ziel — drehe die Knoten!</p>
+
+  <div class="how-to-card">
+    <h2 data-i18n="howToPlay">Wie es geht</h2>
+    <ul>
+      <li><span class="icon">🟢</span> <span data-i18n="rule1">Das grüne Feld ist die Quelle, das blaue das Ziel.</span></li>
+      <li><span class="icon">🔄</span> <span data-i18n="rule2">Tippe auf einen Knoten, um ihn um 90° zu drehen.</span></li>
+      <li><span class="icon">⚡</span> <span data-i18n="rule3">Verbinde alle Knoten so, dass das Signal von Quelle zu Ziel fließt.</span></li>
+      <li><span class="icon">⭐</span> <span data-i18n="rule4">Weniger Züge = mehr Sterne. Schaffst du 3 Sterne?</span></li>
+    </ul>
+  </div>
+
+  <button class="btn-primary" id="btnStart" data-i18n="startGame">Spiel starten</button>
+</div>
+
+<!-- GAME SCREEN -->
+<div class="screen" id="gameScreen">
+  <div class="game-header">
+    <div>
+      <div class="level-label" data-i18n="level">Level</div>
+      <div class="level-num" id="levelNum">1</div>
+    </div>
+    <div style="text-align:right">
+      <div class="moves-label" data-i18n="moves">Züge</div>
+      <div class="moves-num" id="movesNum">0</div>
+    </div>
+  </div>
+
+  <canvas id="gameCanvas"></canvas>
+  <p class="solving-hint" data-i18n="tapHint">Tippe auf einen Knoten zum Drehen</p>
+</div>
+
+<!-- WIN SCREEN -->
+<div class="screen" id="winScreen">
+  <div class="win-card">
+    <div class="win-title">⚡</div>
+    <div class="win-level-name" id="winLevelName"></div>
+    <div class="stars" id="winStars">⭐⭐⭐</div>
+    <div class="win-stats">
+      <div class="win-stat">
+        <div class="win-stat-num" id="winMoves">0</div>
+        <div class="win-stat-label" data-i18n="moves">Züge</div>
+      </div>
+      <div class="win-stat">
+        <div class="win-stat-num" id="winTime">0s</div>
+        <div class="win-stat-label" data-i18n="time">Zeit</div>
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn-secondary" id="btnReplay" data-i18n="replay">Nochmal</button>
+      <button class="btn-primary" id="btnNextLevel" data-i18n="nextLevel">Nächstes Level</button>
+    </div>
+  </div>
+</div>
+
+<script src="/shared/i18n.js"></script>
+<script>
+const TRANSLATIONS = {
+  de: {
+    back: 'Zurück',
+    subtitle: 'Verbinde Quelle und Ziel — drehe die Knoten!',
+    howToPlay: 'Wie es geht',
+    rule1: 'Das grüne Feld ist die Quelle, das blaue das Ziel.',
+    rule2: 'Tippe auf einen Knoten, um ihn um 90° zu drehen.',
+    rule3: 'Verbinde alle Knoten so, dass das Signal von Quelle zu Ziel fließt.',
+    rule4: 'Weniger Züge = mehr Sterne. Schaffst du 3 Sterne?',
+    startGame: 'Spiel starten',
+    level: 'Level',
+    moves: 'Züge',
+    tapHint: 'Tippe auf einen Knoten zum Drehen',
+    time: 'Zeit',
+    replay: 'Nochmal',
+    nextLevel: 'Nächstes Level',
+    solved: 'Signal verbunden!',
+    levelLabel: level => `Level ${level}`,
+  },
+  en: {
+    back: 'Back',
+    subtitle: 'Connect source to target — rotate the nodes!',
+    howToPlay: 'How to play',
+    rule1: 'The green cell is the source, blue is the target.',
+    rule2: 'Tap a node to rotate it 90° clockwise.',
+    rule3: 'Connect all nodes so the signal flows from source to target.',
+    rule4: 'Fewer moves = more stars. Can you get 3 stars?',
+    startGame: 'Start Game',
+    level: 'Level',
+    moves: 'Moves',
+    tapHint: 'Tap a node to rotate it',
+    time: 'Time',
+    replay: 'Replay',
+    nextLevel: 'Next Level',
+    solved: 'Signal connected!',
+    levelLabel: level => `Level ${level}`,
+  },
+  fr: {
+    back: 'Retour',
+    subtitle: 'Connectez la source à la cible — tournez les nœuds !',
+    howToPlay: 'Comment jouer',
+    rule1: 'La case verte est la source, la bleue est la cible.',
+    rule2: 'Tapez un nœud pour le tourner de 90° dans le sens horaire.',
+    rule3: 'Connectez tous les nœuds pour que le signal circule de la source à la cible.',
+    rule4: 'Moins de mouvements = plus d\'étoiles. Pouvez-vous en obtenir 3 ?',
+    startGame: 'Commencer',
+    level: 'Niveau',
+    moves: 'Coups',
+    tapHint: 'Tapez un nœud pour le tourner',
+    time: 'Temps',
+    replay: 'Rejouer',
+    nextLevel: 'Niveau Suivant',
+    solved: 'Signal connecté !',
+    levelLabel: level => `Niveau ${level}`,
+  },
+  it: {
+    back: 'Indietro',
+    subtitle: 'Collega sorgente e destinazione — ruota i nodi!',
+    howToPlay: 'Come si gioca',
+    rule1: 'La cella verde è la sorgente, quella blu è la destinazione.',
+    rule2: 'Tocca un nodo per ruotarlo di 90° in senso orario.',
+    rule3: 'Collega tutti i nodi così che il segnale fluisca dalla sorgente alla destinazione.',
+    rule4: 'Meno mosse = più stelle. Riesci a prendere 3 stelle?',
+    startGame: 'Inizia',
+    level: 'Livello',
+    moves: 'Mosse',
+    tapHint: 'Tocca un nodo per ruotarlo',
+    time: 'Tempo',
+    replay: 'Riprova',
+    nextLevel: 'Livello Successivo',
+    solved: 'Segnale connesso!',
+    levelLabel: level => `Livello ${level}`,
+  },
+  es: {
+    back: 'Volver',
+    subtitle: '¡Conecta la fuente al objetivo — gira los nodos!',
+    howToPlay: 'Cómo jugar',
+    rule1: 'La celda verde es la fuente, la azul es el objetivo.',
+    rule2: 'Toca un nodo para girarlo 90° en sentido horario.',
+    rule3: 'Conecta todos los nodos para que la señal fluya de la fuente al objetivo.',
+    rule4: 'Menos movimientos = más estrellas. ¿Puedes conseguir 3?',
+    startGame: 'Empezar',
+    level: 'Nivel',
+    moves: 'Movimientos',
+    tapHint: 'Toca un nodo para girarlo',
+    time: 'Tiempo',
+    replay: 'Repetir',
+    nextLevel: 'Siguiente Nivel',
+    solved: '¡Señal conectada!',
+    levelLabel: level => `Nivel ${level}`,
+  },
+};
+
+const { t, lang, onLangChange, translatePage } = initI18n(TRANSLATIONS);
+
+// ===================== GAME LOGIC =====================
+
+const BASE_PORTS = {
+  'I': [0, 2],
+  'L': [0, 1],
+  'T': [0, 1, 2],
+  'X': [0, 1, 2, 3]
+};
+
+function getPorts(type, rotation) {
+  const base = BASE_PORTS[type] || [];
+  return base.map(p => (p + rotation) % 4);
+}
+
+function areConnected(nodeA, nodeB, dir) {
+  const portsA = getPorts(nodeA.type, nodeA.rotation);
+  const portsB = getPorts(nodeB.type, nodeB.rotation);
+  const opposite = (dir + 2) % 4;
+  return portsA.includes(dir) && portsB.includes(opposite);
+}
+
+function getNeighbor(r, c, dir) {
+  if (dir === 0) return { r: r - 1, c };
+  if (dir === 1) return { r, c: c + 1 };
+  if (dir === 2) return { r: r + 1, c };
+  if (dir === 3) return { r, c: c - 1 };
+}
+
+function findConnectedFromSource(grid, rows, cols, sourceR, sourceC) {
+  const visited = new Set();
+  const queue = [{ r: sourceR, c: sourceC }];
+  visited.add(`${sourceR},${sourceC}`);
+  while (queue.length > 0) {
+    const { r, c } = queue.shift();
+    const node = grid[r][c];
+    for (let dir = 0; dir < 4; dir++) {
+      const nb = getNeighbor(r, c, dir);
+      if (nb.r < 0 || nb.r >= rows || nb.c < 0 || nb.c >= cols) continue;
+      const key = `${nb.r},${nb.c}`;
+      if (visited.has(key)) continue;
+      if (areConnected(node, grid[nb.r][nb.c], dir)) {
+        visited.add(key);
+        queue.push({ r: nb.r, c: nb.c });
+      }
+    }
+  }
+  return visited;
+}
+
+function isSolved(state) {
+  const connected = findConnectedFromSource(
+    state.grid, state.rows, state.cols,
+    state.source.r, state.source.c
+  );
+  return connected.has(`${state.sink.r},${state.sink.c}`);
+}
+
+function rotateNode(state, r, c) {
+  const newGrid = state.grid.map(row => row.map(node => ({ ...node })));
+  newGrid[r][c] = { ...newGrid[r][c], rotation: (newGrid[r][c].rotation + 1) % 4 };
+  return { ...state, grid: newGrid, moves: state.moves + 1 };
+}
+
+function findNodeForDirs(dirs, rand) {
+  const count = dirs.length;
+  if (count === 0) return { type: 'I', rotation: 0 };
+  if (count === 1) return { type: 'L', rotation: dirs[0] === 0 ? 3 : dirs[0] - 1 };
+  if (count === 2) {
+    const [a, b] = dirs.sort((x, y) => x - y);
+    if ((a + 2) % 4 === b) return { type: 'I', rotation: a === 0 ? 0 : 1 };
+    if (a === 0 && b === 1) return { type: 'L', rotation: 0 };
+    if (a === 1 && b === 2) return { type: 'L', rotation: 1 };
+    if (a === 2 && b === 3) return { type: 'L', rotation: 2 };
+    if (a === 0 && b === 3) return { type: 'L', rotation: 3 };
+  }
+  if (count === 3) {
+    const missing = [0,1,2,3].find(d => !dirs.includes(d));
+    return { type: 'T', rotation: { 3:0, 0:1, 1:2, 2:3 }[missing] };
+  }
+  return { type: 'X', rotation: 0 };
+}
+
+const LEVEL_CONFIGS = [
+  { rows: 3, cols: 3 },
+  { rows: 4, cols: 4 },
+  { rows: 4, cols: 5 },
+  { rows: 5, cols: 5 },
+  { rows: 5, cols: 6 },
+  { rows: 6, cols: 6 },
+  { rows: 7, cols: 7 },
+];
+
+function generateLevel(levelIndex, seed) {
+  const config = LEVEL_CONFIGS[Math.min(levelIndex, LEVEL_CONFIGS.length - 1)];
+  const { rows, cols } = config;
+  let rng = seed || (levelIndex * 7919 + 1234567);
+  function rand() {
+    rng = (rng * 1664525 + 1013904223) & 0xffffffff;
+    return (rng >>> 0) / 0xffffffff;
+  }
+  function randInt(n) { return Math.floor(rand() * n); }
+
+  const sourceR = randInt(Math.ceil(rows / 3));
+  const sourceC = randInt(Math.ceil(cols / 3));
+  const sinkR = rows - 1 - randInt(Math.ceil(rows / 3));
+  const sinkC = cols - 1 - randInt(Math.ceil(cols / 3));
+
+  function generatePath() {
+    const path = [{ r: sourceR, c: sourceC }];
+    const visited = new Set([`${sourceR},${sourceC}`]);
+    let cur = { r: sourceR, c: sourceC };
+    let maxSteps = rows * cols * 3;
+    while ((cur.r !== sinkR || cur.c !== sinkC) && maxSteps-- > 0) {
+      const dirs = [];
+      if (cur.r > sinkR && cur.r > 0) dirs.push(0, 0);
+      if (cur.c < sinkC && cur.c < cols - 1) dirs.push(1, 1);
+      if (cur.r < sinkR && cur.r < rows - 1) dirs.push(2, 2);
+      if (cur.c > sinkC && cur.c > 0) dirs.push(3, 3);
+      if (cur.r > 0) dirs.push(0);
+      if (cur.c < cols - 1) dirs.push(1);
+      if (cur.r < rows - 1) dirs.push(2);
+      if (cur.c > 0) dirs.push(3);
+      const shuffled = dirs.sort(() => rand() - 0.5);
+      for (const dir of shuffled) {
+        const nb = getNeighbor(cur.r, cur.c, dir);
+        if (nb.r < 0 || nb.r >= rows || nb.c < 0 || nb.c >= cols) continue;
+        const key = `${nb.r},${nb.c}`;
+        if (visited.has(key) && (nb.r !== sinkR || nb.c !== sinkC)) continue;
+        cur = nb;
+        if (!visited.has(key)) { visited.add(key); path.push({ ...cur }); }
+        break;
+      }
+      if (cur.r === sinkR && cur.c === sinkC) break;
+    }
+    return path;
+  }
+
+  const path = generatePath();
+  const pathSet = new Set(path.map(p => `${p.r},${p.c}`));
+  const solutionGrid = Array.from({ length: rows }, () =>
+    Array.from({ length: cols }, () => ({ type: 'I', rotation: 0 }))
+  );
+
+  for (let i = 0; i < path.length; i++) {
+    const { r, c } = path[i];
+    const connDirs = [];
+    for (let dir = 0; dir < 4; dir++) {
+      const nb = getNeighbor(r, c, dir);
+      if (nb.r < 0 || nb.r >= rows || nb.c < 0 || nb.c >= cols) continue;
+      const isPathNeighbor = pathSet.has(`${nb.r},${nb.c}`) && (
+        (i > 0 && path[i-1].r === nb.r && path[i-1].c === nb.c) ||
+        (i < path.length-1 && path[i+1].r === nb.r && path[i+1].c === nb.c)
+      );
+      if (isPathNeighbor) connDirs.push(dir);
+    }
+    solutionGrid[r][c] = findNodeForDirs(connDirs, rand);
+  }
+
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      if (!pathSet.has(`${r},${c}`)) {
+        const types = ['I', 'L', 'T', 'X'];
+        solutionGrid[r][c] = { type: types[randInt(types.length)], rotation: randInt(4) };
+      }
+    }
+  }
+
+  const puzzleGrid = solutionGrid.map(row =>
+    row.map(node => ({ ...node, rotation: randInt(4) }))
+  );
+
+  return { rows, cols, grid: puzzleGrid, solutionGrid, source: { r: sourceR, c: sourceC }, sink: { r: sinkR, c: sinkC }, moves: 0, solved: false, levelIndex };
+}
+
+// ===================== RENDERER =====================
+
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+
+let gameState = null;
+let currentLevel = 0;
+let animating = false;
+let clickedCell = null; // { r, c, progress } for rotate animation
+let solvedCells = null; // set of connected keys when solved
+let solvedPulse = 0;
+let solvedAnimId = null;
+
+const SEED_BASE = 20260408;
+
+function getCellSize() {
+  if (!gameState) return 60;
+  const maxW = Math.min(window.innerWidth - 32, 520);
+  return Math.floor(maxW / gameState.cols);
+}
+
+function resizeCanvas() {
+  if (!gameState) return;
+  const sz = getCellSize();
+  canvas.width = sz * gameState.cols;
+  canvas.height = sz * gameState.rows;
+  render();
+}
+
+// Draw a single node pipe shape
+function drawNode(x, y, sz, node, isSource, isSink, isConnected, rotAnim) {
+  const cx = x + sz / 2;
+  const cy = y + sz / 2;
+  const r = sz * 0.38;
+  const lineW = sz * 0.18;
+
+  // Background cell
+  ctx.fillStyle = isSource ? '#0a2a1a' : isSink ? '#0a1a2a' : '#0b1520';
+  ctx.fillRect(x, y, sz, sz);
+
+  // Grid lines
+  ctx.strokeStyle = '#1a2a3a';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(x, y, sz, sz);
+
+  // Compute rotation angle for animation
+  const rotation = node.rotation;
+  const baseAngle = rotation * Math.PI / 2;
+  const animAngle = rotAnim ? rotAnim.from * Math.PI / 2 + (rotation - rotAnim.from) * Math.PI / 2 * rotAnim.progress : baseAngle;
+
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate(animAngle);
+
+  const ports = BASE_PORTS[node.type] || [];
+
+  // Glow for connected nodes
+  const lineColor = isConnected ? '#00ffcc' : '#334455';
+  const glowAlpha = isConnected ? 0.6 : 0;
+
+  // Draw pipe segments
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+
+  // Draw each pipe arm
+  for (const port of ports) {
+    let dx = 0, dy = 0;
+    if (port === 0) dy = -1; // N
+    if (port === 1) dx = 1;  // E
+    if (port === 2) dy = 1;  // S
+    if (port === 3) dx = -1; // W
+
+    if (isConnected && glowAlpha > 0) {
+      ctx.strokeStyle = `rgba(0,255,200,${glowAlpha})`;
+      ctx.lineWidth = lineW + 4;
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(dx * r, dy * r);
+      ctx.stroke();
+    }
+
+    ctx.strokeStyle = lineColor;
+    ctx.lineWidth = lineW;
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(dx * r, dy * r);
+    ctx.stroke();
+  }
+
+  // Center dot
+  if (isConnected) {
+    ctx.fillStyle = '#00ffcc';
+    ctx.shadowColor = '#00ffcc';
+    ctx.shadowBlur = 8;
+  } else {
+    ctx.fillStyle = '#334455';
+    ctx.shadowBlur = 0;
+  }
+  const dotR = sz * 0.1;
+  ctx.beginPath();
+  ctx.arc(0, 0, dotR, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.shadowBlur = 0;
+
+  ctx.restore();
+
+  // Source indicator
+  if (isSource) {
+    ctx.fillStyle = isConnected ? '#00ff88' : '#00aa44';
+    ctx.beginPath();
+    ctx.arc(x + sz * 0.18, y + sz * 0.18, sz * 0.1, 0, Math.PI * 2);
+    ctx.fill();
+    if (isConnected) {
+      ctx.fillStyle = '#00ff88';
+      ctx.shadowColor = '#00ff88';
+      ctx.shadowBlur = 10;
+      ctx.beginPath();
+      ctx.arc(x + sz * 0.18, y + sz * 0.18, sz * 0.1, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+    }
+  }
+
+  // Sink indicator
+  if (isSink) {
+    ctx.strokeStyle = isConnected ? '#00aaff' : '#003366';
+    ctx.lineWidth = sz * 0.07;
+    if (isConnected) {
+      ctx.strokeStyle = '#00ccff';
+      ctx.shadowColor = '#00ccff';
+      ctx.shadowBlur = 12;
+    }
+    ctx.strokeRect(x + sz * 0.12, y + sz * 0.12, sz * 0.76, sz * 0.76);
+    ctx.shadowBlur = 0;
+  }
+}
+
+function render() {
+  if (!gameState) return;
+  const sz = getCellSize();
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Background
+  ctx.fillStyle = '#050d18';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  const connected = findConnectedFromSource(
+    gameState.grid, gameState.rows, gameState.cols,
+    gameState.source.r, gameState.source.c
+  );
+
+  for (let r = 0; r < gameState.rows; r++) {
+    for (let c = 0; c < gameState.cols; c++) {
+      const node = gameState.grid[r][c];
+      const isSource = r === gameState.source.r && c === gameState.source.c;
+      const isSink = r === gameState.sink.r && c === gameState.sink.c;
+      const isConn = connected.has(`${r},${c}`);
+
+      let rotAnim = null;
+      if (clickedCell && clickedCell.r === r && clickedCell.c === c) {
+        rotAnim = clickedCell;
+      }
+
+      drawNode(c * sz, r * sz, sz, node, isSource, isSink, isConn, rotAnim);
+    }
+  }
+
+  // Solved overlay pulse
+  if (gameState.solved && solvedPulse > 0) {
+    const alpha = (Math.sin(solvedPulse * 0.2) * 0.5 + 0.5) * 0.15;
+    ctx.fillStyle = `rgba(0,255,200,${alpha})`;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+  }
+}
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function startGame(levelIndex) {
+  currentLevel = levelIndex;
+  const seed = SEED_BASE + levelIndex * 13337;
+  gameState = { ...generateLevel(levelIndex, seed), moves: 0, solved: false, startTime: Date.now() };
+  clickedCell = null;
+  solvedCells = null;
+  solvedPulse = 0;
+  if (solvedAnimId) cancelAnimationFrame(solvedAnimId);
+
+  document.getElementById('levelNum').textContent = levelIndex + 1;
+  document.getElementById('movesNum').textContent = '0';
+  canvas.classList.remove('solved');
+
+  resizeCanvas();
+  showScreen('gameScreen');
+}
+
+function handleClick(px, py) {
+  if (!gameState || gameState.solved || animating) return;
+  const sz = getCellSize();
+  const c = Math.floor(px / sz);
+  const r = Math.floor(py / sz);
+  if (r < 0 || r >= gameState.rows || c < 0 || c >= gameState.cols) return;
+
+  const prevRot = gameState.grid[r][c].rotation;
+  gameState = rotateNode(gameState, r, c);
+  document.getElementById('movesNum').textContent = gameState.moves;
+
+  // Animate rotation
+  animating = true;
+  clickedCell = { r, c, from: prevRot, progress: 0 };
+  const start = performance.now();
+  const dur = 180;
+
+  function animate(now) {
+    const p = Math.min((now - start) / dur, 1);
+    clickedCell.progress = p;
+    render();
+    if (p < 1) {
+      requestAnimationFrame(animate);
+    } else {
+      clickedCell = null;
+      animating = false;
+      render();
+      checkSolved();
+    }
+  }
+  requestAnimationFrame(animate);
+}
+
+function checkSolved() {
+  if (isSolved(gameState)) {
+    gameState = { ...gameState, solved: true };
+    canvas.classList.add('solved');
+    solvedPulse = 0;
+
+    // Pulse animation
+    function pulse(ts) {
+      solvedPulse++;
+      render();
+      if (solvedPulse < 60) solvedAnimId = requestAnimationFrame(pulse);
+      else showWin();
+    }
+    requestAnimationFrame(pulse);
+  }
+}
+
+function calcStars(moves, rows, cols) {
+  const pathLen = rows + cols; // rough estimate
+  if (moves <= pathLen) return 3;
+  if (moves <= pathLen * 1.8) return 2;
+  return 1;
+}
+
+function showWin() {
+  const elapsed = Math.floor((Date.now() - gameState.startTime) / 1000);
+  const stars = calcStars(gameState.moves, gameState.rows, gameState.cols);
+  document.getElementById('winMoves').textContent = gameState.moves;
+  document.getElementById('winTime').textContent = elapsed + 's';
+  document.getElementById('winStars').textContent = '⭐'.repeat(stars) + '☆'.repeat(3 - stars);
+  document.getElementById('winLevelName').textContent = TRANSLATIONS[lang()].levelLabel(currentLevel + 1);
+  showScreen('winScreen');
+}
+
+canvas.addEventListener('click', e => {
+  const rect = canvas.getBoundingClientRect();
+  handleClick(e.clientX - rect.left, e.clientY - rect.top);
+});
+
+canvas.addEventListener('touchstart', e => {
+  e.preventDefault();
+  const rect = canvas.getBoundingClientRect();
+  const touch = e.touches[0];
+  handleClick(touch.clientX - rect.left, touch.clientY - rect.top);
+}, { passive: false });
+
+document.getElementById('btnStart').addEventListener('click', () => startGame(0));
+document.getElementById('btnNextLevel').addEventListener('click', () => startGame(currentLevel + 1));
+document.getElementById('btnReplay').addEventListener('click', () => startGame(currentLevel));
+
+window.addEventListener('resize', resizeCanvas);
+
+onLangChange(() => {
+  translatePage();
+  if (gameState) {
+    document.getElementById('winLevelName').textContent = TRANSLATIONS[lang()].levelLabel(currentLevel + 1);
+  }
+});
+</script>
+</body>
+</html>
