@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Clockwork Courier</title>
+<style>
+:root {
+  --bg: #0d1117;
+  --panel: #161b22;
+  --accent: #58a6ff;
+  --success: #238636;
+  --danger: #da3633;
+  --text: #c9d1d9;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+.back-bar {
+  width: 100%;
+  background: #0a0a1a;
+  padding: 0.5rem 1rem;
+  border-bottom: 1px solid #333;
+  flex-shrink: 0;
+}
+.back-bar a {
+  color: #ffcc00;
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+.back-bar a:hover { text-decoration: underline; }
+
+.screen {
+  flex: 1;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  text-align: center;
+}
+.screen.active { display: flex; }
+
+h1 { color: var(--accent); margin-bottom: 1rem; }
+.desc { max-width: 400px; margin-bottom: 2rem; line-height: 1.5; }
+
+.grid-container {
+  position: relative;
+  background: #1f242c;
+  border: 2px solid #30363d;
+  margin-bottom: 1rem;
+}
+canvas { display: block; }
+
+.controls {
+  width: 100%;
+  max-width: 480px;
+  background: var(--panel);
+  padding: 1rem;
+  border-radius: 12px;
+  border: 1px solid #30363d;
+}
+
+.program-slots {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+.slot {
+  width: 40px;
+  height: 40px;
+  background: #0d1117;
+  border: 2px solid #30363d;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 1.2rem;
+  transition: all 0.1s;
+}
+.slot.active { border-color: var(--accent); box-shadow: 0 0 8px var(--accent); }
+.slot:empty::after { content: '?'; opacity: 0.3; }
+
+.cmd-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 1rem;
+}
+.cmd-btn {
+  padding: 0.6rem 1rem;
+  background: #21262d;
+  border: 1px solid #30363d;
+  border-radius: 6px;
+  color: var(--text);
+  cursor: pointer;
+  font-weight: bold;
+}
+.cmd-btn:hover { background: #30363d; }
+
+.action-buttons {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+.btn {
+  padding: 0.8rem 1.5rem;
+  border: none;
+  border-radius: 6px;
+  font-weight: bold;
+  cursor: pointer;
+  flex: 1;
+}
+.btn-run { background: var(--success); color: white; }
+.btn-reset { background: #30363d; color: white; }
+
+#status-banner {
+  margin-top: 1rem;
+  font-weight: bold;
+  height: 1.5rem;
+}
+
+/* Animations */
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+</style>
+</head>
+<body>
+<div class="back-bar"><a href="/">← Back to Games</a></div>
+
+<!-- Intro Screen -->
+<div id="start-screen" class="screen active">
+  <h1 data-i18n="gameTitle">Clockwork Courier</h1>
+  <p class="desc" data-i18n="gameDesc">Programmiere deinen Bot mit einer Befehlskette, die sich ständig wiederholt! Sammle alle Pakete und erreiche den Ausgang.</p>
+  <button id="start-btn" class="btn btn-run" style="flex:none; width:200px;" data-i18n="startBtn">START</button>
+</div>
+
+<!-- Game Screen -->
+<div id="game-screen" class="screen">
+  <div id="level-indicator" style="margin-bottom:0.5rem; font-size:0.9rem; opacity:0.7;">Level 1</div>
+  <div class="grid-container">
+    <canvas id="game-canvas"></canvas>
+  </div>
+  
+  <div id="status-banner"></div>
+
+  <div class="controls">
+    <div class="program-slots" id="slots"></div>
+    <div class="cmd-buttons">
+      <button class="cmd-btn" data-cmd="F" title="Forward">↑</button>
+      <button class="cmd-btn" data-cmd="L" title="Left">↺</button>
+      <button class="cmd-btn" data-cmd="R" title="Right">↻</button>
+      <button class="cmd-btn" data-cmd="W" title="Wait">⧖</button>
+    </div>
+    <div class="action-buttons">
+      <button id="run-btn" class="btn btn-run" data-i18n="runBtn">AUSFÜHREN</button>
+      <button id="reset-btn" class="btn btn-reset" data-i18n="resetBtn">RESET</button>
+    </div>
+  </div>
+</div>
+
+<!-- Scripts -->
+<script src="/shared/i18n.js"></script>
+<script type="module">
+import { 
+  createState, simulateStep, LEVELS, DIRS 
+} from './game.js';
+
+const TRANSLATIONS = {
+  de: {
+    gameTitle: "Clockwork Courier",
+    gameDesc: "Programmiere deinen Bot mit einer Befehlskette, die sich ständig wiederholt! Sammle alle Pakete und erreiche den Ausgang. Aber Vorsicht vor Wänden und Wachen!",
+    startBtn: "START",
+    runBtn: "AUSFÜHREN",
+    resetBtn: "RESET",
+    lvlClear: "Level Geschafft! 🎉",
+    crashWall: "Gegen die Wand gefahren! 💥",
+    crashPatrol: "Von einer Wache erwischt! 🚨",
+    timeout: "Energie verbraucht! 🔋",
+    missingParcels: "Du hast Pakete vergessen! 📦",
+    nextLvl: "NÄCHSTES LEVEL",
+    winTitle: "Gewonnen!",
+    winDesc: "Alle Aufträge erledigt. Du bist der Meister-Programmierer!"
+  },
+  en: {
+    gameTitle: "Clockwork Courier",
+    gameDesc: "Program your bot with a repeating command loop! Collect all parcels and reach the exit. Watch out for walls and sentries!",
+    startBtn: "START",
+    runBtn: "RUN",
+    resetBtn: "RESET",
+    lvlClear: "Level Clear! 🎉",
+    crashWall: "Crashed into a wall! 💥",
+    crashPatrol: "Caught by a sentry! 🚨",
+    timeout: "Out of energy! 🔋",
+    missingParcels: "Parcels missing! 📦",
+    nextLvl: "NEXT LEVEL",
+    winTitle: "You Win!",
+    winDesc: "All deliveries complete. You are a master programmer!"
+  },
+  fr: {
+    gameTitle: "Coursier Mécanique",
+    gameDesc: "Programmez votre bot avec une boucle de commandes ! Collectez tous les colis et atteignez la sortie.",
+    startBtn: "COMMENCER",
+    runBtn: "LANCER",
+    resetBtn: "RESET",
+    lvlClear: "Niveau réussi ! 🎉",
+    crashWall: "Collision avec un mur ! 💥",
+    crashPatrol: "Attrapé par un garde ! 🚨",
+    timeout: "Plus d'énergie ! 🔋",
+    missingParcels: "Colis manquants ! 📦",
+    nextLvl: "NIVEAU SUIVANT",
+    winTitle: "Gagné !",
+    winDesc: "Toutes les livraisons sont faites !"
+  },
+  it: {
+    gameTitle: "Corriere Meccanico",
+    gameDesc: "Programma il tuo bot con un ciclo di comandi ripetuti! Raccogli i pacchi e raggiungi l'uscita.",
+    startBtn: "INIZIA",
+    runBtn: "ESEGUI",
+    resetBtn: "RESET",
+    lvlClear: "Livello Superato! 🎉",
+    crashWall: "Schiantato contro un muro! 💥",
+    crashPatrol: "Preso da una guardia! 🚨",
+    timeout: "Energia esaurita! 🔋",
+    missingParcels: "Mancano dei pacchi! 📦",
+    nextLvl: "PROSSIMO LIVELLO",
+    winTitle: "Hai Vinto!",
+    winDesc: "Tutte le consegne completate!"
+  },
+  es: {
+    gameTitle: "Mensajero Mecánico",
+    gameDesc: "¡Programa tu robot con un bucle de comandos! Recoge todos los paquetes y llega a la salida.",
+    startBtn: "EMPEZAR",
+    runBtn: "EJECUTAR",
+    resetBtn: "REINICIAR",
+    lvlClear: "¡Nivel superado! 🎉",
+    crashWall: "¡Chocaste contra un muro! 💥",
+    crashPatrol: "¡Te atrapó un guardia! 🚨",
+    timeout: "¡Sin energía! 🔋",
+    missingParcels: "¡Faltan paquetes! 📦",
+    nextLvl: "SIGUIENTE NIVEL",
+    winTitle: "¡Ganaste!",
+    winDesc: "¡Todas las entregas completadas!"
+  }
+};
+
+const { t } = initI18n(TRANSLATIONS);
+
+let currentLevelIdx = 0;
+let gameState = null;
+let program = [];
+let selectedSlot = 0;
+let isSimulating = false;
+let simulationInterval = null;
+
+const canvas = document.getElementById('game-canvas');
+const ctx = canvas.getContext('2d');
+const TILE_SIZE = 50;
+
+function initLevel() {
+  const level = LEVELS[currentLevelIdx];
+  program = new Array(level.programLength).fill('W');
+  selectedSlot = 0;
+  isSimulating = false;
+  if (simulationInterval) clearInterval(simulationInterval);
+  
+  canvas.width = level.cols * TILE_SIZE;
+  canvas.height = level.rows * TILE_SIZE;
+  
+  gameState = createState(level, program);
+  updateUI();
+  draw();
+}
+
+function updateUI() {
+  const level = LEVELS[currentLevelIdx];
+  document.getElementById('level-indicator').textContent = `Level ${currentLevelIdx + 1}`;
+  
+  const slotsCont = document.getElementById('slots');
+  slotsCont.innerHTML = '';
+  for (let i = 0; i < level.programLength; i++) {
+    const slot = document.createElement('div');
+    slot.className = 'slot' + (i === selectedSlot ? ' active' : '');
+    slot.id = `slot-${i}`;
+    const cmd = program[i];
+    if (cmd !== 'W') {
+        const icons = { F: '↑', L: '↺', R: '↻' };
+        slot.textContent = icons[cmd];
+    }
+    slot.onclick = () => {
+        if (isSimulating) return;
+        selectedSlot = i;
+        updateUI();
+    };
+    slotsCont.appendChild(slot);
+  }
+  
+  document.getElementById('run-btn').disabled = isSimulating;
+  document.getElementById('status-banner').textContent = '';
+}
+
+function draw() {
+  if (!gameState) return;
+  const level = gameState.level;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  
+  // Grid
+  ctx.strokeStyle = '#30363d';
+  for (let x = 0; x <= canvas.width; x += TILE_SIZE) {
+    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
+  }
+  for (let y = 0; y <= canvas.height; y += TILE_SIZE) {
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
+  }
+  
+  // Walls
+  ctx.fillStyle = '#484f58';
+  level.walls.forEach(w => {
+    ctx.fillRect(w.x * TILE_SIZE + 4, w.y * TILE_SIZE + 4, TILE_SIZE - 8, TILE_SIZE - 8);
+  });
+  
+  // Parcels
+  level.parcels.forEach((p, idx) => {
+    if (gameState.collected.has(idx)) return;
+    ctx.fillStyle = '#e3b341';
+    ctx.beginPath();
+    ctx.rect(p.x * TILE_SIZE + 10, p.y * TILE_SIZE + 10, TILE_SIZE - 20, TILE_SIZE - 20);
+    ctx.fill();
+    ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
+  });
+  
+  // Exit
+  ctx.strokeStyle = '#238636'; ctx.lineWidth = 4;
+  ctx.strokeRect(level.exit.x * TILE_SIZE + 6, level.exit.y * TILE_SIZE + 6, TILE_SIZE - 12, TILE_SIZE - 12);
+  ctx.fillStyle = 'rgba(35, 134, 54, 0.2)';
+  ctx.fillRect(level.exit.x * TILE_SIZE + 6, level.exit.y * TILE_SIZE + 6, TILE_SIZE - 12, TILE_SIZE - 12);
+
+  // Patrols
+  level.patrols.forEach(p => {
+    const pos = p.path[gameState.step % p.path.length];
+    ctx.fillStyle = '#da3633';
+    ctx.beginPath();
+    ctx.arc(pos.x * TILE_SIZE + TILE_SIZE/2, pos.y * TILE_SIZE + TILE_SIZE/2, TILE_SIZE/2 - 10, 0, Math.PI * 2);
+    ctx.fill();
+  });
+
+  // Robot
+  const r = gameState.robot;
+  ctx.save();
+  ctx.translate(r.x * TILE_SIZE + TILE_SIZE/2, r.y * TILE_SIZE + TILE_SIZE/2);
+  const rotations = { N: 0, E: 90, S: 180, W: 270 };
+  ctx.rotate((rotations[r.dir] * Math.PI) / 180);
+  
+  ctx.fillStyle = varColor('--accent');
+  ctx.beginPath();
+  ctx.moveTo(0, -15); ctx.lineTo(12, 10); ctx.lineTo(-12, 10); ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+}
+
+function varColor(name) {
+    return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+}
+
+function step() {
+  gameState = simulateStep(gameState);
+  draw();
+  
+  if (gameState.status !== 'running') {
+    clearInterval(simulationInterval);
+    const banner = document.getElementById('status-banner');
+    if (gameState.status === 'success') {
+      banner.textContent = t('lvlClear');
+      banner.style.color = varColor('--success');
+      setTimeout(() => {
+        if (currentLevelIdx < LEVELS.length - 1) {
+          currentLevelIdx++;
+          initLevel();
+        } else {
+          document.getElementById('game-screen').innerHTML = `<h1>${t('winTitle')}</h1><p>${t('winDesc')}</p><button class="btn btn-run" onclick="location.reload()">${t('startBtn')}</button>`;
+        }
+      }, 1500);
+    } else {
+      const reasons = { wall: 'crashWall', patrol: 'crashPatrol', timeout: 'timeout' };
+      banner.textContent = t(reasons[gameState.failReason] || 'crashWall');
+      banner.style.color = varColor('--danger');
+      isSimulating = false;
+      document.getElementById('run-btn').disabled = false;
+    }
+  }
+}
+
+document.getElementById('start-btn').onclick = () => {
+  document.getElementById('start-screen').classList.remove('active');
+  document.getElementById('game-screen').classList.add('active');
+  initLevel();
+};
+
+document.querySelectorAll('.cmd-btn').forEach(btn => {
+  btn.onclick = () => {
+    if (isSimulating) return;
+    program[selectedSlot] = btn.dataset.cmd;
+    selectedSlot = (selectedSlot + 1) % program.length;
+    gameState = createState(LEVELS[currentLevelIdx], program);
+    updateUI();
+    draw();
+  };
+});
+
+document.getElementById('run-btn').onclick = () => {
+  isSimulating = true;
+  document.getElementById('run-btn').disabled = true;
+  gameState = createState(LEVELS[currentLevelIdx], program);
+  simulationInterval = setInterval(step, 400);
+};
+
+document.getElementById('reset-btn').onclick = () => {
+  initLevel();
+};
+
+window.addEventListener('keydown', (e) => {
+    if (isSimulating) return;
+    if (e.key === 'ArrowUp') document.querySelector('[data-cmd="F"]').click();
+    if (e.key === 'ArrowLeft') document.querySelector('[data-cmd="L"]').click();
+    if (e.key === 'ArrowRight') document.querySelector('[data-cmd="R"]').click();
+    if (e.key === ' ') document.getElementById('run-btn').click();
+});
+
+</script>
+<script defer src="https://analytics.lab.gogerl.com/script.js" data-website-id="88b6933c-393b-4861-827b-2326b527581b"></script>
+</body>
+</html>

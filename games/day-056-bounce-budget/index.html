@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title data-i18n="title">Bounce Budget</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: 0; font-family: system-ui, sans-serif; background: #0a0a1a; color: white; display: flex; flex-direction: column; min-height: 100vh; overscroll-behavior: none; }
+    .back-bar { width: 100%; background: #0a0a1a; padding: 0.5rem 1rem; border-bottom: 1px solid #333; z-index: 100; flex-shrink: 0; }
+    .back-bar a { color: #ffcc00; text-decoration: none; font-size: 0.9rem; }
+    .back-bar a:hover { text-decoration: underline; }
+    
+    .screen { display: none; flex: 1; flex-direction: column; align-items: center; justify-content: center; padding: 1rem; text-align: center; }
+    .screen.active { display: flex; }
+    
+    h1 { color: #00ffcc; margin-top: 0; }
+    h2 { color: #ffcc00; }
+    
+    button { background: #00ffcc; color: #000; border: none; padding: 1rem 2rem; font-size: 1.2rem; font-weight: bold; border-radius: 8px; cursor: pointer; margin-top: 1rem; width: 100%; max-width: 300px; text-transform: uppercase; }
+    button:active { transform: scale(0.95); }
+    button:disabled { background: #555; cursor: not-allowed; }
+    
+    .setup-container { display: flex; flex-direction: column; gap: 10px; width: 100%; max-width: 300px; margin-bottom: 2rem; }
+    .setup-container label { text-align: left; font-size: 0.9rem; color: #aaa; }
+    .setup-container select, .setup-container input { padding: 0.8rem; font-size: 1rem; border-radius: 4px; border: 1px solid #333; background: #111; color: white; }
+    
+    #game-container { position: relative; max-width: 100%; overflow: hidden; margin-bottom: 1rem; background: #111; border: 2px solid #333; border-radius: 8px; touch-action: none; }
+    canvas { display: block; width: 100%; height: auto; touch-action: none; }
+    
+    .game-ui { display: flex; flex-direction: column; width: 100%; max-width: 400px; gap: 0.5rem; }
+    .status-bar { display: flex; justify-content: space-between; font-size: 1.1rem; font-weight: bold; background: #222; padding: 0.5rem 1rem; border-radius: 4px; }
+    .instruction { color: #aaa; font-size: 0.9rem; }
+    
+    #turn-summary { position: absolute; inset: 0; background: rgba(0,0,0,0.85); display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.3s; z-index: 10; }
+    #turn-summary.visible { opacity: 1; pointer-events: auto; }
+    .score-big { font-size: 4rem; color: #ffcc00; margin: 1rem 0; font-weight: 900; }
+    
+    .leaderboard { width: 100%; max-width: 300px; margin-bottom: 2rem; text-align: left; }
+    .leaderboard-row { display: flex; justify-content: space-between; padding: 0.8rem; background: #222; margin-bottom: 4px; border-radius: 4px; font-size: 1.1rem; }
+    .leaderboard-row.winner { background: #ffcc00; color: #000; font-weight: bold; }
+    
+    #launch-controls { display: flex; flex-direction: column; align-items: center; gap: 10px; width: 100%; max-width: 400px; }
+    input[type=range] { width: 100%; margin: 10px 0; }
+  </style>
+</head>
+<body>
+  <div class="back-bar"><a href="/">← Back to Games</a></div>
+
+  <!-- SETUP SCREEN -->
+  <div id="setup-screen" class="screen active">
+    <h1 data-i18n="title">Bounce Budget</h1>
+    <p data-i18n="desc">Platziere 3 Bumper, ziele gut und sammle Sterne. Wer holt die meisten Punkte?</p>
+    
+    <div class="setup-container">
+      <label data-i18n="numPlayers">Anzahl Spieler</label>
+      <select id="player-count">
+        <option value="2">2 Spieler</option>
+        <option value="3">3 Spieler</option>
+        <option value="4">4 Spieler</option>
+      </select>
+    </div>
+    
+    <div id="names-container" class="setup-container"></div>
+    
+    <button id="start-btn" data-i18n="start">Spiel Starten</button>
+  </div>
+
+  <!-- HANDOFF SCREEN -->
+  <div id="handoff-screen" class="screen">
+    <h2 data-i18n="round">Runde</h2>
+    <h1 id="handoff-text">Gib das Gerät an [Name]!</h1>
+    <p data-i18n="readyDesc">Bist du bereit, deine Bumper zu platzieren?</p>
+    <button id="ready-btn" data-i18n="ready">Ich bin bereit!</button>
+  </div>
+
+  <!-- GAME SCREEN -->
+  <div id="game-screen" class="screen" style="padding-top: 0.5rem; justify-content: flex-start;">
+    <div class="game-ui">
+      <div class="status-bar">
+        <span id="active-player" style="color: #00ffcc;">Player</span>
+        <span id="bumpers-left" style="color: #ffcc00;">Bumper: 3</span>
+      </div>
+      <div class="instruction" id="game-instruction" data-i18n="instPlace">Tippe, um einen runden Bumper zu platzieren.</div>
+    </div>
+    
+    <div id="game-container">
+      <canvas id="game-canvas" width="400" height="600"></canvas>
+      <div id="turn-summary">
+        <h2 data-i18n="turnScore">Dein Score</h2>
+        <div class="score-big" id="turn-score-val">0</div>
+        <button id="next-turn-btn" data-i18n="nextTurn">Weiter</button>
+      </div>
+    </div>
+    
+    <div id="launch-controls" style="visibility: hidden;">
+      <label id="angle-label" style="font-size: 0.9rem; color: #aaa;">Winkel: <span id="angle-val">0</span>°</label>
+      <input type="range" id="angle-slider" min="-80" max="80" value="0">
+      <button id="launch-btn" data-i18n="launch">🚀 START</button>
+    </div>
+  </div>
+
+  <!-- RESULTS SCREEN -->
+  <div id="results-screen" class="screen">
+    <h1 data-i18n="gameOver">Spiel Beendet!</h1>
+    <div id="leaderboard" class="leaderboard"></div>
+    <button id="restart-btn" data-i18n="playAgain">Nochmal spielen</button>
+  </div>
+
+  <script src="/shared/i18n.js"></script>
+  <script type="module">
+    import { SAMPLE_LAYOUT, clampBumper, simulateShot, createMatch, awardTurn, nextPlayerIndex } from './game.js';
+
+    const TRANSLATIONS = {
+      de: {
+        title: "Bounce Budget", desc: "Platziere 3 Bumper, ziele gut und sammle Sterne. Wer holt die meisten Punkte?",
+        numPlayers: "Anzahl Spieler", start: "Spiel Starten",
+        round: "Runde", readyDesc: "Bist du bereit, deine Bumper zu platzieren?", ready: "Ich bin bereit!",
+        instPlace: "Tippe ins Raster, um einen Bumper zu platzieren.",
+        instLaunch: "Stelle den Startwinkel ein und drücke START!",
+        turnScore: "Punkte in diesem Zug", nextTurn: "Weiter",
+        gameOver: "Spiel Beendet!", playAgain: "Nochmal spielen",
+        handoffTemplate: "Gib das Gerät an {name}!"
+      },
+      en: {
+        title: "Bounce Budget", desc: "Place 3 bumpers, aim well, and collect stars. Who gets the highest score?",
+        numPlayers: "Number of Players", start: "Start Game",
+        round: "Round", readyDesc: "Are you ready to place your bumpers?", ready: "I'm ready!",
+        instPlace: "Tap the grid to place a bumper.",
+        instLaunch: "Adjust the launch angle and press START!",
+        turnScore: "Score this turn", nextTurn: "Continue",
+        gameOver: "Game Over!", playAgain: "Play Again",
+        handoffTemplate: "Pass the device to {name}!"
+      },
+      fr: {
+        title: "Budget Rebond", desc: "Placez 3 pare-chocs, visez bien et collectez des étoiles.",
+        numPlayers: "Nombre de Joueurs", start: "Démarrer",
+        round: "Manche", readyDesc: "Prêt à placer vos pare-chocs ?", ready: "Je suis prêt !",
+        instPlace: "Touchez la grille pour placer un pare-chocs.",
+        instLaunch: "Ajustez l'angle et appuyez sur DÉMARRER !",
+        turnScore: "Score du tour", nextTurn: "Continuer",
+        gameOver: "Partie Terminée !", playAgain: "Rejouer",
+        handoffTemplate: "Passez l'appareil à {name} !"
+      },
+      it: {
+        title: "Budget Rimbalzo", desc: "Piazza 3 paraurti, mira bene e raccogli le stelle.",
+        numPlayers: "Numero di Giocatori", start: "Inizia Partita",
+        round: "Round", readyDesc: "Pronto a piazzare i tuoi paraurti?", ready: "Sono pronto!",
+        instPlace: "Tocca la griglia per piazzare un paraurti.",
+        instLaunch: "Regola l'angolo e premi START!",
+        turnScore: "Punti di questo turno", nextTurn: "Continua",
+        gameOver: "Partita Finita!", playAgain: "Gioca di nuovo",
+        handoffTemplate: "Passa il dispositivo a {name}!"
+      },
+      es: {
+        title: "Presupuesto de Rebote", desc: "Coloca 3 parachoques, apunta bien y recoge estrellas.",
+        numPlayers: "Número de Jugadores", start: "Iniciar Juego",
+        round: "Ronda", readyDesc: "¿Listo para colocar tus parachoques?", ready: "¡Estoy listo!",
+        instPlace: "Toca la cuadrícula para colocar un parachoques.",
+        instLaunch: "¡Ajusta el ángulo y presiona START!",
+        turnScore: "Puntos de este turno", nextTurn: "Continuar",
+        gameOver: "¡Juego Terminado!", playAgain: "Jugar de nuevo",
+        handoffTemplate: "¡Pásale el dispositivo a {name}!"
+      }
+    };
+    
+    const { t, translatePage } = initI18n(TRANSLATIONS);
+
+    // State
+    let match;
+    let roundNum = 1;
+    const MAX_ROUNDS = 3;
+    let activeBumpers = [];
+    let isSimulating = false;
+    let launchAngle = 0;
+    
+    // Layout customization per round to make it interesting
+    let currentLayout;
+    
+    // DOM Elements
+    const screens = {
+      setup: document.getElementById('setup-screen'),
+      handoff: document.getElementById('handoff-screen'),
+      game: document.getElementById('game-screen'),
+      results: document.getElementById('results-screen')
+    };
+    
+    const canvas = document.getElementById('game-canvas');
+    const ctx = canvas.getContext('2d');
+    
+    function showScreen(name) {
+      Object.values(screens).forEach(s => s.classList.remove('active'));
+      screens[name].classList.add('active');
+    }
+    
+    function updateNamesContainer() {
+      const count = parseInt(document.getElementById('player-count').value, 10);
+      const container = document.getElementById('names-container');
+      container.innerHTML = '';
+      for (let i = 0; i < count; i++) {
+        container.innerHTML += `<input type="text" id="player-${i}" value="Spieler ${i+1}" placeholder="Name">`;
+      }
+    }
+    
+    document.getElementById('player-count').addEventListener('change', updateNamesContainer);
+    updateNamesContainer(); // initial
+    
+    function generateLayout(roundIndex) {
+      // Create a deterministic but changing layout
+      const layout = JSON.parse(JSON.stringify(SAMPLE_LAYOUT));
+      // Randomize stars based on round
+      layout.stars = [];
+      const numStars = 4 + roundIndex;
+      for(let i=0; i<numStars; i++) {
+        // pseudo-random
+        const x = 50 + (((i * 97 + roundIndex * 31) % 30) / 30) * 300;
+        const y = 50 + (((i * 43 + roundIndex * 17) % 40) / 40) * 400;
+        layout.stars.push({ x, y, radius: 12 });
+      }
+      return layout;
+    }
+    
+    document.getElementById('start-btn').addEventListener('click', () => {
+      const count = parseInt(document.getElementById('player-count').value, 10);
+      const names = [];
+      for (let i = 0; i < count; i++) {
+        names.push(document.getElementById(`player-${i}`).value || `Spieler ${i+1}`);
+      }
+      match = createMatch(names);
+      roundNum = 1;
+      prepareTurn();
+    });
+    
+    function prepareTurn() {
+      const player = match.players[match.activePlayer];
+      document.getElementById('handoff-text').textContent = t('handoffTemplate').replace('{name}', player.name);
+      showScreen('handoff');
+    }
+    
+    document.getElementById('ready-btn').addEventListener('click', () => {
+      currentLayout = generateLayout(roundNum);
+      activeBumpers = [];
+      isSimulating = false;
+      document.getElementById('turn-summary').classList.remove('visible');
+      document.getElementById('launch-controls').style.visibility = 'hidden';
+      document.getElementById('game-instruction').textContent = t('instPlace');
+      
+      updateGameUI();
+      drawArena();
+      showScreen('game');
+    });
+    
+    function updateGameUI() {
+      const player = match.players[match.activePlayer];
+      document.getElementById('active-player').textContent = player.name;
+      document.getElementById('bumpers-left').textContent = `Bumper: ${3 - activeBumpers.length}`;
+      
+      if (activeBumpers.length === 3 && !isSimulating) {
+        document.getElementById('launch-controls').style.visibility = 'visible';
+        document.getElementById('game-instruction').textContent = t('instLaunch');
+      }
+    }
+    
+    canvas.addEventListener('pointerdown', (e) => {
+      if (isSimulating || activeBumpers.length >= 3) return;
+      
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+      const x = (e.clientX - rect.left) * scaleX;
+      const y = (e.clientY - rect.top) * scaleY;
+      
+      // Check if clicking inside start area or too close to a star (optional, keeping simple)
+      const b = clampBumper({ x, y, angle: 0 });
+      activeBumpers.push(b);
+      
+      updateGameUI();
+      drawArena();
+    });
+    
+    const slider = document.getElementById('angle-slider');
+    slider.addEventListener('input', (e) => {
+      launchAngle = parseInt(e.target.value, 10);
+      document.getElementById('angle-val').textContent = launchAngle;
+      drawArena();
+    });
+    
+    function drawArena(simulationState = null) {
+      ctx.fillStyle = '#111';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      
+      // Start Zone
+      ctx.fillStyle = 'rgba(0, 255, 204, 0.2)';
+      ctx.beginPath();
+      ctx.arc(currentLayout.start.x, currentLayout.start.y, 20, 0, Math.PI * 2);
+      ctx.fill();
+      
+      // Trajectory preview
+      if (!isSimulating) {
+        ctx.strokeStyle = 'rgba(0, 255, 204, 0.5)';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(currentLayout.start.x, currentLayout.start.y);
+        const rad = (launchAngle - 90) * Math.PI / 180;
+        ctx.lineTo(currentLayout.start.x + Math.cos(rad) * 50, currentLayout.start.y + Math.sin(rad) * 50);
+        ctx.stroke();
+      }
+      
+      // Bumpers
+      ctx.fillStyle = '#ff0066';
+      for (const b of activeBumpers) {
+        ctx.beginPath();
+        ctx.arc(b.x, b.y, currentLayout.bumperRadius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+      }
+      
+      // Stars
+      ctx.fillStyle = '#ffcc00';
+      const collectedIds = simulationState ? simulationState.collected : [];
+      currentLayout.stars.forEach((s, i) => {
+        if (!collectedIds.includes(`star-${i}`)) {
+          ctx.beginPath();
+          ctx.arc(s.x, s.y, s.radius, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      });
+      
+      // Ball during simulation
+      if (simulationState) {
+        // Draw path trail
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        simulationState.pathSoFar.forEach((p, idx) => {
+          if (idx === 0) ctx.moveTo(p.x, p.y);
+          else ctx.lineTo(p.x, p.y);
+        });
+        ctx.stroke();
+        
+        // Draw ball
+        const pos = simulationState.currentPos;
+        ctx.fillStyle = '#fff';
+        ctx.beginPath();
+        ctx.arc(pos.x, pos.y, 8, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+    
+    document.getElementById('launch-btn').addEventListener('click', () => {
+      isSimulating = true;
+      document.getElementById('launch-controls').style.visibility = 'hidden';
+      
+      const rad = (launchAngle - 90) * Math.PI / 180;
+      const speed = 10;
+      const v = { x: Math.cos(rad) * speed, y: Math.sin(rad) * speed };
+      
+      const result = simulateShot(currentLayout, activeBumpers, v);
+      
+      // Animate
+      let step = 0;
+      const collectedSoFar = [];
+      const pathSoFar = [];
+      
+      function animLoop() {
+        // Speed up animation by doing multiple steps per frame
+        for (let i = 0; i < 3; i++) {
+          if (step < result.path.length) {
+            const p = result.path[step];
+            pathSoFar.push(p);
+            // very naive collection logic for visuals
+            currentLayout.stars.forEach((s, idx) => {
+              const id = `star-${idx}`;
+              if (!collectedSoFar.includes(id)) {
+                const dist = Math.sqrt((p.x - s.x)**2 + (p.y - s.y)**2);
+                if (dist < s.radius + 8) collectedSoFar.push(id);
+              }
+            });
+            step++;
+          }
+        }
+        
+        if (step < result.path.length) {
+          drawArena({
+            currentPos: result.path[step - 1],
+            pathSoFar,
+            collected: collectedSoFar
+          });
+          requestAnimationFrame(animLoop);
+        } else {
+          // Finished
+          drawArena({
+            currentPos: result.path[result.path.length - 1],
+            pathSoFar,
+            collected: result.collected
+          });
+          showTurnSummary(result.score, result.collected);
+        }
+      }
+      animLoop();
+    });
+    
+    function showTurnSummary(score, collected) {
+      document.getElementById('turn-score-val').textContent = score;
+      document.getElementById('turn-summary').classList.add('visible');
+      
+      awardTurn(match, score, collected);
+    }
+    
+    document.getElementById('next-turn-btn').addEventListener('click', () => {
+      const nextIdx = nextPlayerIndex(match);
+      if (nextIdx === 0) {
+        roundNum++;
+      }
+      
+      match.activePlayer = nextIdx;
+      
+      if (roundNum > MAX_ROUNDS) {
+        endGame();
+      } else {
+        prepareTurn();
+      }
+    });
+    
+    function endGame() {
+      const board = document.getElementById('leaderboard');
+      board.innerHTML = '';
+      
+      // Sort players by score
+      const sorted = [...match.players].sort((a, b) => b.score - a.score);
+      
+      sorted.forEach((p, i) => {
+        const row = document.createElement('div');
+        row.className = `leaderboard-row ${i === 0 ? 'winner' : ''}`;
+        row.innerHTML = `<span>${i+1}. ${p.name}</span><span>${p.score} pts</span>`;
+        board.appendChild(row);
+      });
+      
+      showScreen('results');
+    }
+    
+    document.getElementById('restart-btn').addEventListener('click', () => {
+      showScreen('setup');
+    });
+
+  </script>
+</body>
+</html>
