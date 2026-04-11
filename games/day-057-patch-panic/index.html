@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Patch Panic</title>
+  <script defer src="https://analytics.lab.gogerl.com/script.js" data-website-id="6544877e-6573-4ffa-b91f-db98c1bd4c77"></script>
+  <style>
+    :root {
+      --bg: #07111f;
+      --panel: #102038;
+      --panel-2: #142947;
+      --line: #27476d;
+      --text: #edf4ff;
+      --muted: #9fb6d5;
+      --accent: #ffcc00;
+      --good: #50e3a4;
+      --danger: #ff6f61;
+      --cool: #79d6ff;
+      --shield: #c39bff;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, sans-serif;
+      background: radial-gradient(circle at top, #102950 0%, var(--bg) 55%);
+      color: var(--text);
+      min-height: 100vh;
+    }
+    .back-bar{width:100%;background:#0a0a1a;padding:0.5rem 1rem;border-bottom:1px solid #333;}
+    .back-bar a{color:#ffcc00;text-decoration:none;font-size:0.9rem;font-family:system-ui,sans-serif;}
+    .back-bar a:hover{text-decoration:underline;}
+    .app { max-width: 560px; margin: 0 auto; padding: 1rem; }
+    h1 { margin: 0 0 0.25rem; font-size: 2rem; color: var(--accent); }
+    .subtitle { color: var(--muted); margin-bottom: 1rem; }
+    .screen { display: none; }
+    .screen.active { display: block; }
+    .card {
+      background: linear-gradient(180deg, rgba(20,41,71,0.98), rgba(10,22,39,0.98));
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 1rem;
+      box-shadow: 0 14px 36px rgba(0,0,0,0.28);
+      margin-bottom: 1rem;
+    }
+    .stack { display: grid; gap: 0.75rem; }
+    input {
+      width: 100%;
+      padding: 0.9rem 1rem;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: #091729;
+      color: var(--text);
+      font-size: 1rem;
+    }
+    button {
+      width: 100%;
+      border: 0;
+      border-radius: 14px;
+      padding: 0.9rem 1rem;
+      font-size: 1rem;
+      font-weight: 800;
+      cursor: pointer;
+      color: #04111f;
+      background: var(--accent);
+    }
+    button.secondary {
+      background: #183051;
+      color: var(--text);
+      border: 1px solid var(--line);
+    }
+    button:disabled { opacity: 0.45; cursor: not-allowed; }
+    .split { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+    .room-code {
+      font-family: ui-monospace, monospace;
+      font-size: 2.1rem;
+      font-weight: 900;
+      letter-spacing: 0.25rem;
+      text-align: center;
+      background: #091729;
+      border-radius: 16px;
+      padding: 0.7rem 0;
+      border: 2px solid var(--accent);
+    }
+    .players { display: grid; gap: 0.6rem; }
+    .player-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 12px;
+      padding: 0.7rem 0.85rem;
+    }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      border-radius: 999px;
+      padding: 0.3rem 0.65rem;
+      background: rgba(255,255,255,0.08);
+      color: var(--muted);
+      font-size: 0.82rem;
+      font-weight: 700;
+    }
+    .hud { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.75rem; }
+    .hud-box { background: rgba(255,255,255,0.05); border-radius: 14px; padding: 0.75rem; text-align: center; }
+    .hud-box strong { display: block; font-size: 1.35rem; color: var(--accent); }
+    .message { color: var(--muted); text-align: center; min-height: 1.5rem; margin: 0.5rem 0 0.75rem; }
+    .zones { display: grid; gap: 0.85rem; }
+    .zone-card {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 0.85rem;
+      background: rgba(255,255,255,0.04);
+    }
+    .zone-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.6rem; }
+    .incidents { display: grid; gap: 0.6rem; }
+    .incident {
+      background: #0a182b;
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 14px;
+      padding: 0.7rem;
+      display: grid;
+      gap: 0.55rem;
+    }
+    .incident.resolved { opacity: 0.55; }
+    .incident-top { display: flex; justify-content: space-between; gap: 0.75rem; align-items: center; }
+    .incident-name { font-weight: 800; }
+    .steps { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+    .step {
+      padding: 0.25rem 0.5rem;
+      border-radius: 999px;
+      font-size: 0.74rem;
+      font-weight: 800;
+      background: #183051;
+      color: var(--muted);
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+    .step.done { background: rgba(80,227,164,0.18); color: var(--good); border-color: rgba(80,227,164,0.45); }
+    .tool-btn.weld { background: var(--danger); color: white; }
+    .tool-btn.cool { background: var(--cool); }
+    .tool-btn.shield { background: var(--shield); }
+    .tool-btn { padding: 0.7rem; }
+    .empty-zone { color: var(--muted); font-size: 0.9rem; text-align: center; padding: 0.4rem 0; }
+    .role-banner { text-align: center; font-weight: 800; margin-bottom: 0.75rem; }
+    .small { font-size: 0.88rem; color: var(--muted); }
+    @media (max-width: 520px) {
+      .app { padding: 0.6rem; }
+      .split { grid-template-columns: 1fr; }
+      .hud { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.4rem; }
+      .zones { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.45rem; }
+      .zone-card { padding: 0.45rem; border-radius: 12px; }
+      .incident { padding: 0.42rem; border-radius: 12px; }
+      .incident-name { font-size: 0.88rem; }
+      .small { font-size: 0.74rem; }
+      .step { font-size: 0.62rem; padding: 0.2rem 0.35rem; }
+      .tool-btn { padding: 0.55rem; min-height: 44px; font-size: 0.82rem; }
+      .player-row { padding: 0.5rem 0.65rem; }
+      #scoreboard-card { display: none; }
+      h1 { font-size: 1.55rem; }
+      .subtitle { margin-bottom: 0.7rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="back-bar"><a href="/">← Back to Games</a></div>
+  <div class="app">
+    <div id="screen-setup" class="screen active">
+      <h1>Patch Panic</h1>
+      <div class="subtitle" data-i18n="tagline"></div>
+      <div class="card stack">
+        <input id="player-name" maxlength="18" data-i18n-placeholder="namePlaceholder" placeholder="Name">
+        <button id="btn-create" data-i18n="createRoom"></button>
+        <div class="split">
+          <input id="room-code-input" maxlength="4" placeholder="ABCD">
+          <button id="btn-join" class="secondary" data-i18n="joinRoom"></button>
+        </div>
+        <div id="error-box" class="small"></div>
+      </div>
+      <div class="card small" data-i18n-html="howToBlurb"></div>
+    </div>
+
+    <div id="screen-lobby" class="screen">
+      <div class="card stack">
+        <div class="small" data-i18n="roomCode"></div>
+        <div id="lobby-code" class="room-code">----</div>
+        <div id="lobby-message" class="message"></div>
+        <div id="lobby-players" class="players"></div>
+        <button id="btn-start" data-i18n="startShift"></button>
+      </div>
+    </div>
+
+    <div id="screen-game" class="screen">
+      <div class="card">
+        <div id="role-banner" class="role-banner"></div>
+        <div class="hud">
+          <div class="hud-box"><span data-i18n="hull"></span><strong id="hud-hull">100</strong></div>
+          <div class="hud-box"><span data-i18n="time"></span><strong id="hud-time">75</strong></div>
+          <div class="hud-box"><span data-i18n="repaired"></span><strong id="hud-fixed">0</strong></div>
+        </div>
+        <div id="game-message" class="message"></div>
+      </div>
+      <div id="zones" class="zones"></div>
+      <div class="card" id="scoreboard-card">
+        <div class="small" data-i18n="crewBoard"></div>
+        <div id="scoreboard" class="players" style="margin-top:0.6rem"></div>
+      </div>
+    </div>
+
+    <div id="screen-result" class="screen">
+      <div class="card stack">
+        <h1 id="result-title">Done</h1>
+        <div id="result-copy" class="subtitle"></div>
+        <div class="hud">
+          <div class="hud-box"><span data-i18n="hull"></span><strong id="result-hull">0</strong></div>
+          <div class="hud-box"><span data-i18n="time"></span><strong id="result-time">0</strong></div>
+          <div class="hud-box"><span data-i18n="repaired"></span><strong id="result-fixed">0</strong></div>
+        </div>
+        <div id="result-players" class="players"></div>
+        <button id="btn-restart" data-i18n="backToLobby"></button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/shared/i18n.js"></script>
+  <script>
+    const TRANSLATIONS = {
+      de: {
+        tagline: 'Kooperativer Echtzeit-Reparaturstress für 2 bis 6 Leute. Jeder hat nur ein Werkzeug, zusammen rettet ihr das Schiff.',
+        namePlaceholder: 'Dein Name',
+        createRoom: 'Raum erstellen',
+        joinRoom: 'Beitreten',
+        roomCode: 'Raumcode',
+        startShift: 'Schicht starten',
+        hull: 'Hülle',
+        time: 'Zeit',
+        repaired: 'Gefixt',
+        crewBoard: 'Crew und Punkte',
+        backToLobby: 'Zurück in die Lobby',
+        howToBlurb: '<strong>So läuft’s:</strong> Host erstellt einen Raum, alle joinen mit dem Code. Jeder bekommt ein Werkzeug: <strong>Schweißen</strong>, <strong>Kühlen</strong> oder <strong>Schilden</strong>. Defekte tauchen in Brücke, Maschinenraum und Frachtraum auf. Jede Störung braucht eine feste Reihenfolge. Falsches Werkzeug bringt nichts, laufende Schäden fressen eure Hülle.',
+        zone_bridge: 'Brücke', zone_engine: 'Maschinenraum', zone_cargo: 'Frachtraum',
+        type_fire: 'Brand', type_crack: 'Riss', type_spark: 'Kurzschluss',
+        role_weld: '🔧 Dein Werkzeug: Schweißen', role_cool: '🧊 Dein Werkzeug: Kühlen', role_shield: '🛡️ Dein Werkzeug: Schilden',
+        tool_weld: 'Schweißen', tool_cool: 'Kühlen', tool_shield: 'Schild setzen',
+        noIncidents: 'Gerade ruhig. Kurz genießen.',
+        msg_repair_now: 'Mehrere Systeme brechen weg. Los, los, los.',
+        msg_crew_ready: 'Crew komplett. Host kann starten.',
+        msg_good_step: 'Guter Schritt. Noch nicht fertig.',
+        msg_incident_fixed: 'Sauber. Schaden neutralisiert.',
+        msg_wrong_tool: 'Falsches Werkzeug. Erst die richtige Reihenfolge.',
+        msg_hull_breached: 'Die Hülle ist weg. Das war’s.',
+        msg_shift_saved: 'Schicht überlebt. Schiff gerettet.',
+        msg_player_left: 'Jemand ist weggebrochen.',
+        msg_ready_again: 'Neue Runde? Lobby ist bereit.',
+        stepLabel: 'Reparaturfolge',
+        resultWin: 'Schiff gerettet!',
+        resultLose: 'Patch Panic verloren',
+        resultWinCopy: 'Ihr habt die Schicht überlebt und den Laden zusammengehalten.',
+        resultLoseCopy: 'Zu viele offene Schäden. Die Hülle hat aufgegeben.',
+        room_not_found: 'Raum nicht gefunden.', game_already_started: 'Diese Runde läuft schon.', room_full: 'Der Raum ist voll.',
+      },
+      en: {
+        tagline: 'Co-op real-time repair panic for 2 to 6 players. Everyone has one tool, together you save the ship.',
+        namePlaceholder: 'Your name', createRoom: 'Create room', joinRoom: 'Join', roomCode: 'Room code', startShift: 'Start shift', hull: 'Hull', time: 'Time', repaired: 'Fixed', crewBoard: 'Crew and score', backToLobby: 'Back to lobby',
+        howToBlurb: '<strong>How it works:</strong> The host creates a room, everyone joins with the code. Each player gets one tool: <strong>weld</strong>, <strong>cool</strong>, or <strong>shield</strong>. Incidents appear in Bridge, Engine, and Cargo. Every problem has a strict repair order. Wrong tool does nothing, active damage eats your hull.',
+        zone_bridge: 'Bridge', zone_engine: 'Engine', zone_cargo: 'Cargo', type_fire: 'Fire', type_crack: 'Crack', type_spark: 'Spark', role_weld: '🔧 Your tool: Weld', role_cool: '🧊 Your tool: Cool', role_shield: '🛡️ Your tool: Shield', tool_weld: 'Weld', tool_cool: 'Cool', tool_shield: 'Deploy shield', noIncidents: 'Quiet for a second. Enjoy it.', msg_repair_now: 'Systems are breaking everywhere. Move.', msg_crew_ready: 'Crew ready. Host can start.', msg_good_step: 'Good step. Not done yet.', msg_incident_fixed: 'Clean fix. Damage neutralized.', msg_wrong_tool: 'Wrong tool. Follow the order first.', msg_hull_breached: 'Hull gone. That is it.', msg_shift_saved: 'Shift survived. Ship saved.', msg_player_left: 'Someone dropped out.', msg_ready_again: 'Another round? Lobby is ready.', stepLabel: 'Repair order', resultWin: 'Ship saved!', resultLose: 'Patch Panic lost', resultWinCopy: 'You held the whole mess together and survived the shift.', resultLoseCopy: 'Too many open incidents. The hull finally gave up.', room_not_found: 'Room not found.', game_already_started: 'This match already started.', room_full: 'Room is full.'
+      },
+      fr: {
+        tagline: 'Panique de reparation cooperative en temps reel pour 2 a 6 joueurs. Chacun a un outil, ensemble vous sauvez le vaisseau.',
+        namePlaceholder: 'Ton nom', createRoom: 'Creer une salle', joinRoom: 'Rejoindre', roomCode: 'Code de salle', startShift: 'Lancer la garde', hull: 'Coque', time: 'Temps', repaired: 'Reparees', crewBoard: 'Equipe et score', backToLobby: 'Retour au lobby',
+        howToBlurb: '<strong>Comment jouer :</strong> l hote cree une salle, tout le monde rejoint avec le code. Chaque joueur recoit un outil : <strong>souder</strong>, <strong>refroidir</strong> ou <strong>bouclier</strong>. Les incidents apparaissent sur la passerelle, dans la salle des machines et la cale. Chaque panne a un ordre strict.',
+        zone_bridge: 'Passerelle', zone_engine: 'Salle des machines', zone_cargo: 'Cale', type_fire: 'Feu', type_crack: 'Fissure', type_spark: 'Etincelle', role_weld: '🔧 Ton outil : Souder', role_cool: '🧊 Ton outil : Refroidir', role_shield: '🛡️ Ton outil : Bouclier', tool_weld: 'Souder', tool_cool: 'Refroidir', tool_shield: 'Poser le bouclier', noIncidents: 'Calme plat. Profitez-en.', msg_repair_now: 'Tout casse. Bougez.', msg_crew_ready: 'Equipe prete. L hote peut lancer.', msg_good_step: 'Bonne etape. Pas fini.', msg_incident_fixed: 'Bien joue. Incident neutralise.', msg_wrong_tool: 'Mauvais outil. Respectez l ordre.', msg_hull_breached: 'Coque percee. C est fini.', msg_shift_saved: 'Quart survécu. Vaisseau sauve.', msg_player_left: 'Quelqu un est parti.', msg_ready_again: 'Encore une manche ? Le lobby est pret.', stepLabel: 'Ordre de reparation', resultWin: 'Vaisseau sauve !', resultLose: 'Patch Panic perdu', resultWinCopy: 'Vous avez tenu ensemble jusqu au bout.', resultLoseCopy: 'Trop de dommages ouverts. La coque a lache.', room_not_found: 'Salle introuvable.', game_already_started: 'La partie a deja commence.', room_full: 'Salle complete.'
+      },
+      it: {
+        tagline: 'Panico riparazioni cooperativo in tempo reale per 2-6 giocatori. Ognuno ha un solo strumento, insieme salvate la nave.',
+        namePlaceholder: 'Il tuo nome', createRoom: 'Crea stanza', joinRoom: 'Entra', roomCode: 'Codice stanza', startShift: 'Inizia turno', hull: 'Scafo', time: 'Tempo', repaired: 'Riparati', crewBoard: 'Squadra e punteggio', backToLobby: 'Torna alla lobby',
+        howToBlurb: '<strong>Come si gioca:</strong> l host crea una stanza, tutti entrano col codice. Ogni giocatore riceve uno strumento: <strong>saldare</strong>, <strong>raffreddare</strong> o <strong>scudo</strong>. Gli incidenti appaiono su ponte, motori e cargo. Ogni guasto ha un ordine preciso.',
+        zone_bridge: 'Ponte', zone_engine: 'Sala motori', zone_cargo: 'Cargo', type_fire: 'Incendio', type_crack: 'Crepa', type_spark: 'Scintilla', role_weld: '🔧 Il tuo strumento: Saldare', role_cool: '🧊 Il tuo strumento: Raffreddare', role_shield: '🛡️ Il tuo strumento: Scudo', tool_weld: 'Saldare', tool_cool: 'Raffreddare', tool_shield: 'Attiva scudo', noIncidents: 'Per un attimo e tranquillo.', msg_repair_now: 'I sistemi stanno cedendo ovunque. Muoviti.', msg_crew_ready: 'Squadra pronta. L host puo iniziare.', msg_good_step: 'Buon passo. Non e finita.', msg_incident_fixed: 'Perfetto. Guasto neutralizzato.', msg_wrong_tool: 'Strumento sbagliato. Segui prima l ordine.', msg_hull_breached: 'Scafo distrutto. Fine.', msg_shift_saved: 'Turno salvato. Nave salva.', msg_player_left: 'Qualcuno e uscito.', msg_ready_again: 'Un altro round? Lobby pronta.', stepLabel: 'Ordine di riparazione', resultWin: 'Nave salva!', resultLose: 'Patch Panic perso', resultWinCopy: 'Avete tenuto insieme tutto il caos fino alla fine.', resultLoseCopy: 'Troppi guasti aperti. Lo scafo ha ceduto.', room_not_found: 'Stanza non trovata.', game_already_started: 'La partita e gia iniziata.', room_full: 'La stanza e piena.'
+      },
+      es: {
+        tagline: 'Caos cooperativo de reparacion en tiempo real para 2 a 6 jugadores. Cada uno tiene una sola herramienta, juntos salvais la nave.',
+        namePlaceholder: 'Tu nombre', createRoom: 'Crear sala', joinRoom: 'Unirse', roomCode: 'Codigo de sala', startShift: 'Empezar turno', hull: 'Casco', time: 'Tiempo', repaired: 'Arreglos', crewBoard: 'Equipo y puntos', backToLobby: 'Volver al lobby',
+        howToBlurb: '<strong>Como va:</strong> el host crea una sala y todos entran con el codigo. Cada jugador recibe una herramienta: <strong>soldar</strong>, <strong>enfriar</strong> o <strong>escudo</strong>. Los incidentes aparecen en puente, motores y carga. Cada averia tiene un orden estricto.',
+        zone_bridge: 'Puente', zone_engine: 'Motores', zone_cargo: 'Carga', type_fire: 'Fuego', type_crack: 'Grieta', type_spark: 'Chispa', role_weld: '🔧 Tu herramienta: Soldar', role_cool: '🧊 Tu herramienta: Enfriar', role_shield: '🛡️ Tu herramienta: Escudo', tool_weld: 'Soldar', tool_cool: 'Enfriar', tool_shield: 'Activar escudo', noIncidents: 'Un segundo de calma. Aprovechad.', msg_repair_now: 'Los sistemas se caen por todas partes. Vamos.', msg_crew_ready: 'Equipo listo. El host puede empezar.', msg_good_step: 'Buen paso. Aun no esta hecho.', msg_incident_fixed: 'Limpio. Averia neutralizada.', msg_wrong_tool: 'Herramienta incorrecta. Seguid el orden.', msg_hull_breached: 'Casco roto. Se acabo.', msg_shift_saved: 'Turno sobrevivido. Nave salvada.', msg_player_left: 'Alguien se fue.', msg_ready_again: 'Otra ronda? El lobby esta listo.', stepLabel: 'Orden de reparacion', resultWin: 'Nave salvada!', resultLose: 'Patch Panic perdido', resultWinCopy: 'Mantuvisteis el desastre unido hasta el final.', resultLoseCopy: 'Demasiadas averias abiertas. El casco cedio.', room_not_found: 'Sala no encontrada.', game_already_started: 'La partida ya empezo.', room_full: 'La sala esta llena.'
+      }
+    };
+
+    const { t, translatePage } = initI18n(TRANSLATIONS);
+    const state = { ws: null, room: null };
+    const screens = {
+      setup: document.getElementById('screen-setup'),
+      lobby: document.getElementById('screen-lobby'),
+      game: document.getElementById('screen-game'),
+      result: document.getElementById('screen-result'),
+    };
+
+    function showScreen(key) {
+      Object.values(screens).forEach((el) => el.classList.remove('active'));
+      screens[key].classList.add('active');
+    }
+
+    function msgKey(raw) {
+      return raw ? `msg_${raw}` : '';
+    }
+
+    function wsUrl() {
+      if (window.__TEST_WS_URL) return window.__TEST_WS_URL;
+      if (location.hostname.includes('games.lab.gogerl.com')) return 'wss://day-057-patch-panic.lab.gogerl.com';
+      const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+      return `${proto}://${location.hostname}:3057`;
+    }
+
+    function connect() {
+      if (state.ws && (state.ws.readyState === WebSocket.OPEN || state.ws.readyState === WebSocket.CONNECTING)) return;
+      state.ws = new WebSocket(wsUrl());
+      state.ws.addEventListener('message', (event) => {
+        const payload = JSON.parse(event.data);
+        if (payload.type === 'error') {
+          document.getElementById('error-box').textContent = t(payload.message);
+          return;
+        }
+        if (payload.type === 'state') {
+          state.room = payload;
+          render();
+        }
+      });
+      state.ws.addEventListener('close', () => {
+        setTimeout(() => { if (!state.room || state.room.status !== 'playing') return; connect(); }, 1200);
+      });
+    }
+
+    function send(data) {
+      connect();
+      const push = () => state.ws.send(JSON.stringify(data));
+      if (state.ws.readyState === WebSocket.OPEN) push();
+      else state.ws.addEventListener('open', push, { once: true });
+    }
+
+    function playerName() {
+      return document.getElementById('player-name').value.trim() || 'Player';
+    }
+
+    function renderPlayers(targetId, players) {
+      const root = document.getElementById(targetId);
+      root.innerHTML = '';
+      players.forEach((player) => {
+        const row = document.createElement('div');
+        row.className = 'player-row';
+        const roleText = player.role ? t(`tool_${player.role}`) : '...';
+        row.innerHTML = `<div><strong>${escapeHtml(player.name)}</strong><div class="small">${escapeHtml(roleText)}</div></div><div class="pill">${player.score ?? 0}</div>`;
+        root.appendChild(row);
+      });
+    }
+
+    function renderLobby(room) {
+      document.getElementById('lobby-code').textContent = room.roomCode;
+      document.getElementById('lobby-message').textContent = room.players.length >= 2 ? t(msgKey(room.message || 'crew_ready')) : t('tagline');
+      renderPlayers('lobby-players', room.players);
+      const startBtn = document.getElementById('btn-start');
+      startBtn.disabled = !(room.isHost && room.players.length >= 2);
+      startBtn.textContent = room.isHost ? t('startShift') : `${t('startShift')} · Host`;
+    }
+
+    function renderGame(room) {
+      document.getElementById('hud-hull').textContent = room.hull;
+      document.getElementById('hud-time').textContent = room.timeLeft;
+      document.getElementById('hud-fixed').textContent = room.repaired;
+      document.getElementById('game-message').textContent = t(msgKey(room.message || 'repair_now'));
+      document.getElementById('role-banner').textContent = t(`role_${room.role}`);
+      renderPlayers('scoreboard', room.players);
+
+      const zones = document.getElementById('zones');
+      zones.innerHTML = '';
+      ['bridge','engine','cargo'].forEach((zone) => {
+        const zoneCard = document.createElement('div');
+        zoneCard.className = 'zone-card';
+        const incidents = room.incidents.filter((incident) => incident.zone === zone);
+        zoneCard.innerHTML = `<div class="zone-head"><strong>${t(`zone_${zone}`)}</strong><span class="pill">${incidents.filter(i => !i.resolved).length}</span></div>`;
+        const list = document.createElement('div');
+        list.className = 'incidents';
+
+        if (!incidents.length) {
+          list.innerHTML = `<div class="empty-zone">${t('noIncidents')}</div>`;
+        } else {
+          incidents.forEach((incident) => {
+            const item = document.createElement('div');
+            item.className = `incident ${incident.resolved ? 'resolved' : ''}`;
+            const steps = incident.steps.map((step, index) => `<span class="step ${index < incident.progress ? 'done' : ''}">${t(`tool_${step}`)}</span>`).join('');
+            item.innerHTML = `
+              <div class="incident-top">
+                <div>
+                  <div class="incident-name">${t(`type_${incident.type}`)}</div>
+                  <div class="small">${t('stepLabel')}</div>
+                </div>
+                <div class="pill">-${incident.damage}</div>
+              </div>
+              <div class="steps">${steps}</div>
+            `;
+            const btn = document.createElement('button');
+            btn.className = `tool-btn ${room.role}`;
+            btn.disabled = incident.resolved || room.status !== 'playing';
+            btn.textContent = t(`tool_${room.role}`);
+            btn.dataset.incidentId = incident.id;
+            btn.addEventListener('click', () => send({ type: 'useTool', incidentId: incident.id }));
+            item.appendChild(btn);
+            list.appendChild(item);
+          });
+        }
+
+        zoneCard.appendChild(list);
+        zones.appendChild(zoneCard);
+      });
+    }
+
+    function renderResult(room) {
+      const won = room.status === 'won';
+      document.getElementById('result-title').textContent = t(won ? 'resultWin' : 'resultLose');
+      document.getElementById('result-copy').textContent = t(won ? 'resultWinCopy' : 'resultLoseCopy');
+      document.getElementById('result-hull').textContent = room.hull;
+      document.getElementById('result-time').textContent = room.timeLeft;
+      document.getElementById('result-fixed').textContent = room.repaired;
+      renderPlayers('result-players', [...room.players].sort((a, b) => b.score - a.score));
+    }
+
+    function render() {
+      if (!state.room) return;
+      translatePage();
+      if (state.room.status === 'lobby') {
+        showScreen('lobby');
+        renderLobby(state.room);
+      } else if (state.room.status === 'playing') {
+        showScreen('game');
+        renderGame(state.room);
+      } else {
+        showScreen('result');
+        renderResult(state.room);
+      }
+    }
+
+    function escapeHtml(value) {
+      return value.replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
+    }
+
+    document.getElementById('btn-create').addEventListener('click', () => {
+      document.getElementById('error-box').textContent = '';
+      send({ type: 'create', name: playerName() });
+    });
+
+    document.getElementById('btn-join').addEventListener('click', () => {
+      document.getElementById('error-box').textContent = '';
+      send({ type: 'join', name: playerName(), roomCode: document.getElementById('room-code-input').value.trim().toUpperCase() });
+    });
+
+    document.getElementById('btn-start').addEventListener('click', () => send({ type: 'start' }));
+    document.getElementById('btn-restart').addEventListener('click', () => send({ type: 'restart' }));
+
+    document.getElementById('player-name').value = localStorage.getItem('patch-panic-name') || '';
+    document.getElementById('player-name').addEventListener('change', (event) => localStorage.setItem('patch-panic-name', event.target.value.trim()));
+    connect();
+    translatePage();
+  </script>
+</body>
+</html>
