@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Polar Pull</title>
+  <style>
+    :root {
+      --bg: #07111f;
+      --panel: #10233a;
+      --panel-2: #17314d;
+      --text: #eef6ff;
+      --accent: #6ad5ff;
+      --accent-2: #ff7ad9;
+      --good: #8dff9b;
+      --warn: #ffd166;
+      --wall: #29445f;
+      --hole: #02060c;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: system-ui, sans-serif;
+      background: radial-gradient(circle at top, #113355, var(--bg));
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+    }
+    .back-bar{width:100%;background:#0a0a1a;padding:0.5rem 1rem;border-bottom:1px solid #333;}
+    .back-bar a{color:#ffcc00;text-decoration:none;font-size:0.9rem;font-family:system-ui,sans-serif;}
+    .back-bar a:hover{text-decoration:underline;}
+    main {
+      flex: 1;
+      display: grid;
+      place-items: center;
+      padding: 1rem;
+    }
+    .screen { display: none; width: min(100%, 520px); }
+    .screen.active { display: block; }
+    .card {
+      background: rgba(10, 24, 41, 0.92);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 20px;
+      padding: 1rem;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.35);
+    }
+    h1, h2, p { margin-top: 0; }
+    .hero { text-align: center; }
+    .hero p { line-height: 1.5; opacity: 0.92; }
+    .legend { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.6rem; margin: 1rem 0; font-size: 0.95rem; }
+    .legend span { display: flex; align-items: center; gap: 0.5rem; }
+    .dot { width: 18px; height: 18px; border-radius: 50%; display: inline-block; }
+    .dot.core { background: #7ce3ff; box-shadow: 0 0 10px #7ce3ff; }
+    .dot.magnet { background: linear-gradient(90deg, #ff5f6d 50%, #59c4ff 50%); }
+    .dot.metal { background: #cbd5e1; }
+    .dot.exit { background: #9effa4; }
+    .dot.hole { background: #000; border: 1px solid #335; }
+    button {
+      border: 0;
+      border-radius: 14px;
+      padding: 0.9rem 1rem;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+      color: white;
+      background: var(--panel-2);
+    }
+    button.primary { background: linear-gradient(135deg, var(--accent), #3ba3ff); color: #04101c; }
+    button.pulse.attract { background: linear-gradient(135deg, #ff8adf, #c466ff); }
+    button.pulse.repel { background: linear-gradient(135deg, #7ce3ff, #55a8ff); }
+    button:disabled { opacity: 0.5; cursor: default; }
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      gap: 0.5rem;
+      margin-bottom: 0.75rem;
+      font-size: 0.92rem;
+      flex-wrap: wrap;
+    }
+    .pill {
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.12);
+      padding: 0.45rem 0.7rem;
+      border-radius: 999px;
+    }
+    canvas {
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      background: linear-gradient(180deg, rgba(9,17,31,0.9), rgba(6,12,22,0.96));
+      border-radius: 16px;
+      display: block;
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+    .status {
+      min-height: 2.8rem;
+      display: grid;
+      place-items: center;
+      text-align: center;
+      margin: 0.8rem 0;
+      color: var(--warn);
+      font-weight: 700;
+    }
+    .controls { display: grid; gap: 0.75rem; }
+    .row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; }
+    .row.two { grid-template-columns: repeat(2, 1fr); }
+    .footer-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-top: 0.75rem; }
+    .tiny { font-size: 0.85rem; opacity: 0.8; text-align: center; margin-top: 0.75rem; }
+  </style>
+</head>
+<body>
+  <div class="back-bar"><a href="/">← Back to Games</a></div>
+  <main>
+    <section id="start-screen" class="screen active">
+      <div class="card hero">
+        <h1 data-i18n="title">Polar Pull</h1>
+        <p data-i18n="intro">Du bist ein Taschenmagnet in einer Raumstation voller Schrott. Laufe, ziehe, stoße und sammle alle Energiekernchen ein.</p>
+        <div class="legend">
+          <span><i class="dot magnet"></i><span data-i18n="legendMagnet">Du</span></span>
+          <span><i class="dot core"></i><span data-i18n="legendCore">Energiekern</span></span>
+          <span><i class="dot metal"></i><span data-i18n="legendMetal">Metallschrott</span></span>
+          <span><i class="dot hole"></i><span data-i18n="legendHole">Schmelzloch</span></span>
+          <span><i class="dot exit"></i><span data-i18n="legendExit">Ausgang</span></span>
+        </div>
+        <p data-i18n="howto">Bewege den Magneten mit den Pfeilen. Pulse ziehen oder stoßen das erste Metallstück in Sichtlinie um ein Feld. Sammle alle Kerne und erreiche dann den Ausgang.</p>
+        <button id="start-btn" class="primary" data-i18n="start">Spiel Starten</button>
+      </div>
+    </section>
+
+    <section id="game-screen" class="screen">
+      <div class="card">
+        <div class="topbar">
+          <div class="pill" id="level-label"></div>
+          <div class="pill" id="moves-label"></div>
+          <div class="pill" id="cores-label"></div>
+        </div>
+        <canvas id="game-canvas" width="480" height="480" aria-label="Polar Pull grid"></canvas>
+        <div class="status" id="status-text"></div>
+
+        <div class="controls">
+          <div class="row">
+            <div></div>
+            <button data-action="move" data-dir="up">↑</button>
+            <button class="pulse attract" data-action="pulse" data-mode="attract" data-dir="up">⬆︎ ✦</button>
+          </div>
+          <div class="row">
+            <button data-action="move" data-dir="left">←</button>
+            <button id="reset-btn" data-i18n="reset">Reset</button>
+            <button data-action="move" data-dir="right">→</button>
+          </div>
+          <div class="row">
+            <button class="pulse repel" data-action="pulse" data-mode="repel" data-dir="left">✦ ←</button>
+            <button data-action="move" data-dir="down">↓</button>
+            <button class="pulse repel" data-action="pulse" data-mode="repel" data-dir="right">→ ✦</button>
+          </div>
+          <div class="row two">
+            <button class="pulse attract" data-action="pulse" data-mode="attract" data-dir="left">⬅︎ ✦</button>
+            <button class="pulse attract" data-action="pulse" data-mode="attract" data-dir="right">✦ ➡︎</button>
+          </div>
+          <div class="row two">
+            <button class="pulse repel" data-action="pulse" data-mode="repel" data-dir="up">✦ ↑</button>
+            <button class="pulse repel" data-action="pulse" data-mode="repel" data-dir="down">✦ ↓</button>
+          </div>
+        </div>
+        <div class="footer-actions">
+          <button id="prev-btn" data-i18n="prev">Zurück</button>
+          <button id="next-btn" class="primary" data-i18n="next">Weiter</button>
+        </div>
+        <div class="tiny" data-i18n="tip">Tipp: Erst Metall in Löcher stoßen, dann freie Wege für die Kerne bauen.</div>
+      </div>
+    </section>
+  </main>
+
+<script src="/shared/i18n.js"></script>
+<script type="module">
+  import { LEVELS, createState, movePlayer, pulse, isWon, getTile } from './game.js';
+
+  const TRANSLATIONS = {
+    de: {
+      title: 'Polar Pull', intro: 'Du bist ein Taschenmagnet in einer Raumstation voller Schrott. Laufe, ziehe, stoße und sammle alle Energiekernchen ein.',
+      legendMagnet: 'Du', legendCore: 'Energiekern', legendMetal: 'Metallschrott', legendHole: 'Schmelzloch', legendExit: 'Ausgang',
+      howto: 'Bewege den Magneten mit den Pfeilen. Pulse ziehen oder stoßen das erste Metallstück in Sichtlinie um ein Feld. Sammle alle Kerne und erreiche dann den Ausgang.',
+      start: 'Spiel Starten', reset: 'Reset', prev: 'Zurück', next: 'Weiter', tip: 'Tipp: Erst Metall in Löcher stoßen, dann freie Wege für die Kerne bauen.',
+      level: 'Level', moves: 'Züge', cores: 'Kerne', ready: 'Sammle alle Kerne ein und fliehe dann zum Ausgang.',
+      won: 'Perfekt. Station gesäubert. Weiter zum nächsten Raum!', done: 'Alle Räume geschafft. Schön magnetisch. 🧲', locked: 'Erst dieses Level lösen.',
+    },
+    en: {
+      title: 'Polar Pull', intro: 'You are a pocket magnet in a scrap-clogged station. Walk, pull, shove, and grab every glowing core.',
+      legendMagnet: 'You', legendCore: 'Energy core', legendMetal: 'Metal scrap', legendHole: 'Melt hole', legendExit: 'Exit',
+      howto: 'Move the magnet with the arrows. Pulses pull or shove the first metal chunk in line of sight by one tile. Collect every core, then reach the exit.',
+      start: 'Start Game', reset: 'Reset', prev: 'Back', next: 'Next', tip: 'Tip: dump metal into holes first, then open routes to the cores.',
+      level: 'Level', moves: 'Moves', cores: 'Cores', ready: 'Collect every core, then escape through the exit.',
+      won: 'Nice. Station cleaned. On to the next room!', done: 'All rooms cleared. Very magnetic. 🧲', locked: 'Solve this level first.',
+    },
+    fr: {
+      title: 'Polar Pull', intro: 'Tu es un petit aimant dans une station remplie de ferraille. Marche, attire, repousse et ramasse chaque noyau.',
+      legendMagnet: 'Toi', legendCore: 'Noyau', legendMetal: 'Ferraille', legendHole: 'Trou de fusion', legendExit: 'Sortie',
+      howto: 'Déplace l’aimant avec les flèches. Les impulsions attirent ou repoussent le premier morceau de métal en ligne de vue d’une case.',
+      start: 'Commencer', reset: 'Réinitialiser', prev: 'Retour', next: 'Suivant', tip: 'Astuce : pousse d’abord le métal dans les trous, puis ouvre la voie vers les noyaux.',
+      level: 'Niveau', moves: 'Coups', cores: 'Noyaux', ready: 'Ramasse tous les noyaux puis atteins la sortie.',
+      won: 'Parfait. Station nettoyée. Salle suivante !', done: 'Toutes les salles sont terminées. Très magnétique. 🧲', locked: 'Résous ce niveau d’abord.',
+    },
+    it: {
+      title: 'Polar Pull', intro: 'Sei un piccolo magnete in una stazione piena di rottami. Cammina, attira, respingi e raccogli tutti i nuclei.',
+      legendMagnet: 'Tu', legendCore: 'Nucleo', legendMetal: 'Rottame', legendHole: 'Buco di fusione', legendExit: 'Uscita',
+      howto: 'Muovi il magnete con le frecce. Gli impulsi attirano o respingono il primo pezzo di metallo in linea di vista di una casella.',
+      start: 'Inizia', reset: 'Reset', prev: 'Indietro', next: 'Avanti', tip: 'Suggerimento: spingi prima il metallo nei buchi, poi libera la strada ai nuclei.',
+      level: 'Livello', moves: 'Mosse', cores: 'Nuclei', ready: 'Raccogli tutti i nuclei e poi raggiungi l’uscita.',
+      won: 'Perfetto. Stazione ripulita. Sala successiva!', done: 'Tutte le sale sono completate. Molto magnetico. 🧲', locked: 'Risolvi prima questo livello.',
+    },
+    es: {
+      title: 'Polar Pull', intro: 'Eres un imán de bolsillo en una estación llena de chatarra. Camina, atrae, empuja y recoge todos los núcleos.',
+      legendMagnet: 'Tú', legendCore: 'Núcleo', legendMetal: 'Chatarra', legendHole: 'Hoyo de fusión', legendExit: 'Salida',
+      howto: 'Mueve el imán con las flechas. Los pulsos atraen o empujan una casilla la primera pieza metálica en línea de visión.',
+      start: 'Empezar', reset: 'Reiniciar', prev: 'Atrás', next: 'Siguiente', tip: 'Consejo: mete primero el metal en los hoyos y luego abre camino hacia los núcleos.',
+      level: 'Nivel', moves: 'Movimientos', cores: 'Núcleos', ready: 'Recoge todos los núcleos y luego llega a la salida.',
+      won: 'Perfecto. Estación limpia. ¡Siguiente sala!', done: 'Todas las salas superadas. Muy magnético. 🧲', locked: 'Resuelve primero este nivel.',
+    }
+  };
+
+  const { t, translatePage } = initI18n(TRANSLATIONS);
+  const startScreen = document.getElementById('start-screen');
+  const gameScreen = document.getElementById('game-screen');
+  const canvas = document.getElementById('game-canvas');
+  const ctx = canvas.getContext('2d');
+  const statusText = document.getElementById('status-text');
+  const levelLabel = document.getElementById('level-label');
+  const movesLabel = document.getElementById('moves-label');
+  const coresLabel = document.getElementById('cores-label');
+  const nextBtn = document.getElementById('next-btn');
+  const prevBtn = document.getElementById('prev-btn');
+
+  let unlocked = 0;
+  let levelIndex = 0;
+  let state = createState(LEVELS[levelIndex], levelIndex);
+
+  function loadLevel(index) {
+    levelIndex = Math.max(0, Math.min(index, LEVELS.length - 1));
+    state = createState(LEVELS[levelIndex], levelIndex);
+    render();
+  }
+
+  function renderHud() {
+    levelLabel.textContent = `${t('level')} ${levelIndex + 1}/${LEVELS.length}`;
+    movesLabel.textContent = `${t('moves')}: ${state.moves + state.energyUsed} / ${state.targetMoves}`;
+    coresLabel.textContent = `${t('cores')}: ${state.coresLeft}`;
+    prevBtn.disabled = levelIndex === 0;
+    nextBtn.disabled = levelIndex > unlocked || (!state.won && levelIndex === unlocked && levelIndex < LEVELS.length - 1);
+    statusText.textContent = state.won ? (levelIndex === LEVELS.length - 1 ? t('done') : t('won')) : t('ready');
+  }
+
+  function drawCell(x, y, size) {
+    const tile = getTile(state, x, y);
+    const px = x * size;
+    const py = y * size;
+    ctx.fillStyle = tile === 'wall' ? '#29445f' : '#0d1a2c';
+    ctx.fillRect(px + 2, py + 2, size - 4, size - 4);
+
+    if (tile === 'hole') {
+      ctx.fillStyle = '#02060c';
+      ctx.beginPath();
+      ctx.arc(px + size / 2, py + size / 2, size * 0.26, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#364c70';
+      ctx.stroke();
+    }
+    if (tile === 'exit') {
+      ctx.strokeStyle = '#7bff93';
+      ctx.lineWidth = 3;
+      ctx.strokeRect(px + size * 0.22, py + size * 0.22, size * 0.56, size * 0.56);
+    }
+    if (tile === 'core') {
+      ctx.fillStyle = '#7ce3ff';
+      ctx.beginPath();
+      ctx.arc(px + size / 2, py + size / 2, size * 0.16, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.shadowColor = '#7ce3ff';
+      ctx.shadowBlur = 12;
+      ctx.fill();
+      ctx.shadowBlur = 0;
+    }
+  }
+
+  function drawActors(size) {
+    for (const metal of state.metals) {
+      const cx = metal.x * size + size / 2;
+      const cy = metal.y * size + size / 2;
+      ctx.fillStyle = '#cfd8e3';
+      ctx.beginPath();
+      ctx.roundRect(cx - size * 0.18, cy - size * 0.18, size * 0.36, size * 0.36, 8);
+      ctx.fill();
+    }
+
+    const cx = state.player.x * size + size / 2;
+    const cy = state.player.y * size + size / 2;
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.fillStyle = '#ff6881';
+    ctx.fillRect(-size * 0.22, -size * 0.18, size * 0.22, size * 0.36);
+    ctx.fillStyle = '#69c8ff';
+    ctx.fillRect(0, -size * 0.18, size * 0.22, size * 0.36);
+    ctx.fillStyle = '#f5fbff';
+    ctx.beginPath();
+    ctx.arc(0, 0, size * 0.09, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function render() {
+    const size = canvas.width / state.width;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    for (let y = 0; y < state.height; y++) {
+      for (let x = 0; x < state.width; x++) drawCell(x, y, size);
+    }
+    drawActors(size);
+    renderHud();
+  }
+
+  function handleMove(dir) {
+    state = movePlayer(state, dir);
+    if (state.won) unlocked = Math.max(unlocked, Math.min(levelIndex + 1, LEVELS.length - 1));
+    render();
+  }
+
+  function handlePulse(dir, mode) {
+    state = pulse(state, dir, mode);
+    render();
+  }
+
+  document.getElementById('start-btn').addEventListener('click', () => {
+    startScreen.classList.remove('active');
+    gameScreen.classList.add('active');
+    render();
+  });
+
+  document.getElementById('reset-btn').addEventListener('click', () => loadLevel(levelIndex));
+  nextBtn.addEventListener('click', () => {
+    if (state.won || levelIndex < unlocked) loadLevel(levelIndex + 1);
+    else statusText.textContent = t('locked');
+  });
+  prevBtn.addEventListener('click', () => loadLevel(levelIndex - 1));
+
+  document.querySelectorAll('[data-action]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const action = btn.dataset.action;
+      const dir = btn.dataset.dir;
+      if (action === 'move') handleMove(dir);
+      else handlePulse(dir, btn.dataset.mode);
+    });
+  });
+
+  window.addEventListener('keydown', (event) => {
+    const keyMap = { ArrowUp: 'up', ArrowRight: 'right', ArrowDown: 'down', ArrowLeft: 'left' };
+    if (keyMap[event.key]) {
+      event.preventDefault();
+      handleMove(keyMap[event.key]);
+    }
+    if (event.key.toLowerCase() === 'r') loadLevel(levelIndex);
+  });
+
+  translatePage();
+  render();
+</script>
+</body>
+</html>

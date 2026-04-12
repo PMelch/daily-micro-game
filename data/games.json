@@ -1871,6 +1871,42 @@
       "whyFun_it": "È come programmare, ma come un puzzle! L'effetto loop ti costringe a pensare a schemi.",
       "whyFun_es": "¡Es como programar, pero como un puzzle! El efecto de bucle te obliga a pensar en patrones.",
       "screenshot": "screenshot.png"
+    },
+    {
+      "id": "day-058-polar-pull",
+      "name": "Polar Pull",
+      "date": "2026-04-13",
+      "tags": [
+        "single-player",
+        "puzzle",
+        "magnet",
+        "strategy",
+        "spatial"
+      ],
+      "ratings": [],
+      "name_de": "Polar Pull",
+      "name_en": "Polar Pull",
+      "name_fr": "Polar Pull",
+      "name_it": "Polar Pull",
+      "name_es": "Polar Pull",
+      "description": "Solo-Magneträtsel! Du bist ein kleiner Taschenmagnet in einer Schrottstation. Bewege dich, ziehe Metall heran oder stoße es weg, sammle alle Energiekerne und finde den Ausgang.",
+      "description_de": "Solo-Magneträtsel! Du bist ein kleiner Taschenmagnet in einer Schrottstation. Bewege dich, ziehe Metall heran oder stoße es weg, sammle alle Energiekerne und finde den Ausgang.",
+      "description_en": "Solo magnet puzzle! You are a pocket magnet inside a junk-clogged station. Move, pull scrap closer or shove it away, collect every energy core, then reach the exit.",
+      "description_fr": "Puzzle magnétique solo ! Tu es un petit aimant dans une station pleine de ferraille. Déplace-toi, attire ou repousse le métal, récupère tous les noyaux d'énergie puis trouve la sortie.",
+      "description_it": "Puzzle magnetico in solitaria! Sei un piccolo magnete in una stazione piena di rottami. Muoviti, attira o respingi il metallo, raccogli tutti i nuclei energetici e raggiungi l'uscita.",
+      "description_es": "¡Puzzle magnético en solitario! Eres un pequeño imán en una estación llena de chatarra. Muévete, atrae o empuja el metal, recoge todos los núcleos de energía y llega a la salida.",
+      "howToPlay": "Bewege den Magneten mit den Pfeiltasten oder den Buttons. Magnet-Pulse ziehen oder stoßen das erste Metallstück in Sichtlinie genau ein Feld. Räume Schrott in Schmelzlöcher, sammle alle Kerne und verlasse dann den Raum.",
+      "howToPlay_de": "Bewege den Magneten mit den Pfeiltasten oder den Buttons. Magnet-Pulse ziehen oder stoßen das erste Metallstück in Sichtlinie genau ein Feld. Räume Schrott in Schmelzlöcher, sammle alle Kerne und verlasse dann den Raum.",
+      "howToPlay_en": "Move the magnet with the arrow keys or on-screen buttons. Magnet pulses pull or shove the first metal chunk in line of sight exactly one tile. Dump scrap into melt holes, collect every core, then leave through the exit.",
+      "howToPlay_fr": "Déplace l'aimant avec les flèches ou les boutons. Les impulsions magnétiques attirent ou repoussent d'une case le premier morceau de métal en ligne de vue. Jette la ferraille dans les trous, ramasse tous les noyaux puis sors.",
+      "howToPlay_it": "Muovi il magnete con le frecce o con i pulsanti. Gli impulsi magnetici attirano o respingono di una casella il primo pezzo di metallo in linea di vista. Butta i rottami nei buchi, raccogli tutti i nuclei e poi esci.",
+      "howToPlay_es": "Mueve el imán con las flechas o los botones. Los pulsos magnéticos atraen o empujan exactamente una casilla la primera pieza de metal en línea de visión. Mete la chatarra en los agujeros, recoge todos los núcleos y sal.",
+      "whyFun": "Das Herzstück ist die Fernwirkung: Du bewegst nicht nur dich selbst, sondern den ganzen Raum. Ein guter Pulse räumt Schrott aus dem Weg, öffnet eine Route und kann sogar Metall elegant im Loch versenken. Klein, klar, aber mit echtem Grübel-Faktor.",
+      "whyFun_de": "Das Herzstück ist die Fernwirkung: Du bewegst nicht nur dich selbst, sondern den ganzen Raum. Ein guter Pulse räumt Schrott aus dem Weg, öffnet eine Route und kann sogar Metall elegant im Loch versenken. Klein, klar, aber mit echtem Grübel-Faktor.",
+      "whyFun_en": "The heart of it is remote control: you are not just moving yourself, you are reshaping the whole room. A good pulse clears junk, opens a route, and can even drop metal neatly into a hole. Small, crisp, and genuinely thinky.",
+      "whyFun_fr": "Le cœur du jeu, c'est l'action à distance : tu ne bouges pas seulement ton pion, tu remodeles toute la salle. Une bonne impulsion dégage la ferraille, ouvre un chemin et peut même faire tomber le métal dans un trou. Petit, net et malin.",
+      "whyFun_it": "Il cuore del gioco è il controllo a distanza: non muovi solo te stesso, ma rimodelli tutta la stanza. Un buon impulso libera i rottami, apre una strada e può persino far cadere il metallo in un buco. Piccolo, chiaro e davvero intelligente.",
+      "whyFun_es": "El corazón del juego es el control a distancia: no solo te mueves tú, sino que remodelas toda la sala. Un buen pulso aparta chatarra, abre rutas e incluso deja caer metal en un agujero. Pequeño, claro y con buen factor de ingenio."
     }
   ]
 }
