@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Track Tactix</title>
+  <script defer src="https://analytics.lab.gogerl.com/script.js" data-website-id="6544877e-6573-4ffa-b91f-db98c1bd4c77"></script>
+  <style>
+    :root{--bg:#0f1226;--panel:#181d3a;--panel2:#232b57;--accent:#ffcc00;--text:#f4f6ff;--muted:#a9b0d0;--danger:#ff6b6b;--good:#68e0a1}
+    *{box-sizing:border-box} body{margin:0;background:radial-gradient(circle at top,#202759,#0d1023 60%);color:var(--text);font-family:system-ui,sans-serif;min-height:100vh}
+    .back-bar{width:100%;background:#0a0a1a;padding:.5rem 1rem;border-bottom:1px solid #333}.back-bar a{color:#ffcc00;text-decoration:none;font-size:.9rem;font-family:system-ui,sans-serif}.back-bar a:hover{text-decoration:underline}
+    main{max-width:900px;margin:0 auto;padding:1rem;display:grid;gap:1rem}.panel{background:rgba(24,29,58,.92);border:1px solid rgba(255,255,255,.08);border-radius:18px;padding:1rem;box-shadow:0 10px 30px rgba(0,0,0,.25)}
+    h1,h2,p{margin:.2rem 0}.subtitle{color:var(--muted)} .hidden{display:none !important}
+    .row{display:flex;gap:.75rem;flex-wrap:wrap}.col{display:grid;gap:.75rem}.player-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:.75rem}.player-card{background:var(--panel2);border-radius:14px;padding:.75rem;border:2px solid transparent}.active{border-color:var(--accent)} .tiny{font-size:.9rem;color:var(--muted)}
+    .setup-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:.75rem}.name-field{display:grid;gap:.35rem} input,select,button{font:inherit} input,select{background:#0c1030;color:#fff;border:1px solid #465198;border-radius:12px;padding:.8rem}
+    button{border:0;border-radius:14px;padding:.85rem 1rem;background:var(--accent);color:#161616;font-weight:700;cursor:pointer} button.secondary{background:#303867;color:#fff} button.ghost{background:transparent;border:1px solid #5862a7;color:#fff} button:disabled{opacity:.45;cursor:not-allowed}
+    .board-wrap{display:grid;justify-items:center;gap:.75rem}.board{display:grid;grid-template-columns:repeat(6,minmax(42px,62px));gap:6px;touch-action:manipulation}.cell{aspect-ratio:1;background:#12183a;border:1px solid rgba(255,255,255,.08);border-radius:12px;display:grid;place-items:center;position:relative}.pickup{width:16px;height:16px;border-radius:50%;background:radial-gradient(circle at 30% 30%,#fff,var(--accent));box-shadow:0 0 18px rgba(255,204,0,.6)}
+    .robot{width:28px;height:28px;border-radius:10px;display:grid;place-items:center;font-size:16px;font-weight:900;color:#111;transform:rotate(var(--rot))}.r0{background:#7dd3fc}.r1{background:#f9a8d4}.r2{background:#86efac}.r3{background:#fdba74}.queue{display:flex;gap:.35rem;flex-wrap:wrap;min-height:38px}.chip{padding:.35rem .55rem;border-radius:999px;background:#0d1334;border:1px solid #4e589c;font-size:.88rem}
+    .commands{display:grid;grid-template-columns:repeat(2,minmax(120px,1fr));gap:.6rem}.commands button{min-height:56px}.steps{display:flex;gap:.5rem;flex-wrap:wrap;justify-content:center}.step-dot{width:14px;height:14px;border-radius:50%;background:#3d467e}.step-dot.on{background:var(--accent)}
+    .overlay{position:fixed;inset:0;background:rgba(8,10,20,.78);display:grid;place-items:center;padding:1rem;z-index:20}.overlay-card{max-width:520px;width:100%;background:#12183a;border:1px solid rgba(255,255,255,.1);border-radius:22px;padding:1.2rem;display:grid;gap:.9rem;text-align:center}
+    .winner{font-size:1.1rem;color:var(--good);font-weight:700}.danger{color:var(--danger)}
+    @media (max-width:640px){main{padding:.75rem}.board{grid-template-columns:repeat(6,minmax(40px,1fr));width:100%}.commands{grid-template-columns:1fr 1fr}}
+  </style>
+</head>
+<body>
+  <div class="back-bar"><a href="/">← Back to Games</a></div>
+  <main>
+    <section class="panel col">
+      <h1 data-i18n="title">Track Tactix</h1>
+      <p class="subtitle" data-i18n="tagline">Programmiere drei geheime Züge, dann rasen alle Roboter gleichzeitig los.</p>
+      <div class="row">
+        <button id="how-btn" class="secondary" data-i18n="howButton">So spielt man</button>
+        <button id="reset-btn" class="ghost" data-i18n="resetButton">Neu starten</button>
+      </div>
+    </section>
+
+    <section id="setup-panel" class="panel col">
+      <h2 data-i18n="setupTitle">Spieler anlegen</h2>
+      <div class="setup-grid">
+        <div class="name-field">
+          <label for="player-count" data-i18n="playerCount">Wie viele Spieler?</label>
+          <select id="player-count">
+            <option value="2">2</option><option value="3">3</option><option value="4">4</option>
+          </select>
+        </div>
+      </div>
+      <div id="name-fields" class="setup-grid"></div>
+      <button id="start-btn" data-i18n="startGame">Spiel starten</button>
+    </section>
+
+    <section id="game-panel" class="hidden col">
+      <div class="player-grid" id="scoreboard"></div>
+      <div class="panel board-wrap">
+        <div class="row" style="justify-content:space-between;width:100%;align-items:center">
+          <h2 id="round-label"></h2>
+          <div class="steps" id="step-indicator"></div>
+        </div>
+        <div id="turn-banner" class="subtitle"></div>
+        <div id="board" class="board"></div>
+      </div>
+      <div class="panel col">
+        <h2 id="planner-title"></h2>
+        <div class="queue" id="queue"></div>
+        <div class="commands">
+          <button data-command="forward"></button>
+          <button data-command="dash"></button>
+          <button data-command="left"></button>
+          <button data-command="right"></button>
+          <button data-command="wait" class="secondary"></button>
+          <button id="undo-btn" class="ghost"></button>
+        </div>
+        <button id="confirm-btn" disabled></button>
+      </div>
+    </section>
+  </main>
+
+  <div id="overlay" class="overlay hidden"><div id="overlay-card" class="overlay-card"></div></div>
+
+  <script src="/shared/i18n.js"></script>
+  <script type="module">
+    import { BOARD_SIZE, COMMANDS, createGameState, queueCommand, allCommandsQueued, resolveRound, getWinners, createRoundPickups } from './game.js';
+
+    const TRANSLATIONS = {
+      de:{title:'Track Tactix',tagline:'Programmiere drei geheime Züge, dann rasen alle Roboter gleichzeitig los.',howButton:'So spielt man',resetButton:'Neu starten',setupTitle:'Spieler anlegen',playerCount:'Wie viele Spieler?',startGame:'Spiel starten',round:'Runde',planner:'Geheime Befehle für {name}',queueEmpty:'Noch keine Befehle gewählt.',confirm:'Zugfolge bestätigen',undo:'Letzten Befehl löschen',forward:'Vor',dash:'Dash',left:'Links drehen',right:'Rechts drehen',wait:'Warten',points:'Punkte',facing:'Blick',introTitle:'So funktioniert es',introBody:'Jeder Spieler plant heimlich drei Befehle. Danach werden alle Befehle Schritt für Schritt gleichzeitig ausgeführt. Sterne einsammeln gibt Punkte. Kollisionen betäuben beide Roboter für die nächste Runde.',continue:'Weiter',passTitle:'Gib das Gerät an {name}!',passBody:'{name} plant jetzt heimlich die drei Befehle.',revealTitle:'Ausführen!',revealBody:'Alle Roboter fahren jetzt gleichzeitig.',nextPlayer:'Nächster Spieler: {name}',winnerSingle:'Gewonnen hat {name} mit {score} Punkten!',winnerTie:'Unentschieden zwischen {names} mit jeweils {score} Punkten!',playAgain:'Nochmal spielen',turnBanner:'Aktiv: {name}',facing_N:'↑ Norden',facing_E:'→ Osten',facing_S:'↓ Süden',facing_W:'← Westen',stunned:'Benommen',ready:'Bereit',pickups:'Sterne im Feld: {count}',roundLabel:'Runde {round} / {max}',stepLabel:'Schritt {step}',gameplayHint:'Alle bewegen sich gleichzeitig. Wände stoppen, Kollisionen betäuben.',defaultPlayer:'Spieler {n}'},
+      en:{title:'Track Tactix',tagline:'Program three secret moves, then every robot dashes at once.',howButton:'How to play',resetButton:'Reset',setupTitle:'Set up players',playerCount:'How many players?',startGame:'Start game',round:'Round',planner:'Secret commands for {name}',queueEmpty:'No commands selected yet.',confirm:'Confirm sequence',undo:'Remove last command',forward:'Forward',dash:'Dash',left:'Turn left',right:'Turn right',wait:'Wait',points:'Points',facing:'Facing',introTitle:'How it works',introBody:'Each player secretly plans three commands. Then all commands resolve simultaneously step by step. Collect stars for points. Crashes stun both robots for the next round.',continue:'Continue',passTitle:'Pass the device to {name}!',passBody:'{name} now plans their three secret commands.',revealTitle:'Execute!',revealBody:'All robots move at the same time now.',nextPlayer:'Next player: {name}',winnerSingle:'{name} wins with {score} points!',winnerTie:'Tie between {names} with {score} points each!',playAgain:'Play again',turnBanner:'Active: {name}',facing_N:'↑ North',facing_E:'→ East',facing_S:'↓ South',facing_W:'← West',stunned:'Stunned',ready:'Ready',pickups:'Stars on board: {count}',roundLabel:'Round {round} / {max}',stepLabel:'Step {step}',gameplayHint:'Everyone moves at once. Walls block, crashes stun.',defaultPlayer:'Player {n}'},
+      fr:{title:'Track Tactix',tagline:'Programmez trois actions secrètes, puis tous les robots foncent en même temps.',howButton:'Règles',resetButton:'Réinitialiser',setupTitle:'Créer les joueurs',playerCount:'Combien de joueurs ?',startGame:'Lancer la partie',round:'Manche',planner:'Commandes secrètes pour {name}',queueEmpty:'Aucune commande choisie.',confirm:'Confirmer la séquence',undo:'Retirer la dernière commande',forward:'Avancer',dash:'Turbo',left:'Tourner à gauche',right:'Tourner à droite',wait:'Attendre',points:'Points',facing:'Direction',introTitle:'Comment ça marche',introBody:'Chaque joueur prépare secrètement trois commandes. Ensuite tout se résout en même temps, étape par étape. Les étoiles donnent des points. Les collisions étourdissent les deux robots pour la manche suivante.',continue:'Continuer',passTitle:'Passe l’appareil à {name} !',passBody:'{name} prépare maintenant ses trois commandes secrètes.',revealTitle:'Exécution !',revealBody:'Tous les robots bougent maintenant en même temps.',nextPlayer:'Joueur suivant : {name}',winnerSingle:'{name} gagne avec {score} points !',winnerTie:'Égalité entre {names} avec {score} points chacun !',playAgain:'Rejouer',turnBanner:'Actif : {name}',facing_N:'↑ Nord',facing_E:'→ Est',facing_S:'↓ Sud',facing_W:'← Ouest',stunned:'Étourdi',ready:'Prêt',pickups:'Étoiles sur la grille : {count}',roundLabel:'Manche {round} / {max}',stepLabel:'Étape {step}',gameplayHint:'Tout le monde bouge en même temps. Les murs bloquent, les chocs étourdissent.',defaultPlayer:'Joueur {n}'},
+      it:{title:'Track Tactix',tagline:'Programma tre mosse segrete, poi tutti i robot partono insieme.',howButton:'Come si gioca',resetButton:'Reimposta',setupTitle:'Crea i giocatori',playerCount:'Quanti giocatori?',startGame:'Avvia gioco',round:'Round',planner:'Comandi segreti per {name}',queueEmpty:'Nessun comando scelto.',confirm:'Conferma sequenza',undo:'Rimuovi ultimo comando',forward:'Avanti',dash:'Scatto',left:'Gira a sinistra',right:'Gira a destra',wait:'Aspetta',points:'Punti',facing:'Direzione',introTitle:'Come funziona',introBody:'Ogni giocatore pianifica segretamente tre comandi. Poi tutto si risolve simultaneamente passo dopo passo. Le stelle danno punti. Gli scontri stordiscono entrambi i robot per il round successivo.',continue:'Continua',passTitle:'Passa il dispositivo a {name}!',passBody:'Ora {name} pianifica i tre comandi segreti.',revealTitle:'Esecuzione!',revealBody:'Ora tutti i robot si muovono insieme.',nextPlayer:'Prossimo giocatore: {name}',winnerSingle:'Vince {name} con {score} punti!',winnerTie:'Pareggio tra {names} con {score} punti ciascuno!',playAgain:'Gioca ancora',turnBanner:'Attivo: {name}',facing_N:'↑ Nord',facing_E:'→ Est',facing_S:'↓ Sud',facing_W:'← Ovest',stunned:'Stordito',ready:'Pronto',pickups:'Stelle sulla griglia: {count}',roundLabel:'Round {round} / {max}',stepLabel:'Passo {step}',gameplayHint:'Tutti si muovono insieme. I muri bloccano, gli scontri stordiscono.',defaultPlayer:'Giocatore {n}'},
+      es:{title:'Track Tactix',tagline:'Programa tres movimientos secretos y luego todos los robots salen a la vez.',howButton:'Cómo jugar',resetButton:'Reiniciar',setupTitle:'Crear jugadores',playerCount:'¿Cuántos jugadores?',startGame:'Empezar partida',round:'Ronda',planner:'Comandos secretos de {name}',queueEmpty:'Todavía no hay comandos.',confirm:'Confirmar secuencia',undo:'Quitar último comando',forward:'Avanzar',dash:'Sprint',left:'Girar izquierda',right:'Girar derecha',wait:'Esperar',points:'Puntos',facing:'Dirección',introTitle:'Cómo funciona',introBody:'Cada jugador planea en secreto tres comandos. Después todo se resuelve de forma simultánea paso a paso. Las estrellas dan puntos. Los choques aturden a ambos robots para la siguiente ronda.',continue:'Continuar',passTitle:'¡Pásale el dispositivo a {name}!',passBody:'Ahora {name} planea sus tres comandos secretos.',revealTitle:'¡Ejecutar!',revealBody:'Ahora todos los robots se mueven a la vez.',nextPlayer:'Siguiente jugador: {name}',winnerSingle:'¡{name} gana con {score} puntos!',winnerTie:'¡Empate entre {names} con {score} puntos cada uno!',playAgain:'Jugar otra vez',turnBanner:'Activo: {name}',facing_N:'↑ Norte',facing_E:'→ Este',facing_S:'↓ Sur',facing_W:'← Oeste',stunned:'Aturdido',ready:'Listo',pickups:'Estrellas en el tablero: {count}',roundLabel:'Ronda {round} / {max}',stepLabel:'Paso {step}',gameplayHint:'Todos se mueven a la vez. Las paredes bloquean, los choques aturden.',defaultPlayer:'Jugador {n}'}}
+;
+    const { t, lang, onLangChange, translatePage } = initI18n(TRANSLATIONS);
+    const $ = s => document.querySelector(s);
+    const $$ = s => Array.from(document.querySelectorAll(s));
+    const COMMAND_ORDER = ['forward','dash','left','right','wait'];
+    const state = { game:null, planningIndex:0 };
+
+    function fmt(key, vars={}){ return Object.entries(vars).reduce((str,[k,v])=>str.replaceAll(`{${k}}`, v), t(key)); }
+    function defaultName(i){ return fmt('defaultPlayer',{n:i+1}); }
+    function robotArrow(f){ return ({N:'▲',E:'▶',S:'▼',W:'◀'})[f]; }
+    function facingLabel(f){ return t(`facing_${f}`); }
+    function ensurePickups(){ if(state.game.pickups.length===0 && state.game.round<=state.game.maxRounds){ state.game.pickups = createRoundPickups(state.game.players.length, state.game.round); } }
+
+    function renderNameFields(){
+      const count = Number($('#player-count').value);
+      $('#name-fields').innerHTML = '';
+      for(let i=0;i<count;i++){
+        const wrap = document.createElement('div'); wrap.className='name-field';
+        wrap.innerHTML = `<label for="player-${i}">${defaultName(i)}</label><input id="player-${i}" maxlength="18" placeholder="${defaultName(i)}" value="${defaultName(i)}">`;
+        $('#name-fields').appendChild(wrap);
+      }
+    }
+
+    function renderBoard(stepIndex = null){
+      const board = $('#board'); board.innerHTML='';
+      const frame = stepIndex == null ? null : state.game.replay?.[stepIndex];
+      const players = frame ? state.game.players.map((p,i)=>({...p,...frame[i]})) : state.game.players;
+      for(let y=0;y<BOARD_SIZE;y++){
+        for(let x=0;x<BOARD_SIZE;x++){
+          const cell=document.createElement('div'); cell.className='cell';
+          const pickup = state.game.pickups.find(p=>p.x===x&&p.y===y); if(pickup){ const star=document.createElement('div'); star.className='pickup'; cell.appendChild(star); }
+          players.forEach((player,idx)=>{ if(player.position.x===x&&player.position.y===y){ const r=document.createElement('div'); r.className=`robot r${idx}`; r.style.setProperty('--rot',{N:'0deg',E:'90deg',S:'180deg',W:'270deg'}[player.facing]); r.textContent=robotArrow(player.facing); cell.appendChild(r);} });
+          board.appendChild(cell);
+        }
+      }
+    }
+
+    function renderScoreboard(){
+      $('#scoreboard').innerHTML = state.game.players.map((p,i)=>`<div class="player-card ${i===state.planningIndex?'active':''}"><strong>${p.name}</strong><div class="tiny">${t('points')}: ${p.score}</div><div class="tiny">${t('facing')}: ${facingLabel(p.facing)}</div><div class="tiny">${p.stunned>0?`<span class="danger">${t('stunned')}</span>`:t('ready')}</div></div>`).join('');
+    }
+
+    function renderPlanner(){
+      const player = state.game.players[state.planningIndex];
+      $('#planner-title').textContent = fmt('planner',{name:player.name});
+      $('#queue').innerHTML = player.queue.length ? player.queue.map(cmd=>`<span class="chip">${t(cmd)}</span>`).join('') : `<span class="tiny">${t('queueEmpty')}</span>`;
+      $('#confirm-btn').textContent = t('confirm');
+      $('#undo-btn').textContent = t('undo');
+      $('#confirm-btn').disabled = player.queue.length !== 3;
+      $('#turn-banner').textContent = `${fmt('turnBanner',{name:player.name})} • ${fmt('pickups',{count:state.game.pickups.length})}`;
+      $('#round-label').textContent = fmt('roundLabel',{round:Math.min(state.game.round,state.game.maxRounds),max:state.game.maxRounds});
+      $('#step-indicator').innerHTML = [0,1,2].map(i=>`<div class="step-dot ${i<player.queue.length?'on':''}"></div>`).join('');
+      $$('[data-command]').forEach(btn=>btn.textContent=t(btn.dataset.command));
+      renderBoard(); renderScoreboard();
+    }
+
+    async function showOverlay(title, body, buttonLabel=t('continue')){
+      return new Promise(resolve=>{
+        $('#overlay-card').innerHTML = `<h2>${title}</h2><p>${body}</p><button id="overlay-ok">${buttonLabel}</button>`;
+        $('#overlay').classList.remove('hidden');
+        $('#overlay-ok').onclick = ()=>{ $('#overlay').classList.add('hidden'); resolve(); };
+      });
+    }
+
+    async function showIntro(){ await showOverlay(t('introTitle'), `${t('introBody')}<br><br>${t('gameplayHint')}`); }
+
+    async function advancePlanner(){
+      if(state.planningIndex < state.game.players.length - 1){
+        state.planningIndex += 1;
+        renderPlanner();
+        await showOverlay(fmt('passTitle',{name:state.game.players[state.planningIndex].name}), fmt('passBody',{name:state.game.players[state.planningIndex].name}));
+      } else {
+        await runReplay();
+      }
+    }
+
+    async function runReplay(){
+      state.game = resolveRound(state.game);
+      renderScoreboard();
+      await showOverlay(t('revealTitle'), t('revealBody'));
+      for(let i=0;i<3;i++){
+        $('#step-indicator').innerHTML = [0,1,2].map(s=>`<div class="step-dot ${s<=i?'on':''}"></div>`).join('');
+        $('#turn-banner').textContent = fmt('stepLabel',{step:i+1});
+        renderBoard(i);
+        await new Promise(r=>setTimeout(r, 650));
+      }
+      if(state.game.phase === 'game-over' || state.game.round > state.game.maxRounds){
+        renderBoard(); renderScoreboard();
+        const winners = getWinners(state.game);
+        const title = winners.length===1 ? fmt('winnerSingle',{name:winners[0].name,score:winners[0].score}) : fmt('winnerTie',{names:winners.map(w=>w.name).join(', '),score:winners[0].score});
+        await showOverlay('🏁', `<div class="winner">${title}</div>`, t('playAgain'));
+        resetToSetup();
+        return;
+      }
+      ensurePickups();
+      state.planningIndex = 0;
+      renderPlanner();
+      await showOverlay(fmt('nextPlayer',{name:state.game.players[0].name}), fmt('passBody',{name:state.game.players[0].name}));
+    }
+
+    function startGame(){
+      const names = Array.from($('#name-fields').querySelectorAll('input')).map((input, i)=>input.value.trim() || defaultName(i));
+      state.game = createGameState(names);
+      state.game.phase='planning';
+      state.planningIndex = 0;
+      $('#setup-panel').classList.add('hidden');
+      $('#game-panel').classList.remove('hidden');
+      ensurePickups();
+      renderPlanner();
+      showIntro();
+    }
+
+    function resetToSetup(){
+      state.game = null; state.planningIndex = 0;
+      $('#game-panel').classList.add('hidden');
+      $('#setup-panel').classList.remove('hidden');
+      renderNameFields();
+    }
+
+    $('#player-count').addEventListener('change', renderNameFields);
+    $('#start-btn').addEventListener('click', startGame);
+    $('#reset-btn').addEventListener('click', resetToSetup);
+    $('#how-btn').addEventListener('click', showIntro);
+    $('#undo-btn').addEventListener('click', ()=>{ const p=state.game.players[state.planningIndex]; p.queue.pop(); renderPlanner(); });
+    $('#confirm-btn').addEventListener('click', advancePlanner);
+    $$('[data-command]').forEach(btn=>btn.addEventListener('click', ()=>{ const p=state.game.players[state.planningIndex]; if(p.queue.length>=3) return; state.game = queueCommand(state.game, state.planningIndex, btn.dataset.command); renderPlanner(); }));
+    onLangChange(()=>{ translatePage(); renderNameFields(); if(state.game){ renderPlanner(); renderScoreboard(); }});
+
+    renderNameFields();
+    translatePage();
+  </script>
+</body>
+</html>
