@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Shadow Heist</title>
+  <style>
+    :root {
+      --bg: #081019;
+      --panel: rgba(15, 23, 35, 0.94);
+      --text: #eef3ff;
+      --muted: #9aabc5;
+      --accent: #8df0c8;
+      --accent-2: #ffd166;
+      --danger: #ff6f91;
+      --wall: #223247;
+      --floor: #0d1725;
+      --vision: rgba(255, 111, 145, 0.15);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: system-ui, sans-serif;
+      background: radial-gradient(circle at top, #112235, var(--bg));
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+    }
+    .back-bar{width:100%;background:#0a0a1a;padding:0.5rem 1rem;border-bottom:1px solid #333;}
+    .back-bar a{color:#ffcc00;text-decoration:none;font-size:0.9rem;font-family:system-ui,sans-serif;}
+    .back-bar a:hover{text-decoration:underline;}
+    main { flex: 1; display: grid; place-items: center; padding: 1rem; }
+    .screen { display: none; width: min(100%, 560px); }
+    .screen.active { display: block; }
+    .card {
+      background: var(--panel);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 22px;
+      padding: 1rem;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.35);
+    }
+    h1, h2, p { margin-top: 0; }
+    .hero { text-align: center; }
+    .hero p { color: var(--muted); line-height: 1.5; }
+    .legend { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.65rem; margin: 1rem 0; }
+    .legend span { display: flex; align-items: center; gap: 0.55rem; }
+    .chip { width: 18px; height: 18px; border-radius: 6px; display: inline-block; }
+    .chip.player { background: linear-gradient(135deg, #8df0c8, #48c9ff); }
+    .chip.guard { background: linear-gradient(135deg, #ff6f91, #ff9770); }
+    .chip.key { background: #ffd166; }
+    .chip.exit { background: #8efc86; }
+    .chip.lure { background: #c8a8ff; }
+    button {
+      border: 0;
+      border-radius: 14px;
+      padding: 0.85rem 1rem;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+      color: #071019;
+      background: var(--accent);
+    }
+    button.secondary { background: #1a2b41; color: var(--text); }
+    button.warn { background: var(--accent-2); }
+    button:disabled { opacity: 0.5; cursor: default; }
+    .topbar { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.55rem; margin-bottom: 0.8rem; }
+    .pill {
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 999px;
+      padding: 0.5rem 0.7rem;
+      text-align: center;
+      font-size: 0.9rem;
+    }
+    canvas {
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      display: block;
+      background: #060b12;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 16px;
+      touch-action: manipulation;
+    }
+    .status {
+      min-height: 2.8rem;
+      display: grid;
+      place-items: center;
+      text-align: center;
+      margin: 0.8rem 0;
+      font-weight: 700;
+      color: var(--accent-2);
+    }
+    .controls { display: grid; gap: 0.75rem; }
+    .row { display: grid; gap: 0.75rem; }
+    .row.three { grid-template-columns: repeat(3, 1fr); }
+    .row.two { grid-template-columns: repeat(2, 1fr); }
+    .tiny { text-align: center; font-size: 0.88rem; color: var(--muted); margin-top: 0.6rem; }
+    @media (max-width: 520px) {
+      .topbar { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+</head>
+<body>
+  <div class="back-bar"><a href="/">← Back to Games</a></div>
+  <main>
+    <section id="start-screen" class="screen active">
+      <div class="card hero">
+        <h1 data-i18n="title">Shadow Heist</h1>
+        <p data-i18n="intro">Stehl die Schlüsselkarte, wirf Ablenkungen und schleich an den Wachrouten vorbei. Ein kleiner Stealth-Puzzle-Raub für zwischendurch.</p>
+        <div class="legend">
+          <span><i class="chip player"></i><span data-i18n="legendPlayer">Diebin</span></span>
+          <span><i class="chip guard"></i><span data-i18n="legendGuard">Wache</span></span>
+          <span><i class="chip key"></i><span data-i18n="legendKey">Schlüsselkarte</span></span>
+          <span><i class="chip exit"></i><span data-i18n="legendExit">Fluchtpunkt</span></span>
+          <span><i class="chip lure"></i><span data-i18n="legendLure">Ablenkung</span></span>
+        </div>
+        <p data-i18n="howto">Bewege dich Feld für Feld. Wachen patrouillieren automatisch nach jeder Aktion. Tippe auf das Raster, um eine Ablenkung zu werfen und eine Wache kurz aus der Linie zu ziehen. Hol die Schlüsselkarte und erreiche dann den Ausgang.</p>
+        <button id="start-btn" data-i18n="start">Spiel starten</button>
+      </div>
+    </section>
+
+    <section id="game-screen" class="screen">
+      <div class="card">
+        <div class="topbar">
+          <div class="pill" id="level-pill"></div>
+          <div class="pill" id="moves-pill"></div>
+          <div class="pill" id="lure-pill"></div>
+          <div class="pill" id="key-pill"></div>
+        </div>
+        <canvas id="game-canvas" width="560" height="560" aria-label="Shadow Heist board"></canvas>
+        <div id="status-text" class="status"></div>
+        <div class="controls">
+          <div class="row three">
+            <div></div>
+            <button class="secondary" data-move="up">↑</button>
+            <div></div>
+          </div>
+          <div class="row three">
+            <button class="secondary" data-move="left">←</button>
+            <button id="reset-btn" class="warn" data-i18n="reset">Reset</button>
+            <button class="secondary" data-move="right">→</button>
+          </div>
+          <div class="row three">
+            <div></div>
+            <button class="secondary" data-move="down">↓</button>
+            <div></div>
+          </div>
+          <div class="row two">
+            <button id="prev-btn" class="secondary" data-i18n="prev">Zurück</button>
+            <button id="next-btn" data-i18n="next">Weiter</button>
+          </div>
+        </div>
+        <div class="tiny" data-i18n="tip">Tipp: Rosa Sichtlinien sind tödlich. Eine gute Ablenkung spart oft zwei Züge.</div>
+      </div>
+    </section>
+  </main>
+
+  <script src="/shared/i18n.js"></script>
+  <script type="module">
+    import { LEVELS, createState, movePlayer, throwLure, getGuardVision } from './game.js';
+
+    const TRANSLATIONS = {
+      de: {
+        title: 'Shadow Heist', intro: 'Stehl die Schlüsselkarte, wirf Ablenkungen und schleich an den Wachrouten vorbei. Ein kleiner Stealth-Puzzle-Raub für zwischendurch.',
+        legendPlayer: 'Diebin', legendGuard: 'Wache', legendKey: 'Schlüsselkarte', legendExit: 'Fluchtpunkt', legendLure: 'Ablenkung',
+        howto: 'Bewege dich Feld für Feld. Wachen patrouillieren automatisch nach jeder Aktion. Tippe auf das Raster, um eine Ablenkung zu werfen und eine Wache kurz aus der Linie zu ziehen. Hol die Schlüsselkarte und erreiche dann den Ausgang.',
+        start: 'Spiel starten', reset: 'Reset', prev: 'Zurück', next: 'Weiter', tip: 'Tipp: Rosa Sichtlinien sind tödlich. Eine gute Ablenkung spart oft zwei Züge.',
+        level: 'Level', moves: 'Züge', lures: 'Ablenk.', key: 'Keycard', haveKey: 'Ja', noKey: 'Nein',
+        ready: 'Schleich los. Erst die Karte, dann der Ausgang.', lureInfo: 'Tippe auf ein freies Feld, um dort eine Ablenkung zu werfen.',
+        won: 'Sauberer Job. Weiter zum nächsten Coup.', done: 'Alle Coups geschafft. Unsichtbar genug. 🕶️', alarm: 'Alarm! Eine Wache hat dich gesehen. Reset und besser schleichen.', locked: 'Erst dieses Level lösen.'
+      },
+      en: {
+        title: 'Shadow Heist', intro: 'Steal the keycard, toss distractions, and slip past patrol routes. A tiny stealth puzzle for a quick hit.',
+        legendPlayer: 'Thief', legendGuard: 'Guard', legendKey: 'Keycard', legendExit: 'Escape point', legendLure: 'Distraction',
+        howto: 'Move one tile at a time. Guards patrol after every action. Tap the board to throw a distraction and pull a guard out of line for a moment. Grab the keycard, then reach the exit.',
+        start: 'Start game', reset: 'Reset', prev: 'Back', next: 'Next', tip: 'Tip: pink sight lines are deadly. A good distraction often saves two moves.',
+        level: 'Level', moves: 'Moves', lures: 'Lures', key: 'Keycard', haveKey: 'Yes', noKey: 'No',
+        ready: 'Stay quiet. Keycard first, exit second.', lureInfo: 'Tap any free tile to toss a distraction there.',
+        won: 'Clean job. On to the next score.', done: 'Every heist cleared. Invisible enough. 🕶️', alarm: 'Alarm! A guard spotted you. Reset and sneak smarter.', locked: 'Solve this level first.'
+      },
+      fr: {
+        title: 'Shadow Heist', intro: 'Vole la carte d’accès, lance des distractions et glisse entre les patrouilles. Un mini casse-tête d’infiltration.',
+        legendPlayer: 'Voleuse', legendGuard: 'Garde', legendKey: 'Carte', legendExit: 'Sortie', legendLure: 'Distraction',
+        howto: 'Déplace-toi case par case. Les gardes patrouillent après chaque action. Touche la grille pour lancer une distraction et les dévier un instant. Prends la carte puis rejoins la sortie.',
+        start: 'Commencer', reset: 'Réinitialiser', prev: 'Retour', next: 'Suivant', tip: 'Astuce : les lignes roses sont mortelles. Une bonne distraction économise souvent deux coups.',
+        level: 'Niveau', moves: 'Coups', lures: 'Leurres', key: 'Carte', haveKey: 'Oui', noKey: 'Non',
+        ready: 'Reste discret. Carte d’abord, sortie ensuite.', lureInfo: 'Touche une case libre pour y lancer une distraction.',
+        won: 'Travail propre. Au casse suivant.', done: 'Tous les casses sont réussis. Assez invisible. 🕶️', alarm: 'Alerte ! Un garde t’a vue. Réinitialise et recommence plus discrètement.', locked: 'Résous d’abord ce niveau.'
+      },
+      it: {
+        title: 'Shadow Heist', intro: 'Ruba la keycard, lancia distrazioni e sguscia tra le pattuglie. Un piccolo puzzle stealth.',
+        legendPlayer: 'Ladra', legendGuard: 'Guardia', legendKey: 'Keycard', legendExit: 'Uscita', legendLure: 'Distrazione',
+        howto: 'Muoviti di una casella alla volta. Le guardie pattugliano dopo ogni azione. Tocca la griglia per lanciare una distrazione e spostare una guardia per un attimo. Prendi la keycard e raggiungi l’uscita.',
+        start: 'Inizia', reset: 'Reset', prev: 'Indietro', next: 'Avanti', tip: 'Suggerimento: le linee rosa sono letali. Una buona distrazione spesso fa risparmiare due mosse.',
+        level: 'Livello', moves: 'Mosse', lures: 'Esche', key: 'Keycard', haveKey: 'Sì', noKey: 'No',
+        ready: 'Muoviti piano. Prima la keycard, poi l’uscita.', lureInfo: 'Tocca una casella libera per lanciare lì una distrazione.',
+        won: 'Colpo pulito. Al prossimo.', done: 'Tutti i colpi completati. Abbastanza invisibile. 🕶️', alarm: 'Allarme! Una guardia ti ha vista. Fai reset e prova con più cervello.', locked: 'Risolvi prima questo livello.'
+      },
+      es: {
+        title: 'Shadow Heist', intro: 'Roba la tarjeta, lanza distracciones y escápate entre las patrullas. Un pequeño rompecabezas de sigilo.',
+        legendPlayer: 'Ladrona', legendGuard: 'Guardia', legendKey: 'Tarjeta', legendExit: 'Salida', legendLure: 'Distracción',
+        howto: 'Muévete casilla a casilla. Los guardias patrullan después de cada acción. Toca el tablero para lanzar una distracción y sacar a un guardia de la línea un momento. Consigue la tarjeta y luego llega a la salida.',
+        start: 'Empezar', reset: 'Reiniciar', prev: 'Atrás', next: 'Siguiente', tip: 'Consejo: las líneas rosas son mortales. Una buena distracción suele ahorrar dos movimientos.',
+        level: 'Nivel', moves: 'Movs.', lures: 'Señuelos', key: 'Tarjeta', haveKey: 'Sí', noKey: 'No',
+        ready: 'Sin ruido. Primero la tarjeta, luego la salida.', lureInfo: 'Toca una casilla libre para lanzar allí una distracción.',
+        won: 'Golpe limpio. Vamos al siguiente.', done: 'Todos los golpes superados. Bastante invisible. 🕶️', alarm: '¡Alarma! Un guardia te vio. Reinicia y escóndete mejor.', locked: 'Resuelve antes este nivel.'
+      }
+    };
+
+    const { t, translatePage } = initI18n(TRANSLATIONS);
+    const startScreen = document.getElementById('start-screen');
+    const gameScreen = document.getElementById('game-screen');
+    const canvas = document.getElementById('game-canvas');
+    const ctx = canvas.getContext('2d');
+    const statusText = document.getElementById('status-text');
+    const levelPill = document.getElementById('level-pill');
+    const movesPill = document.getElementById('moves-pill');
+    const lurePill = document.getElementById('lure-pill');
+    const keyPill = document.getElementById('key-pill');
+    const nextBtn = document.getElementById('next-btn');
+    const prevBtn = document.getElementById('prev-btn');
+
+    let levelIndex = 0;
+    let unlocked = 0;
+    let state = createState(LEVELS[levelIndex], levelIndex);
+
+    function loadLevel(index) {
+      levelIndex = Math.max(0, Math.min(index, LEVELS.length - 1));
+      state = createState(LEVELS[levelIndex], levelIndex);
+      render();
+    }
+
+    function renderHud() {
+      levelPill.textContent = `${t('level')} ${levelIndex + 1}/${LEVELS.length}`;
+      movesPill.textContent = `${t('moves')}: ${state.moves}/${state.par}`;
+      lurePill.textContent = `${t('lures')}: ${state.lureCharges}`;
+      keyPill.textContent = `${t('key')}: ${state.hasKey ? t('haveKey') : t('noKey')}`;
+      prevBtn.disabled = levelIndex === 0;
+      nextBtn.disabled = levelIndex > unlocked || (!state.won && levelIndex === unlocked && levelIndex < LEVELS.length - 1);
+      if (state.alarm) statusText.textContent = t('alarm');
+      else if (state.won) statusText.textContent = levelIndex === LEVELS.length - 1 ? t('done') : t('won');
+      else statusText.textContent = `${t('ready')} ${state.lureCharges > 0 ? t('lureInfo') : ''}`.trim();
+    }
+
+    function drawBoard() {
+      const size = canvas.width / state.width;
+      const vision = getGuardVision(state);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      for (let y = 0; y < state.height; y++) {
+        for (let x = 0; x < state.width; x++) {
+          const px = x * size;
+          const py = y * size;
+          const isWall = state.walls.has(`${x},${y}`);
+          ctx.fillStyle = isWall ? '#223247' : '#0d1725';
+          ctx.fillRect(px + 2, py + 2, size - 4, size - 4);
+        }
+      }
+
+      ctx.fillStyle = 'rgba(255,111,145,0.15)';
+      for (const tile of vision) {
+        const px = tile.x * size;
+        const py = tile.y * size;
+        ctx.fillRect(px + 4, py + 4, size - 8, size - 8);
+      }
+
+      if (state.keycard) {
+        drawDiamond(state.keycard.x, state.keycard.y, size, '#ffd166');
+      }
+      drawExit(state.exit.x, state.exit.y, size);
+      if (state.lure) drawLure(state.lure.x, state.lure.y, size);
+      for (const guard of state.guards) drawGuard(guard.x, guard.y, size);
+      drawPlayer(state.player.x, state.player.y, size);
+    }
+
+    function drawDiamond(x, y, size, color) {
+      const cx = x * size + size / 2;
+      const cy = y * size + size / 2;
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.moveTo(cx, cy - size * 0.22);
+      ctx.lineTo(cx + size * 0.18, cy);
+      ctx.lineTo(cx, cy + size * 0.22);
+      ctx.lineTo(cx - size * 0.18, cy);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    function drawExit(x, y, size) {
+      const px = x * size;
+      const py = y * size;
+      ctx.strokeStyle = '#8efc86';
+      ctx.lineWidth = 4;
+      ctx.strokeRect(px + size * 0.24, py + size * 0.24, size * 0.52, size * 0.52);
+    }
+
+    function drawLure(x, y, size) {
+      const cx = x * size + size / 2;
+      const cy = y * size + size / 2;
+      ctx.fillStyle = '#c8a8ff';
+      ctx.beginPath();
+      ctx.arc(cx, cy, size * 0.12, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(200,168,255,0.5)';
+      ctx.beginPath();
+      ctx.arc(cx, cy, size * 0.25, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+
+    function drawGuard(x, y, size) {
+      const cx = x * size + size / 2;
+      const cy = y * size + size / 2;
+      ctx.fillStyle = '#ff6f91';
+      ctx.beginPath();
+      ctx.roundRect(cx - size * 0.18, cy - size * 0.18, size * 0.36, size * 0.36, 10);
+      ctx.fill();
+      ctx.fillStyle = '#fff5f6';
+      ctx.beginPath();
+      ctx.arc(cx - size * 0.06, cy - size * 0.03, size * 0.03, 0, Math.PI * 2);
+      ctx.arc(cx + size * 0.06, cy - size * 0.03, size * 0.03, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    function drawPlayer(x, y, size) {
+      const cx = x * size + size / 2;
+      const cy = y * size + size / 2;
+      ctx.fillStyle = '#8df0c8';
+      ctx.beginPath();
+      ctx.arc(cx, cy, size * 0.17, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#48c9ff';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(cx, cy, size * 0.23, Math.PI * 0.15, Math.PI * 1.85);
+      ctx.stroke();
+    }
+
+    function render() {
+      drawBoard();
+      renderHud();
+    }
+
+    function takeMove(dir) {
+      state = movePlayer(state, dir);
+      if (state.won) unlocked = Math.max(unlocked, Math.min(levelIndex + 1, LEVELS.length - 1));
+      render();
+    }
+
+    document.getElementById('start-btn').addEventListener('click', () => {
+      startScreen.classList.remove('active');
+      gameScreen.classList.add('active');
+      render();
+    });
+
+    document.querySelectorAll('[data-move]').forEach((btn) => {
+      btn.addEventListener('click', () => takeMove(btn.dataset.move));
+    });
+
+    document.getElementById('reset-btn').addEventListener('click', () => loadLevel(levelIndex));
+    prevBtn.addEventListener('click', () => loadLevel(levelIndex - 1));
+    nextBtn.addEventListener('click', () => {
+      if (state.won || levelIndex < unlocked) loadLevel(levelIndex + 1);
+      else statusText.textContent = t('locked');
+    });
+
+    canvas.addEventListener('click', (event) => {
+      if (state.lureCharges <= 0 || state.won || state.alarm) return;
+      const rect = canvas.getBoundingClientRect();
+      const size = rect.width / state.width;
+      const x = Math.floor((event.clientX - rect.left) / size);
+      const y = Math.floor((event.clientY - rect.top) / size);
+      state = throwLure(state, x, y);
+      render();
+    });
+
+    window.addEventListener('keydown', (event) => {
+      const map = { ArrowUp: 'up', ArrowRight: 'right', ArrowDown: 'down', ArrowLeft: 'left' };
+      if (map[event.key]) {
+        event.preventDefault();
+        takeMove(map[event.key]);
+      }
+      if (event.key.toLowerCase() === 'r') loadLevel(levelIndex);
+    });
+
+    translatePage();
+    render();
+  </script>
+</body>
+</html>
