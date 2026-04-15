@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bank Shot</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="back-bar"><a href="/">← Back to Games</a></div>
+
+  <div class="page">
+    <section id="setup-screen" class="card screen active">
+      <h1 data-i18n="title"></h1>
+      <p class="lede" data-i18n="setupLead"></p>
+      <label for="player-count" data-i18n="playerCount"></label>
+      <select id="player-count">
+        <option value="2">2</option>
+        <option value="3">3</option>
+        <option value="4">4</option>
+      </select>
+      <div id="player-inputs"></div>
+      <button id="start-btn" class="primary" data-i18n="startGame"></button>
+    </section>
+
+    <section id="handoff-screen" class="card screen">
+      <div class="pill" id="round-pill"></div>
+      <h2 id="handoff-title" data-i18n="handoffTitle"></h2>
+      <p id="handoff-text"></p>
+      <p class="hint" data-i18n="handoffHint"></p>
+      <button id="ready-btn" class="primary" data-i18n="readyBtn"></button>
+    </section>
+
+    <section id="game-screen" class="screen">
+      <div class="hud card">
+        <div>
+          <div class="pill" id="round-label"></div>
+          <div id="active-player" class="active-player"></div>
+        </div>
+        <button id="shoot-btn" class="primary" data-i18n="shoot"></button>
+      </div>
+      <canvas id="game-canvas" width="320" height="420" aria-label="Bank Shot Spielfeld"></canvas>
+      <p class="hint center" data-i18n="aimHint"></p>
+      <div id="score-board" class="card score-board"></div>
+    </section>
+
+    <section id="turn-summary" class="card screen overlay">
+      <h2 data-i18n="turnResult"></h2>
+      <p id="summary-score"></p>
+      <p id="summary-detail"></p>
+      <button id="next-turn-btn" class="primary" data-i18n="nextTurn"></button>
+    </section>
+
+    <section id="final-screen" class="card screen overlay">
+      <h2 data-i18n="finalTitle"></h2>
+      <div id="final-standings"></div>
+      <button id="play-again-btn" class="primary" data-i18n="playAgain"></button>
+    </section>
+  </div>
+
+  <script src="/shared/i18n.js"></script>
+  <script src="logic.js"></script>
+  <script src="main.js"></script>
+</body>
+</html>

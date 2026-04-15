@@ -1,6 +1,42 @@
 {
   "games": [
     {
+      "id": "day-061-bank-shot",
+      "name": "Bank Shot",
+      "date": "2026-04-16",
+      "tags": [
+        "pass-and-play",
+        "physics",
+        "ricochet",
+        "competitive",
+        "arcade"
+      ],
+      "ratings": [],
+      "name_de": "Bank Shot",
+      "name_en": "Bank Shot",
+      "name_fr": "Bank Shot",
+      "name_it": "Bank Shot",
+      "name_es": "Bank Shot",
+      "description": "Pass & Play Banden-Duell! 2–4 Spieler bekommen dasselbe Brett voller Bumper und Gems. Ein Schuss pro Zug, clevere Winkel, dicke Punkte. Wer nach 3 Runden vorne liegt, gewinnt.",
+      "description_de": "Pass & Play Banden-Duell! 2–4 Spieler bekommen dasselbe Brett voller Bumper und Gems. Ein Schuss pro Zug, clevere Winkel, dicke Punkte. Wer nach 3 Runden vorne liegt, gewinnt.",
+      "description_en": "Pass & Play ricochet duel! 2–4 players get the same bumper-filled board and one shot per turn. Smart angles, juicy rebounds, biggest total after 3 rounds wins.",
+      "description_fr": "Duel de ricochets pass & play ! 2 à 4 joueurs reçoivent le même plateau rempli de bumpers et de gemmes. Un tir par tour, angles malins, gros score après 3 manches.",
+      "description_it": "Duello di rimbalzi pass & play! Da 2 a 4 giocatori affrontano la stessa plancia piena di bumper e gemme. Un tiro per turno, angoli furbi, vince il punteggio più alto dopo 3 round.",
+      "description_es": "¡Duelo de rebotes pass & play! De 2 a 4 jugadores reciben el mismo tablero lleno de bumpers y gemas. Un disparo por turno, ángulos listos y gana el total más alto tras 3 rondas.",
+      "howToPlay": "Wähle 2–4 Spieler und trage Namen ein. Vor jedem Zug erscheint ein Übergabebildschirm. Der aktive Spieler tippt ins Feld, um seinen Winkel festzulegen, und feuert dann genau einen Schuss ab. Gesammelte Gems bringen Punkte, Banden bringen Bonuspunkte. Nach 3 Runden gewinnt die höchste Gesamtpunktzahl.",
+      "howToPlay_de": "Wähle 2–4 Spieler und trage Namen ein. Vor jedem Zug erscheint ein Übergabebildschirm. Der aktive Spieler tippt ins Feld, um seinen Winkel festzulegen, und feuert dann genau einen Schuss ab. Gesammelte Gems bringen Punkte, Banden bringen Bonuspunkte. Nach 3 Runden gewinnt die höchste Gesamtpunktzahl.",
+      "howToPlay_en": "Choose 2–4 players and enter names. Each turn starts with a handoff screen. The active player taps the board to set an angle, then fires exactly one shot. Gems are points, wall banks add bonuses. Highest total after 3 rounds wins.",
+      "howToPlay_fr": "Choisissez 2 à 4 joueurs et entrez les noms. Chaque tour commence par un écran de passage. Le joueur actif touche le plateau pour viser puis tire une seule fois. Les gemmes valent des points, les rebonds sur les bords ajoutent un bonus. Le meilleur total après 3 manches gagne.",
+      "howToPlay_it": "Scegli da 2 a 4 giocatori e inserisci i nomi. Ogni turno inizia con una schermata di passaggio. Il giocatore attivo tocca il campo per mirare e poi effettua un solo tiro. Le gemme valgono punti, le sponde danno bonus. Vince il totale più alto dopo 3 round.",
+      "howToPlay_es": "Elige de 2 a 4 jugadores y escribe sus nombres. Cada turno empieza con una pantalla de relevo. El jugador activo toca el tablero para apuntar y luego hace un solo disparo. Las gemas dan puntos y los rebotes en pared añaden bonus. Gana el total más alto tras 3 rondas.",
+      "whyFun": "Das Ding lebt von diesem einen Moment: Du siehst eine Lücke zwischen zwei Bumpern, gehst voll auf Bande, und plötzlich sammelt dein Puck drei Gems in Serie ein. Es ist schnell, laut und herrlich schadenfroh, wenn der nächste Spieler denselben Winkel versucht und komplett leer ausgeht.",
+      "whyFun_de": "Das Ding lebt von diesem einen Moment: Du siehst eine Lücke zwischen zwei Bumpern, gehst voll auf Bande, und plötzlich sammelt dein Puck drei Gems in Serie ein. Es ist schnell, laut und herrlich schadenfroh, wenn der nächste Spieler denselben Winkel versucht und komplett leer ausgeht.",
+      "whyFun_en": "The joy is in that one filthy angle. You bank off the wall, split two bumpers, and suddenly your puck vacuums up a chain of gems. Then the next player copies the idea and whiffs completely. Fast, mean, and very funny.",
+      "whyFun_fr": "Le plaisir vient de cet angle improbable. Tu prends la bande, tu passes entre deux bumpers, et d’un coup la bille ramasse plusieurs gemmes. Puis le joueur suivant tente la même chose et rate tout. Rapide, cruel, drôle.",
+      "whyFun_it": "Il bello è quell’angolo sporco perfetto. Vai di sponda, passi tra due bumper e all’improvviso il disco raccoglie una catena di gemme. Poi il giocatore dopo prova a copiare e non prende nulla. Rapido, cattivo, divertente.",
+      "whyFun_es": "La gracia está en ese ángulo sucio perfecto. Vas a banda, te cuelas entre dos bumpers y de repente el disco recoge una cadena de gemas. Luego el siguiente intenta copiarte y no se lleva nada. Rápido, cruel y muy gracioso."
+    },
+    {
       "id": "day-060-shadow-heist",
       "day": 60,
       "slug": "shadow-heist",
