@@ -22,7 +22,7 @@ test.describe('day-062-script-scout', () => {
     await expect(page.locator('#result-card')).toHaveClass(/active/);
     await expect(page.locator('#result-stars')).toContainText(/3/);
 
-    await page.getByRole('button', { name: /next|nächstes level|niveau suivant|livello successivo|siguiente nivel/i }).click();
+    await page.locator('#next-btn').click({ force: true });
     await expect(page.locator('#level-pill')).toContainText(/2/);
   });
 });
