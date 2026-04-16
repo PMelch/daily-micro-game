@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Script Scout</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="back-bar"><a href="/">← Back to Games</a></div>
+  <div class="page">
+    <section class="card hero">
+      <h1 data-i18n="title"></h1>
+      <p data-i18n="subtitle"></p>
+      <div class="stats">
+        <span id="level-pill" class="pill"></span>
+        <span id="star-pill" class="pill"></span>
+      </div>
+    </section>
+
+    <section class="card board-card">
+      <canvas id="board" width="320" height="320" aria-label="Script Scout Spielfeld"></canvas>
+      <div class="legend">
+        <span>💎 <span data-i18n="legendCrystal"></span></span>
+        <span>🚪 <span data-i18n="legendGoal"></span></span>
+        <span>🤖 <span data-i18n="legendBot"></span></span>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="row-between">
+        <strong data-i18n="programTitle"></strong>
+        <span id="command-count"></span>
+      </div>
+      <div id="program-slots" class="program-slots"></div>
+      <div class="command-pad">
+        <button class="command-btn" data-command="forward">↑</button>
+        <button class="command-btn" data-command="left">↺</button>
+        <button class="command-btn" data-command="right">↻</button>
+        <button class="command-btn" data-command="wait">•</button>
+      </div>
+      <div class="actions">
+        <button id="run-btn" class="primary" data-i18n="run"></button>
+        <button id="clear-btn" class="secondary" data-i18n="clear"></button>
+      </div>
+      <p id="message" class="message"></p>
+    </section>
+
+    <section class="card overlay" id="result-card">
+      <h2 data-i18n="resultTitle"></h2>
+      <p id="result-message"></p>
+      <p id="result-stars"></p>
+      <div class="actions">
+        <button id="retry-btn" class="secondary" data-i18n="retry"></button>
+        <button id="next-btn" class="primary" data-i18n="next"></button>
+      </div>
+    </section>
+  </div>
+
+  <script src="/shared/i18n.js"></script>
+  <script src="logic.js"></script>
+  <script src="main.js"></script>
+</body>
+</html>

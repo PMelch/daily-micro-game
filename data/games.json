@@ -1,6 +1,42 @@
 {
   "games": [
     {
+      "id": "day-062-script-scout",
+      "name": "Script Scout",
+      "date": "2026-04-17",
+      "tags": [
+        "single-player",
+        "puzzle",
+        "programming",
+        "logic",
+        "fun"
+      ],
+      "ratings": [],
+      "name_de": "Script Scout",
+      "name_en": "Script Scout",
+      "name_fr": "Script Scout",
+      "name_it": "Script Scout",
+      "name_es": "Script Scout",
+      "description": "Solo-Programmierpuzzle! Baue eine kurze Befehlsfolge für einen Mini-Roboter. Sammle alle Kristalle und finde mit möglichst wenigen Kommandos den Ausgang.",
+      "description_de": "Solo-Programmierpuzzle! Baue eine kurze Befehlsfolge für einen Mini-Roboter. Sammle alle Kristalle und finde mit möglichst wenigen Kommandos den Ausgang.",
+      "description_en": "Solo programming puzzle! Build a short command sequence for a tiny robot. Collect every crystal and reach the exit using as few commands as possible.",
+      "description_fr": "Puzzle solo de programmation ! Construisez une courte suite de commandes pour un mini robot. Ramassez tous les cristaux et atteignez la sortie avec le moins de commandes possible.",
+      "description_it": "Puzzle di programmazione in solitaria! Crea una breve sequenza di comandi per un mini robot. Raccogli tutti i cristalli e raggiungi l'uscita con il minor numero di comandi possibile.",
+      "description_es": "¡Puzzle de programación en solitario! Construye una breve secuencia de comandos para un mini robot. Recoge todos los cristales y llega a la salida con la menor cantidad de comandos posible.",
+      "howToPlay": "Wähle unten Befehle wie Vorwärts, Links, Rechts und Warten. Der Bot führt dein Programm danach komplett aus. Sammle alle Kristalle und lande auf dem Ausgangsfeld. Weniger Befehle bringen mehr Sterne.",
+      "howToPlay_de": "Wähle unten Befehle wie Vorwärts, Links, Rechts und Warten. Der Bot führt dein Programm danach komplett aus. Sammle alle Kristalle und lande auf dem Ausgangsfeld. Weniger Befehle bringen mehr Sterne.",
+      "howToPlay_en": "Choose commands like Forward, Left, Right, and Wait. The bot executes your whole program in one go. Collect every crystal and stop on the exit tile. Fewer commands earn more stars.",
+      "howToPlay_fr": "Choisissez des commandes comme Avancer, Gauche, Droite et Attendre. Le robot exécute ensuite tout le programme d'un coup. Ramassez tous les cristaux et terminez sur la sortie. Moins de commandes donnent plus d'étoiles.",
+      "howToPlay_it": "Scegli comandi come Avanti, Sinistra, Destra e Attendi. Il bot esegue poi l'intero programma in un colpo solo. Raccogli tutti i cristalli e fermati sull'uscita. Meno comandi significano più stelle.",
+      "howToPlay_es": "Elige comandos como Avanzar, Izquierda, Derecha y Esperar. El bot ejecuta todo tu programa de una vez. Recoge todos los cristales y termina en la salida. Menos comandos dan más estrellas.",
+      "whyFun": "Der schöne Moment hier ist nicht Reflex, sondern Planung. Du tippst eine kleine Befehlskette, drückst Start und hoffst, dass der Roboter genau das tut, was du im Kopf gesehen hast. Wenn am Ende alle Kristalle im perfekten Lauf eingesammelt werden, fühlt sich das herrlich clever an.",
+      "whyFun_de": "Der schöne Moment hier ist nicht Reflex, sondern Planung. Du tippst eine kleine Befehlskette, drückst Start und hoffst, dass der Roboter genau das tut, was du im Kopf gesehen hast. Wenn am Ende alle Kristalle im perfekten Lauf eingesammelt werden, fühlt sich das herrlich clever an.",
+      "whyFun_en": "The joy here is planning, not reflexes. You tap in a tiny command chain, hit run, and hope the robot does exactly what you imagined. When it scoops every crystal in one clean route, it feels wonderfully smart.",
+      "whyFun_fr": "Le plaisir ici vient de la planification, pas des réflexes. Vous préparez une petite chaîne de commandes, vous lancez l'exécution et vous espérez que le robot fera exactement ce que vous aviez imaginé. Quand tout s'aligne parfaitement, c'est très satisfaisant.",
+      "whyFun_it": "Il piacere qui sta nella pianificazione, non nei riflessi. Inserisci una piccola catena di comandi, premi esegui e speri che il robot faccia esattamente ciò che avevi immaginato. Quando raccoglie tutti i cristalli in un percorso perfetto, è molto soddisfacente.",
+      "whyFun_es": "La gracia aquí está en planear, no en los reflejos. Introduces una pequeña cadena de comandos, pulsas ejecutar y esperas que el robot haga exactamente lo que imaginaste. Cuando recoge todos los cristales en una ruta perfecta, se siente muy inteligente."
+    },
+    {
       "id": "day-061-bank-shot",
       "name": "Bank Shot",
       "date": "2026-04-16",
