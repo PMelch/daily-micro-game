@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Overlay</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script defer src="https://analytics.lab.gogerl.com/script.js" data-website-id="6544877e-6573-4ffa-b91f-db98c1bd4c77"></script>
+</head>
+<body>
+  <div class="back-bar"><a href="/">← Back to Games</a></div>
+  <div class="page">
+    <section id="setup-screen" class="card screen active">
+      <h1 data-i18n="title"></h1>
+      <p class="lede" data-i18n="setupLead"></p>
+      <label for="player-count" data-i18n="playerCount"></label>
+      <select id="player-count"><option value="2">2</option><option value="3">3</option><option value="4">4</option></select>
+      <div id="player-inputs"></div>
+      <button id="start-btn" class="primary" data-i18n="startGame"></button>
+    </section>
+
+    <section id="handoff-screen" class="card screen">
+      <div class="pill" id="round-pill"></div>
+      <h2 data-i18n="handoffTitle"></h2>
+      <p id="handoff-text"></p>
+      <p class="hint" data-i18n="handoffHint"></p>
+      <button id="ready-btn" class="primary" data-i18n="readyBtn"></button>
+    </section>
+
+    <section id="game-screen" class="screen">
+      <div class="hud card">
+        <div>
+          <div class="pill" id="round-label"></div>
+          <div id="active-player" class="active-player"></div>
+        </div>
+        <div class="statline">
+          <span id="score-preview"></span>
+          <button id="submit-btn" class="primary" data-i18n="submitTurn"></button>
+        </div>
+      </div>
+      <div class="board-wrap">
+        <div>
+          <h3 data-i18n="targetBoard"></h3>
+          <div id="target-board" class="board" aria-label="Zielmuster"></div>
+        </div>
+        <div>
+          <h3 data-i18n="workBoard"></h3>
+          <div id="work-board" class="board" aria-label="Arbeitsbrett"></div>
+        </div>
+      </div>
+      <div class="controls card">
+        <div class="toolbar">
+          <label for="stamp-select" data-i18n="chooseStamp"></label>
+          <select id="stamp-select"></select>
+          <button id="rotate-btn" data-i18n="rotate"></button>
+          <button id="clear-btn" data-i18n="clear"></button>
+        </div>
+        <p id="instruction" class="hint"></p>
+      </div>
+      <div id="score-board" class="card score-board"></div>
+    </section>
+
+    <section id="turn-summary" class="card screen overlay">
+      <h2 data-i18n="turnSummary"></h2>
+      <p id="summary-line"></p>
+      <p id="summary-detail"></p>
+      <button id="next-turn-btn" class="primary" data-i18n="nextTurn"></button>
+    </section>
+
+    <section id="final-screen" class="card screen overlay">
+      <h2 data-i18n="finalTitle"></h2>
+      <div id="final-standings"></div>
+      <button id="play-again-btn" class="primary" data-i18n="playAgain"></button>
+    </section>
+  </div>
+  <script src="/shared/i18n.js"></script>
+  <script src="logic.js"></script>
+  <script src="main.js"></script>
+</body>
+</html>
