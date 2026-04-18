@@ -17,7 +17,7 @@ module.exports = defineConfig({
     {
       name: 'desktop-chromium',
       use: { ...devices['Desktop Chrome'] },
-      testMatch: ['smoke.spec.js', 'sync-or-sink.spec.js', 'neon-drift.spec.js', 'roll-call.spec.js', 'vibe-check.spec.js', 'patch-panic.spec.js', 'patch-panic-screenshot.spec.js', 'day-061-bank-shot.spec.js', 'day-062-script-scout.spec.js', 'day-063-overlay.spec.js'],
+      testMatch: ['smoke.spec.js', 'sync-or-sink.spec.js', 'neon-drift.spec.js', 'roll-call.spec.js', 'vibe-check.spec.js', 'patch-panic.spec.js', 'patch-panic-screenshot.spec.js', 'day-061-bank-shot.spec.js', 'day-062-script-scout.spec.js', 'day-063-overlay.spec.js', 'day-064-crew-circuit.spec.js', 'day-064-crew-circuit-screenshot.spec.js'],
     },
     {
       name: 'mobile-chrome',

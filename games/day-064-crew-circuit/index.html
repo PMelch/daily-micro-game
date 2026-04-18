@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Crew Circuit</title>
+<script defer src="https://analytics.lab.gogerl.com/script.js" data-website-id="6544877e-6573-4ffa-b91f-db98c1bd4c77"></script>
+<style>
+:root{--bg:#07111f;--panel:#0f1b2e;--line:#243552;--text:#eef4ff;--muted:#8ca0bf;--accent:#ffcc00;--good:#39d98a;--danger:#ff6b6b;}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at top,#13233c,#07111f 55%);color:var(--text);font-family:system-ui,sans-serif;min-height:100dvh}.back-bar{width:100%;background:#0a0a1a;padding:.5rem 1rem;border-bottom:1px solid #333}.back-bar a{color:#ffcc00;text-decoration:none;font-size:.9rem;font-family:system-ui,sans-serif}.shell{max-width:560px;margin:0 auto;padding:1rem;display:flex;flex-direction:column;gap:1rem}.screen{display:none}.screen.active{display:block}.card{background:rgba(15,27,46,.96);border:1px solid var(--line);border-radius:18px;padding:1rem;box-shadow:0 14px 32px rgba(0,0,0,.24)}h1{margin:.2rem 0 .35rem;color:var(--accent);font-size:2rem}p{margin:.35rem 0;color:var(--muted)}input{width:100%;padding:.85rem 1rem;border-radius:12px;border:1px solid var(--line);background:#08111f;color:var(--text);font-size:1rem}button,select{font:inherit}button{border:none;border-radius:12px;padding:.85rem 1rem;font-weight:700;cursor:pointer}button.primary{background:var(--accent);color:#111}button.secondary{background:#1c2a45;color:var(--text);border:1px solid var(--line)}button:disabled{opacity:.45;cursor:not-allowed}.row{display:flex;gap:.75rem}.row>*{flex:1}.stack{display:flex;flex-direction:column;gap:.75rem}.players{display:flex;flex-wrap:wrap;gap:.5rem}.player-row{padding:.45rem .8rem;background:#13233c;border-radius:999px;border:1px solid var(--line)}.code{font-size:2.4rem;text-align:center;font-family:monospace;letter-spacing:.22em;color:var(--accent);background:#08111f;padding:.4rem;border-radius:14px;border:2px solid #6a5600}.hud{display:grid;grid-template-columns:1fr 1fr;gap:.75rem}.pill{background:#13233c;border:1px solid var(--line);border-radius:14px;padding:.6rem .8rem}.pill strong{display:block;color:var(--accent)}#role-badge{display:inline-block;padding:.45rem .8rem;border-radius:999px;background:#1c2a45;border:1px solid #415a88;color:var(--accent);font-weight:900;letter-spacing:.05em}.board{display:grid;grid-template-columns:repeat(9,1fr);gap:4px;touch-action:manipulation}.cell{aspect-ratio:1/1;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:1rem}.wall{background:#2d3750}.fog{background:#09111d;color:#09111d}.floor{background:#14243b}.drone{background:#36c2ff;color:#08111f}.core{background:#ffcc00;color:#111}.exit{background:#39d98a;color:#08111f}.sentry{background:#ff6b6b;color:#200}.stunned{background:#ffb3b3;color:#200}.actions{display:grid;grid-template-columns:repeat(3,1fr);gap:.65rem}.action-btn{min-height:52px}.action-btn.active{outline:2px solid var(--accent);box-shadow:0 0 0 3px rgba(255,204,0,.15)}.legend{display:grid;grid-template-columns:repeat(4,1fr);gap:.5rem;font-size:.8rem}.legend span{display:flex;align-items:center;gap:.3rem;color:var(--muted)}.dot{width:14px;height:14px;border-radius:4px;display:inline-block}.small{font-size:.9rem}.center{text-align:center}@media (max-width:520px){h1{font-size:1.7rem}.shell{padding:.8rem}.legend{grid-template-columns:repeat(2,1fr)}}
+@media (max-height:700px){.shell{padding:.55rem;gap:.55rem}.card{padding:.75rem}.hud{gap:.45rem}.pill{padding:.4rem .55rem;font-size:.85rem}.legend{font-size:.72rem;gap:.35rem}.board{max-width:300px;margin:0 auto;gap:3px}.cell{font-size:.82rem;border-radius:8px}.actions{gap:.45rem}.action-btn{min-height:44px;padding:.6rem .4rem}}
+</style>
+</head>
+<body>
+<div class="back-bar"><a href="/">← Back to Games</a></div>
+<div class="shell">
+  <section id="screen-setup" class="screen active">
+    <div class="card stack">
+      <h1 data-i18n="title"></h1>
+      <p data-i18n="subtitle"></p>
+      <input id="player-name" maxlength="18" value="Spieler" data-i18n-placeholder="namePlaceholder">
+      <div class="row">
+        <button id="btn-create" class="primary" data-i18n="createRoom"></button>
+        <button id="btn-join-toggle" class="secondary" data-i18n="joinRoom"></button>
+      </div>
+      <div id="join-row" class="row">
+        <input id="room-code-input" maxlength="4" placeholder="ABCD">
+        <button id="btn-join" class="secondary" data-i18n="join"></button>
+      </div>
+      <p class="small" data-i18n="setupHint"></p>
+    </div>
+  </section>
+
+  <section id="screen-lobby" class="screen">
+    <div class="card stack">
+      <div class="center"><div class="code" id="lobby-code">----</div></div>
+      <p class="center" data-i18n="lobbyHint"></p>
+      <div id="lobby-players" class="players"></div>
+      <button id="btn-start" class="primary" data-i18n="startMission"></button>
+    </div>
+  </section>
+
+  <section id="screen-game" class="screen">
+    <div class="card stack">
+      <div class="hud">
+        <div class="pill"><strong data-i18n="level"></strong><span id="level-label">1/2</span></div>
+        <div class="pill"><strong data-i18n="cores"></strong><span id="cores-label">2</span></div>
+        <div class="pill"><strong data-i18n="dronePosition"></strong><span id="drone-pos">0,0</span></div>
+        <div class="pill"><strong data-i18n="role"></strong><span id="role-badge">UP</span></div>
+      </div>
+      <div class="legend">
+        <span><i class="dot drone"></i><b data-i18n="legendDrone"></b></span>
+        <span><i class="dot core"></i><b data-i18n="legendCore"></b></span>
+        <span><i class="dot exit"></i><b data-i18n="legendExit"></b></span>
+        <span><i class="dot sentry"></i><b data-i18n="legendSentry"></b></span>
+      </div>
+      <div id="board" class="board" aria-label="game board"></div>
+      <div class="pill"><strong data-i18n="event"></strong><span id="event-log">...</span></div>
+      <div class="actions">
+        <button id="btn-up" class="secondary action-btn">↑</button>
+        <button id="btn-scan" class="secondary action-btn" data-i18n="scan"></button>
+        <button id="btn-right" class="secondary action-btn">→</button>
+        <button id="btn-left" class="secondary action-btn">←</button>
+        <button id="btn-stun" class="secondary action-btn" data-i18n="stun"></button>
+        <button id="btn-down" class="secondary action-btn">↓</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="screen-end" class="screen">
+    <div class="card stack center">
+      <h1 data-i18n="victoryTitle"></h1>
+      <p data-i18n="victoryText"></p>
+    </div>
+  </section>
+</div>
+<script src="/shared/i18n.js"></script>
+<script>
+const TRANSLATIONS={de:{title:'Crew Circuit',subtitle:'Asymmetrisches Koop-Labyrinth: Jeder Spieler steuert nur EINE Aktion des Teams. Koordiniert euch live, sammelt alle Energiekerne und bringt die Drohne zum Ausgang.',namePlaceholder:'Spielername',createRoom:'Raum erstellen',joinRoom:'Raum beitreten',join:'Beitreten',setupHint:'2 bis 6 Spieler, jeder auf dem eigenen Gerät. Einer erstellt, alle anderen treten per Code bei.',lobbyHint:'Teilt den Code mit eurem Team. Der Host startet die Mission.',startMission:'Mission starten',level:'Level',cores:'Kerne übrig',dronePosition:'Drohnen-Position',role:'Deine Rolle',legendDrone:'Drohne',legendCore:'Kern',legendExit:'Ausgang',legendSentry:'Sentry',event:'Ereignis',scan:'Scan',stun:'EMP',victoryTitle:'Mission geschafft!',victoryText:'Ihr habt beide Labore geräumt. Saubere Teamarbeit.',role_up:'AUF',role_right:'RECHTS',role_down:'RUNTER',role_left:'LINKS',role_scan:'SCAN',role_stun:'EMP'},en:{title:'Crew Circuit',subtitle:'Asymmetric co-op maze: each player controls only ONE team action. Coordinate live, collect every core, then escort the drone to the exit.',namePlaceholder:'Player name',createRoom:'Create room',joinRoom:'Join room',join:'Join',setupHint:'2 to 6 players, one device each. One host creates, everyone else joins with the code.',lobbyHint:'Share the code with your crew. The host starts the mission.',startMission:'Start mission',level:'Level',cores:'Cores left',dronePosition:'Drone position',role:'Your role',legendDrone:'Drone',legendCore:'Core',legendExit:'Exit',legendSentry:'Sentry',event:'Event',scan:'Scan',stun:'EMP',victoryTitle:'Mission complete!',victoryText:'You cleared both labs. Very tidy teamwork.',role_up:'UP',role_right:'RIGHT',role_down:'DOWN',role_left:'LEFT',role_scan:'SCAN',role_stun:'STUN'},fr:{title:'Crew Circuit',subtitle:'Labyrinthe coop asymétrique : chaque joueur contrôle UNE seule action. Coordonnez-vous en direct, récupérez tous les cœurs puis guidez le drone vers la sortie.',namePlaceholder:'Nom du joueur',createRoom:'Créer une salle',joinRoom:'Rejoindre',join:'Entrer',setupHint:'2 à 6 joueurs, un appareil chacun. Un hôte crée la salle, les autres rejoignent avec le code.',lobbyHint:'Partagez le code avec l’équipe. L’hôte lance la mission.',startMission:'Lancer la mission',level:'Niveau',cores:'Cœurs restants',dronePosition:'Position du drone',role:'Votre rôle',legendDrone:'Drone',legendCore:'Cœur',legendExit:'Sortie',legendSentry:'Sentinelle',event:'Événement',scan:'Scan',stun:'EMP',victoryTitle:'Mission réussie !',victoryText:'Vous avez nettoyé les deux labos. Beau travail d’équipe.',role_up:'HAUT',role_right:'DROITE',role_down:'BAS',role_left:'GAUCHE',role_scan:'SCAN',role_stun:'EMP'},it:{title:'Crew Circuit',subtitle:'Labirinto co-op asimmetrico: ogni giocatore controlla UNA sola azione della squadra. Coordinatevi in tempo reale, raccogliete tutti i nuclei e portate il drone all’uscita.',namePlaceholder:'Nome giocatore',createRoom:'Crea stanza',joinRoom:'Entra in stanza',join:'Entra',setupHint:'Da 2 a 6 giocatori, un dispositivo ciascuno. Uno crea la stanza, gli altri entrano col codice.',lobbyHint:'Condividi il codice con la squadra. L’host avvia la missione.',startMission:'Avvia missione',level:'Livello',cores:'Nuclei rimasti',dronePosition:'Posizione drone',role:'Il tuo ruolo',legendDrone:'Drone',legendCore:'Nucleo',legendExit:'Uscita',legendSentry:'Sentinella',event:'Evento',scan:'Scan',stun:'EMP',victoryTitle:'Missione compiuta!',victoryText:'Avete ripulito entrambi i laboratori. Ottimo gioco di squadra.',role_up:'SU',role_right:'DESTRA',role_down:'GIÙ',role_left:'SINISTRA',role_scan:'SCAN',role_stun:'EMP'},es:{title:'Crew Circuit',subtitle:'Laberinto cooperativo asimétrico: cada jugador controla solo UNA acción del equipo. Coordinaos en tiempo real, recoged todos los núcleos y llevad el dron hasta la salida.',namePlaceholder:'Nombre del jugador',createRoom:'Crear sala',joinRoom:'Unirse',join:'Entrar',setupHint:'De 2 a 6 jugadores, uno por dispositivo. Un anfitrión crea la sala y los demás entran con el código.',lobbyHint:'Comparte el código con tu equipo. El anfitrión inicia la misión.',startMission:'Iniciar misión',level:'Nivel',cores:'Núcleos restantes',dronePosition:'Posición del dron',role:'Tu rol',legendDrone:'Dron',legendCore:'Núcleo',legendExit:'Salida',legendSentry:'Centinela',event:'Evento',scan:'Escanear',stun:'PEM',victoryTitle:'¡Misión cumplida!',victoryText:'Habéis limpiado ambos laboratorios. Muy buen trabajo en equipo.',role_up:'ARRIBA',role_right:'DERECHA',role_down:'ABAJO',role_left:'IZQUIERDA',role_scan:'ESCANEAR',role_stun:'PEM'}};
+const {t,onLangChange}=initI18n(TRANSLATIONS);
+const screens={setup:document.getElementById('screen-setup'),lobby:document.getElementById('screen-lobby'),game:document.getElementById('screen-game'),end:document.getElementById('screen-end')};
+const wsUrl=()=>window.__TEST_WS_URL||((location.protocol==='https:'?'wss://':'ws://')+'day-064-crew-circuit.lab.gogerl.com');
+let socket=null,lastState=null,myRole='';
+const $=id=>document.getElementById(id);
+function show(name){Object.values(screens).forEach(el=>el.classList.remove('active'));screens[name].classList.add('active');}
+function connect(){ if(socket && socket.readyState<=1) return; socket=new WebSocket(wsUrl()); socket.onmessage=(e)=>handle(JSON.parse(e.data)); }
+function send(data){ connect(); const go=()=>socket.send(JSON.stringify(data)); if(socket.readyState===1) go(); else socket.addEventListener('open',go,{once:true}); }
+function roleLabel(role){ return t('role_'+role); }
+function renderBoard(state){ const board=$('board'); board.innerHTML=''; state.grid.forEach(row=>row.forEach(cell=>{ const div=document.createElement('div'); div.className='cell'; if(cell==='#') div.classList.add('wall'); else if(cell==='?') div.classList.add('fog'); else if(cell==='D'){ div.classList.add('drone'); div.textContent='◆'; } else if(cell==='C'){ div.classList.add('core'); div.textContent='⚡'; } else if(cell==='E'||cell==='e'){ div.classList.add('exit'); div.textContent='⎋'; } else if(cell==='X'){ div.classList.add('sentry'); div.textContent='✖'; } else if(cell==='s'){ div.classList.add('stunned'); div.textContent='✖'; } else div.classList.add('floor'); board.appendChild(div); })); }
+function renderState(payload){ lastState=payload.state; myRole=payload.me.role||myRole; $('lobby-code').textContent=payload.state.code; $('lobby-players').innerHTML=''; payload.state.players.forEach(p=>{ const row=document.createElement('div'); row.className='player-row'; row.textContent=`${p.name} · ${roleLabel(p.role||'up')}`; $('lobby-players').appendChild(row); }); $('btn-start').disabled=!(payload.me.isHost && payload.state.players.length>=2); if(payload.state.phase==='lobby'){ show('lobby'); return; } if(payload.state.phase==='ended'){ show('end'); return; } show('game'); $('level-label').textContent=`${payload.state.levelIndex+1}/2`; $('cores-label').textContent=String(payload.state.coresLeft); $('drone-pos').textContent=payload.state.dronePos; $('role-badge').textContent=roleLabel(payload.me.role||'up'); $('event-log').textContent=payload.state.lastEvent||'...'; renderBoard(payload.state); document.querySelectorAll('.action-btn').forEach(btn=>{ btn.disabled=true; btn.classList.remove('active'); }); const active=$('btn-'+(payload.me.role||'up')); if(active){ active.disabled=false; active.classList.add('active'); }
+}
+function handle(msg){ if(msg.type==='state') renderState(msg); if(msg.type==='error') alert(msg.message); }
+$('btn-join-toggle').onclick=()=>{ $('room-code-input').focus(); };
+$('btn-create').onclick=()=> send({type:'create',name:$('player-name').value});
+$('btn-join').onclick=()=> send({type:'join',name:$('player-name').value,code:$('room-code-input').value.toUpperCase()});
+$('btn-start').onclick=()=> send({type:'start'});
+[['btn-up','up'],['btn-right','right'],['btn-down','down'],['btn-left','left'],['btn-scan','scan'],['btn-stun','stun']].forEach(([id,action])=>$(id).onclick=()=>send({type:'action',action}));
+onLangChange(()=>{ if(lastState) $('role-badge').textContent=roleLabel(myRole||'up'); document.querySelectorAll('#lobby-players .player-row').forEach((row,i)=>{ const p=lastState?.players?.[i]; if(p) row.textContent=`${p.name} · ${roleLabel(p.role||'up')}`; }); });
+connect();
+</script>
+</body>
+</html>
