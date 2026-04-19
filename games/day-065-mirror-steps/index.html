@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mirror Steps</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script defer src="https://analytics.lab.gogerl.com/script.js" data-website-id="6544877e-6573-4ffa-b91f-db98c1bd4c77"></script>
+</head>
+<body>
+  <div class="back-bar"><a href="/">← Back to Games</a></div>
+  <div class="page">
+    <section class="card hero">
+      <h1 data-i18n="title"></h1>
+      <p data-i18n="subtitle"></p>
+      <div class="stats">
+        <span id="level-pill" class="pill"></span>
+        <span id="move-pill" class="pill"></span>
+      </div>
+    </section>
+
+    <section class="card">
+      <canvas id="board" width="360" height="360" aria-label="Mirror Steps Spielfeld"></canvas>
+      <div class="legend">
+        <span>🟡 <span data-i18n="legendHero"></span></span>
+        <span>🟣 <span data-i18n="legendMirror"></span></span>
+        <span>💎 <span data-i18n="legendCrystal"></span></span>
+        <span>⬡ <span data-i18n="legendGoal"></span></span>
+      </div>
+    </section>
+
+    <section class="card">
+      <p id="message" class="message"></p>
+      <div class="controls-grid">
+        <button class="move-btn" data-dir="up">↑</button>
+        <div></div>
+        <button class="move-btn" data-dir="left">←</button>
+        <button class="move-btn" data-dir="down">↓</button>
+        <button class="move-btn" data-dir="right">→</button>
+      </div>
+      <div class="actions">
+        <button id="reset-btn" class="secondary" data-i18n="reset"></button>
+        <button id="next-btn" class="primary" data-i18n="next"></button>
+      </div>
+    </section>
+
+    <section class="card overlay" id="result-card">
+      <h2 data-i18n="resultTitle"></h2>
+      <p id="result-message"></p>
+      <p id="result-stars" class="result-stars"></p>
+      <div class="actions result-actions">
+        <button id="retry-btn" class="secondary" data-i18n="retry"></button>
+        <button id="result-next-btn" class="primary" data-i18n="next"></button>
+      </div>
+    </section>
+  </div>
+
+  <script src="/shared/i18n.js"></script>
+  <script src="logic.js"></script>
+  <script src="main.js"></script>
+</body>
+</html>
