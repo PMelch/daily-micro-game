@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Patch Parade</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script defer src="https://analytics.lab.gogerl.com/script.js" data-website-id="6544877e-6573-4ffa-b91f-db98c1bd4c77"></script>
+</head>
+<body>
+  <div class="back-bar"><a href="/">← Back to Games</a></div>
+  <div class="shell">
+    <section id="setup-screen" class="card screen active">
+      <h1 data-i18n="title"></h1>
+      <p data-i18n="subtitle"></p>
+      <label class="label" for="player-count" data-i18n="playerCount"></label>
+      <select id="player-count"></select>
+      <div id="name-fields" class="stack"></div>
+      <button id="start-btn" class="primary" data-i18n="start"></button>
+    </section>
+
+    <section id="transition-screen" class="card screen">
+      <h2 id="transition-title"></h2>
+      <p id="transition-copy"></p>
+      <button id="continue-btn" class="primary" data-i18n="continue"></button>
+    </section>
+
+    <section id="game-screen" class="screen">
+      <div class="card hero">
+        <div>
+          <h1 data-i18n="title"></h1>
+          <p id="turn-line"></p>
+        </div>
+        <div class="hero-pills">
+          <span id="round-pill" class="pill"></span>
+          <span id="score-pill" class="pill"></span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="offer-head">
+          <h2 data-i18n="choosePatch"></h2>
+          <p id="placement-hint"></p>
+        </div>
+        <div id="offer-list" class="offer-list"></div>
+        <div class="controls-row">
+          <button id="rotate-btn" class="secondary" data-i18n="rotate"></button>
+          <button id="skip-btn" class="secondary" data-i18n="skip"></button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="board-head">
+          <h2 data-i18n="board"></h2>
+          <p id="board-tip"></p>
+        </div>
+        <div id="board" class="board" aria-label="Patch Parade board"></div>
+        <div class="legend">
+          <span><i class="swatch gold"></i><b data-i18n="gold"></b></span>
+          <span><i class="swatch mint"></i><b data-i18n="mint"></b></span>
+          <span><i class="swatch violet"></i><b data-i18n="violet"></b></span>
+          <span><i class="swatch coral"></i><b data-i18n="coral"></b></span>
+          <span><i class="star-dot">★</i><b data-i18n="starBonus"></b></span>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2 data-i18n="scoreboard"></h2>
+        <div id="scoreboard" class="scoreboard"></div>
+      </div>
+    </section>
+
+    <section id="result-screen" class="card screen">
+      <h1 data-i18n="resultTitle"></h1>
+      <p id="winner-line"></p>
+      <div id="final-scores" class="scoreboard"></div>
+      <button id="restart-btn" class="primary" data-i18n="playAgain"></button>
+    </section>
+  </div>
+
+  <script src="/shared/i18n.js"></script>
+  <script src="logic.js"></script>
+  <script src="main.js"></script>
+</body>
+</html>

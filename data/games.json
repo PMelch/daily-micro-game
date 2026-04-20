@@ -2187,6 +2187,42 @@
       "whyFun_fr": "Le cœur du jeu, c'est l'action à distance : tu ne bouges pas seulement ton pion, tu remodeles toute la salle. Une bonne impulsion dégage la ferraille, ouvre un chemin et peut même faire tomber le métal dans un trou. Petit, net et malin.",
       "whyFun_it": "Il cuore del gioco è il controllo a distanza: non muovi solo te stesso, ma rimodelli tutta la stanza. Un buon impulso libera i rottami, apre una strada e può persino far cadere il metallo in un buco. Piccolo, chiaro e davvero intelligente.",
       "whyFun_es": "El corazón del juego es el control a distancia: no solo te mueves tú, sino que remodelas toda la sala. Un buen pulso aparta chatarra, abre rutas e incluso deja caer metal en un agujero. Pequeño, claro y con buen factor de ingenio."
+    },
+    {
+      "id": "day-066-patch-parade",
+      "name": "Patch Parade",
+      "date": "2026-04-21",
+      "tags": [
+        "pass-and-play",
+        "polyomino",
+        "strategy",
+        "competitive",
+        "fun"
+      ],
+      "ratings": [],
+      "name_de": "Patch Parade",
+      "name_en": "Patch Parade",
+      "name_fr": "Patch Parade",
+      "name_it": "Patch Parade",
+      "name_es": "Patch Parade",
+      "description": "Pass & Play Polyomino-Duell! 2-4 Spieler bauen nacheinander ihre kleine Paradefläche. Wählt Patches, dreht sie clever und sammelt Reihen-, Stern- und Farb-Boni.",
+      "description_de": "Pass & Play Polyomino-Duell! 2-4 Spieler bauen nacheinander ihre kleine Paradefläche. Wählt Patches, dreht sie clever und sammelt Reihen-, Stern- und Farb-Boni.",
+      "description_en": "Pass & Play polyomino duel! 2-4 players build their tiny parade boards one turn at a time. Pick patches, rotate them cleverly, and chase row, star, and color bonuses.",
+      "description_fr": "Duel polyomino pass & play ! 2 à 4 joueurs construisent chacun leur mini plateau de parade. Choisissez des patchs, tournez-les et visez les bonus de lignes, d’étoiles et de couleurs.",
+      "description_it": "Duello polyomino pass & play! Da 2 a 4 giocatori costruiscono il proprio piccolo tabellone da parata. Scegli i patch, ruotali con astuzia e cerca bonus di righe, stelle e colori.",
+      "description_es": "¡Duelo de poliminós pass & play! De 2 a 4 jugadores construyen su pequeño tablero de desfile por turnos. Elige parches, gíralos con cabeza y busca bonus de filas, estrellas y colores.",
+      "howToPlay": "2-4 Spieler geben das Gerät reihum weiter. Jeder Zug zeigt drei Patch-Optionen. Wähle einen Patch, drehe ihn bei Bedarf und platziere ihn auf deinem 6x6-Brett. Jedes Feld gibt Punkte, Sternfelder geben +2, volle Reihen oder Spalten geben +2. Nach 7 Runden gewinnt die größte Endwertung inklusive Farbgruppen-Bonus.",
+      "howToPlay_de": "2-4 Spieler geben das Gerät reihum weiter. Jeder Zug zeigt drei Patch-Optionen. Wähle einen Patch, drehe ihn bei Bedarf und platziere ihn auf deinem 6x6-Brett. Jedes Feld gibt Punkte, Sternfelder geben +2, volle Reihen oder Spalten geben +2. Nach 7 Runden gewinnt die größte Endwertung inklusive Farbgruppen-Bonus.",
+      "howToPlay_en": "2-4 players pass the device around. Each turn offers three patches. Pick one, rotate it if needed, and place it on your 6x6 board. Every filled cell scores, star spaces add +2, and complete rows or columns add +2. After 7 rounds, the biggest final score including the color-group bonus wins.",
+      "howToPlay_fr": "Les joueurs se passent l’appareil. À chaque tour, trois patchs sont proposés. Choisis-en un, tourne-le si besoin, puis place-le sur ton plateau 6x6. Chaque case remplie marque des points, les étoiles valent +2, et chaque ligne ou colonne complète vaut +2. Après 7 manches, le meilleur score final avec bonus de couleur gagne.",
+      "howToPlay_it": "I giocatori si passano il dispositivo. Ogni turno offre tre patch. Scegline uno, ruotalo se serve e piazzalo sulla tua plancia 6x6. Ogni casella piena dà punti, le stelle valgono +2 e ogni riga o colonna completa vale +2. Dopo 7 round vince il punteggio finale più alto, incluso il bonus colore.",
+      "howToPlay_es": "Los jugadores se pasan el dispositivo. Cada turno ofrece tres parches. Elige uno, gíralo si hace falta y colócalo en tu tablero 6x6. Cada casilla llena da puntos, las estrellas suman +2 y cada fila o columna completa da +2. Tras 7 rondas gana la puntuación final más alta, incluido el bonus de color.",
+      "whyFun": "Der Reiz ist das knappe Platzieren: Nimmst du den großen L-Patch für sichere Sofortpunkte oder den kleinen Streifen, um eine Reihe fertigzumachen? Jede Auslage ist ein Mini-Draft, jede Drehung kann plötzlich ein Sternfeld oder den perfekten Farb-Cluster retten.",
+      "whyFun_de": "Der Reiz ist das knappe Platzieren: Nimmst du den großen L-Patch für sichere Sofortpunkte oder den kleinen Streifen, um eine Reihe fertigzumachen? Jede Auslage ist ein Mini-Draft, jede Drehung kann plötzlich ein Sternfeld oder den perfekten Farb-Cluster retten.",
+      "whyFun_en": "The fun is in the tight placement puzzle: do you grab the chunky L patch for safe points or the slim strip to finish a row? Every offer feels like a tiny draft, and every rotation can suddenly save a star tile or your perfect color cluster.",
+      "whyFun_fr": "Tout le plaisir vient du placement serré : prends-tu le gros patch en L pour des points sûrs ou la petite bande pour finir une ligne ? Chaque offre ressemble à un mini draft, et chaque rotation peut sauver une étoile ou un groupe de couleur parfait.",
+      "whyFun_it": "Il divertimento sta nel piazzamento tirato: prendi il grande patch a L per punti sicuri o la striscia sottile per chiudere una riga? Ogni offerta sembra un mini draft e ogni rotazione può salvare una stella o il gruppo colore perfetto.",
+      "whyFun_es": "La gracia está en el puzle de colocación: ¿coges la pieza en L para puntos seguros o la tira fina para cerrar una fila? Cada oferta parece un mini draft y cada giro puede salvar una estrella o tu grupo de color perfecto."
     }
   ]
 }
