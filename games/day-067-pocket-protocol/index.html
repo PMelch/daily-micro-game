@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Pocket Protocol</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script defer src="https://analytics.lab.gogerl.com/script.js" data-website-id="6544877e-6573-4ffa-b91f-db98c1bd4c77"></script>
+</head>
+<body>
+  <div class="back-bar"><a href="/">← Back to Games</a></div>
+
+  <div class="shell">
+    <section id="start-screen" class="card screen active">
+      <p class="eyebrow" data-i18n="eyebrow"></p>
+      <h1 data-i18n="title"></h1>
+      <p class="lede" data-i18n="subtitle"></p>
+      <div class="info-grid">
+        <article>
+          <h2 data-i18n="goalTitle"></h2>
+          <p data-i18n="goalCopy"></p>
+        </article>
+        <article>
+          <h2 data-i18n="commandTitle"></h2>
+          <p data-i18n="commandCopy"></p>
+        </article>
+      </div>
+      <button id="start-btn" class="primary" data-i18n="start"></button>
+    </section>
+
+    <section id="game-screen" class="screen">
+      <div class="card hero">
+        <div>
+          <p class="eyebrow" id="level-kicker"></p>
+          <h1 data-i18n="title"></h1>
+          <p id="status-line"></p>
+        </div>
+        <div class="hero-pills">
+          <span id="tick-pill" class="pill"></span>
+          <span id="data-pill" class="pill"></span>
+        </div>
+      </div>
+
+      <div class="card board-card">
+        <div class="section-head">
+          <h2 data-i18n="gridTitle"></h2>
+          <p id="mission-line"></p>
+        </div>
+        <div id="board" class="board" aria-label="Pocket Protocol board"></div>
+        <div class="legend" id="legend"></div>
+      </div>
+
+      <div class="card queue-card">
+        <div class="section-head">
+          <h2 data-i18n="queueTitle"></h2>
+          <p data-i18n="queueHint"></p>
+        </div>
+        <div id="queue" class="queue"></div>
+        <div id="command-palette" class="command-palette"></div>
+        <div class="controls-row">
+          <button id="run-btn" class="primary" data-i18n="run"></button>
+          <button id="step-btn" class="secondary" data-i18n="step"></button>
+          <button id="reset-btn" class="secondary" data-i18n="reset"></button>
+          <button id="clear-btn" class="secondary" data-i18n="clear"></button>
+          <button id="next-btn" class="secondary" data-i18n="nextLevel"></button>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script src="/shared/i18n.js"></script>
+  <script src="logic.js"></script>
+  <script src="main.js"></script>
+</body>
+</html>
