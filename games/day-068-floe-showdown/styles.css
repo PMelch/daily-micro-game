@@ -1,0 +1,174 @@
+:root {
+  color-scheme: dark;
+  --bg: #071421;
+  --card: rgba(8, 23, 39, 0.92);
+  --card-2: rgba(14, 35, 58, 0.92);
+  --line: rgba(165, 212, 255, 0.24);
+  --text: #edf8ff;
+  --muted: #9bb9cf;
+  --accent: #77d6ff;
+  --accent-2: #ffcf6b;
+  --danger: #082034;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: Inter, system-ui, sans-serif;
+  background: radial-gradient(circle at top, #123154 0%, var(--bg) 48%, #020812 100%);
+  color: var(--text);
+  min-height: 100vh;
+}
+.back-bar{width:100%;background:#0a0a1a;padding:0.5rem 1rem;border-bottom:1px solid #333;}.back-bar a{color:#ffcc00;text-decoration:none;font-size:0.9rem;font-family:system-ui,sans-serif;}
+.shell {
+  width: min(100%, 900px);
+  margin: 0 auto;
+  padding: 1rem 1rem 2rem;
+}
+.screen { display: none; }
+.screen.active { display: block; }
+.card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  padding: 1rem;
+  box-shadow: 0 18px 46px rgba(0, 0, 0, 0.28);
+  margin-bottom: 1rem;
+}
+.hero {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  gap: 1rem;
+}
+.hero-pills { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.pill {
+  background: var(--card-2);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 0.4rem 0.75rem;
+  color: var(--accent-2);
+  font-weight: 700;
+}
+.label, .section-head h2 { display: block; margin-bottom: 0.4rem; }
+.section-head p, #turn-line, #winner-line, #board-hint, #move-hint { color: var(--muted); margin-top: 0.3rem; }
+.name-fields { display: grid; gap: 0.75rem; margin: 1rem 0; }
+input, select, button {
+  font: inherit;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+}
+input, select {
+  width: 100%;
+  padding: 0.85rem 0.95rem;
+  background: rgba(4, 13, 24, 0.88);
+  color: var(--text);
+}
+button {
+  cursor: pointer;
+  padding: 0.85rem 1rem;
+  color: var(--text);
+  background: rgba(15, 40, 66, 0.96);
+}
+button.primary {
+  background: linear-gradient(135deg, #1f8cff, #6dd6ff);
+  color: #03111f;
+  font-weight: 800;
+}
+button:disabled { opacity: 0.45; cursor: not-allowed; }
+.board {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0.45rem;
+}
+.cell {
+  aspect-ratio: 1;
+  border-radius: 16px;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: linear-gradient(145deg, rgba(129, 223, 255, 0.82), rgba(72, 145, 196, 0.9));
+  padding: 0.3rem;
+  position: relative;
+  display: flex;
+  align-items: start;
+  justify-content: end;
+  overflow: hidden;
+}
+.cell.sunk {
+  background: radial-gradient(circle at 40% 35%, #19456f 0%, #071a2f 42%, #020910 100%);
+}
+.cell.current::after {
+  content: '';
+  position: absolute;
+  inset: 4px;
+  border: 2px solid rgba(255, 208, 107, 0.95);
+  border-radius: 12px;
+}
+.cell.preview {
+  outline: 3px solid rgba(255, 207, 107, 0.85);
+  transform: translateY(-2px);
+}
+.cell .fish {
+  font-weight: 800;
+  color: #0a3652;
+  font-size: 0.8rem;
+}
+.cell .hole {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.35) 20%, rgba(0,0,0,0.78) 58%, rgba(0,0,0,0.95) 100%);
+}
+.pawn {
+  position: absolute;
+  inset: auto auto 8px 8px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: #03111f;
+  box-shadow: 0 8px 18px rgba(0,0,0,0.25);
+}
+.move-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 0.75rem;
+}
+.move-btn {
+  text-align: left;
+  min-height: 94px;
+}
+.move-btn strong { display: block; margin-bottom: 0.3rem; }
+.move-btn span { display: block; color: var(--muted); font-size: 0.9rem; }
+.scoreboard { display: grid; gap: 0.6rem; }
+.score-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.85rem 0.95rem;
+  background: rgba(255,255,255,0.04);
+  border-radius: 14px;
+}
+.score-row.active {
+  border: 1px solid rgba(255, 207, 107, 0.65);
+}
+.score-name { display: flex; align-items: center; gap: 0.6rem; }
+.badge {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: inline-grid;
+  place-items: center;
+  color: #03111f;
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+.trapped-note { color: #ffb5b5; font-size: 0.85rem; }
+@media (max-width: 640px) {
+  .shell { padding: 0.8rem 0.8rem 1.5rem; }
+  .hero { flex-direction: column; }
+  .board { gap: 0.35rem; }
+  .cell { border-radius: 14px; }
+}
