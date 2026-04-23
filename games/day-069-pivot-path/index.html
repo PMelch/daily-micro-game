@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Pivot Path</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script defer src="https://analytics.lab.gogerl.com/script.js" data-website-id="6544877e-6573-4ffa-b91f-db98c1bd4c77"></script>
+</head>
+<body>
+  <div class="back-bar"><a href="/">← Back to Games</a></div>
+
+  <main class="shell">
+    <section id="start-screen" class="screen card active">
+      <p class="eyebrow" data-i18n="eyebrow"></p>
+      <h1 data-i18n="title"></h1>
+      <p class="lede" data-i18n="subtitle"></p>
+      <div class="info-grid">
+        <article>
+          <h2 data-i18n="goalTitle"></h2>
+          <p data-i18n="goalCopy"></p>
+        </article>
+        <article>
+          <h2 data-i18n="hookTitle"></h2>
+          <p data-i18n="hookCopy"></p>
+        </article>
+      </div>
+      <button id="start-btn" class="primary" data-i18n="start"></button>
+    </section>
+
+    <section id="game-screen" class="screen">
+      <div class="card hero">
+        <div>
+          <p class="eyebrow" id="level-pill"></p>
+          <h1 data-i18n="title"></h1>
+          <p id="status-line"></p>
+        </div>
+        <div class="hero-stats">
+          <span id="steps-pill" class="pill"></span>
+          <span id="stamps-pill" class="pill"></span>
+        </div>
+      </div>
+
+      <div class="card board-card">
+        <div class="section-head">
+          <h2 data-i18n="boardTitle"></h2>
+          <p id="mission-line"></p>
+        </div>
+        <div id="board" class="board" aria-label="Pivot Path board"></div>
+      </div>
+
+      <div class="card controls-card">
+        <div class="section-head">
+          <h2 data-i18n="controlsTitle"></h2>
+          <p data-i18n="controlsHint"></p>
+        </div>
+        <div class="controls-row">
+          <button id="skip-btn" class="secondary" data-i18n="skip"></button>
+          <button id="reset-btn" class="secondary" data-i18n="reset"></button>
+          <button id="next-btn" class="primary" data-i18n="nextLevel"></button>
+        </div>
+        <div class="legend" id="legend"></div>
+      </div>
+    </section>
+
+    <section id="result-card" class="screen card result-card" aria-live="polite">
+      <p class="eyebrow" data-i18n="resultEyebrow"></p>
+      <h2 id="result-title"></h2>
+      <p id="result-copy"></p>
+      <div id="star-row" class="star-row"></div>
+      <div class="controls-row">
+        <button id="retry-btn" class="secondary" data-i18n="retry"></button>
+        <button id="result-next-btn" class="primary" data-i18n="nextLevel"></button>
+      </div>
+    </section>
+  </main>
+
+  <script src="/shared/i18n.js"></script>
+  <script src="logic.js"></script>
+  <script src="main.js"></script>
+</body>
+</html>

@@ -17,12 +17,12 @@ module.exports = defineConfig({
     {
       name: 'desktop-chromium',
       use: { ...devices['Desktop Chrome'] },
-      testMatch: ['smoke.spec.js', 'sync-or-sink.spec.js', 'neon-drift.spec.js', 'roll-call.spec.js', 'vibe-check.spec.js', 'patch-panic.spec.js', 'patch-panic-screenshot.spec.js', 'day-061-bank-shot.spec.js', 'day-062-script-scout.spec.js', 'day-063-overlay.spec.js', 'day-064-crew-circuit.spec.js', 'day-064-crew-circuit-screenshot.spec.js', 'day-065-mirror-steps.spec.js', 'day-066-patch-parade.spec.js', 'day-067-pocket-protocol.spec.js', 'day-068-floe-showdown.spec.js'],
+      testMatch: ['smoke.spec.js', 'sync-or-sink.spec.js', 'neon-drift.spec.js', 'roll-call.spec.js', 'vibe-check.spec.js', 'patch-panic.spec.js', 'patch-panic-screenshot.spec.js', 'day-061-bank-shot.spec.js', 'day-062-script-scout.spec.js', 'day-063-overlay.spec.js', 'day-064-crew-circuit.spec.js', 'day-064-crew-circuit-screenshot.spec.js', 'day-065-mirror-steps.spec.js', 'day-066-patch-parade.spec.js', 'day-067-pocket-protocol.spec.js', 'day-068-floe-showdown.spec.js', 'day-069-pivot-path.spec.js', 'day-069-pivot-path-screenshot.spec.js'],
     },
     {
       name: 'mobile-chrome',
       use: { ...devices['Pixel 5'] },
-      testMatch: ['smoke.spec.js', 'day-061-bank-shot.spec.js', 'day-062-script-scout.spec.js', 'day-063-overlay.spec.js', 'day-065-mirror-steps.spec.js', 'day-066-patch-parade.spec.js', 'day-067-pocket-protocol.spec.js', 'day-068-floe-showdown.spec.js'],
+      testMatch: ['smoke.spec.js', 'day-061-bank-shot.spec.js', 'day-062-script-scout.spec.js', 'day-063-overlay.spec.js', 'day-065-mirror-steps.spec.js', 'day-066-patch-parade.spec.js', 'day-067-pocket-protocol.spec.js', 'day-068-floe-showdown.spec.js', 'day-069-pivot-path.spec.js'],
     },
   ],
   webServer: {
