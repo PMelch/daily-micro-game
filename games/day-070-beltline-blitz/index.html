@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Beltline Blitz</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script defer src="https://analytics.lab.gogerl.com/script.js" data-website-id="6544877e-6573-4ffa-b91f-db98c1bd4c77"></script>
+</head>
+<body>
+  <div class="back-bar"><a href="/">← Back to Games</a></div>
+  <div class="shell">
+    <section id="setup-screen" class="card screen active">
+      <h1 data-i18n="title"></h1>
+      <p data-i18n="subtitle"></p>
+      <label class="label" for="player-count" data-i18n="playerCount"></label>
+      <select id="player-count"></select>
+      <div id="name-fields" class="name-fields"></div>
+      <button id="start-btn" class="primary" data-i18n="start"></button>
+    </section>
+
+    <section id="transition-screen" class="card screen">
+      <h2 id="transition-title"></h2>
+      <p id="transition-copy"></p>
+      <button id="ready-btn" class="primary" data-i18n="ready"></button>
+    </section>
+
+    <section id="game-screen" class="screen">
+      <div class="card hero">
+        <div>
+          <h1 data-i18n="title"></h1>
+          <p id="turn-line"></p>
+        </div>
+        <div class="hero-pills">
+          <span id="turn-pill" class="pill"></span>
+          <span id="status-pill" class="pill accent"></span>
+        </div>
+      </div>
+
+      <div class="card board-card">
+        <div class="section-head">
+          <h2 data-i18n="boardTitle"></h2>
+          <p id="board-hint"></p>
+        </div>
+        <div id="board" class="board" aria-label="Beltline Blitz board"></div>
+      </div>
+
+      <div class="card info-grid">
+        <div>
+          <h2 data-i18n="scoreboard"></h2>
+          <div id="scoreboard" class="scoreboard"></div>
+        </div>
+        <div>
+          <h2 data-i18n="logTitle"></h2>
+          <div id="log-box" class="log-box"></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="result-screen" class="card screen">
+      <h1 data-i18n="resultTitle"></h1>
+      <p id="winner-line"></p>
+      <div id="final-scores" class="scoreboard"></div>
+      <button id="restart-btn" class="primary" data-i18n="playAgain"></button>
+    </section>
+  </div>
+
+  <script src="/shared/i18n.js"></script>
+  <script type="module" src="main.js"></script>
+</body>
+</html>
