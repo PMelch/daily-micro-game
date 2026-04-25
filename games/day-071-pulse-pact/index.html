@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Pulse Pact</title>
+<script defer src="https://analytics.lab.gogerl.com/script.js" data-website-id="6544877e-6573-4ffa-b91f-db98c1bd4c77"></script>
+<style>
+:root{--bg:#080812;--panel:#111423;--line:#262d4a;--text:#f7f7fb;--muted:#9fa7c8;--accent:#ffcc00;--good:#5df2b4;--bad:#ff6b7a;--lane0:#5bc0ff;--lane1:#8d7bff;--lane2:#ff7be8;--lane3:#ff9f5c;--lane4:#63e45d;--lane5:#ffe45c}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at top,#191d36,#080812 62%);color:var(--text);font-family:system-ui,sans-serif;min-height:100dvh}.back-bar{width:100%;background:#0a0a1a;padding:0.5rem 1rem;border-bottom:1px solid #333;}.back-bar a{color:#ffcc00;text-decoration:none;font-size:0.9rem;font-family:system-ui,sans-serif;}.shell{max-width:560px;margin:0 auto;padding:1rem;display:flex;flex-direction:column;gap:1rem}.screen{display:none}.screen.active{display:block}.card{background:rgba(17,20,35,.96);border:1px solid var(--line);border-radius:20px;padding:1rem;box-shadow:0 18px 40px rgba(0,0,0,.28)}.stack{display:flex;flex-direction:column;gap:.85rem}.row{display:flex;gap:.75rem}.row>*{flex:1}h1{margin:.1rem 0;color:var(--accent);font-size:2rem}p{margin:.2rem 0;color:var(--muted)}input{width:100%;padding:.85rem 1rem;border-radius:12px;border:1px solid var(--line);background:#0b1020;color:var(--text);font-size:1rem}button{border:none;border-radius:14px;padding:.9rem 1rem;font:inherit;font-weight:800;cursor:pointer}button.primary{background:var(--accent);color:#111}button.secondary{background:#1a2038;color:var(--text);border:1px solid var(--line)}button:disabled{opacity:.38;cursor:not-allowed}.center{text-align:center}.code{font-size:2.4rem;font-family:monospace;letter-spacing:.24em;background:#0b1020;border:2px solid #665300;color:var(--accent);border-radius:16px;padding:.45rem}.players{display:flex;flex-wrap:wrap;gap:.5rem}.player-pill{padding:.45rem .8rem;border-radius:999px;background:#1a2038;border:1px solid var(--line)}.hud{display:grid;grid-template-columns:repeat(2,1fr);gap:.65rem}.pill{background:#161d34;border:1px solid var(--line);border-radius:16px;padding:.6rem .75rem}.pill strong{display:block;color:var(--accent);font-size:.82rem}.lane-tags{display:flex;flex-wrap:wrap;gap:.4rem}.lane-tag{padding:.28rem .55rem;border-radius:999px;font-weight:800;font-size:.82rem;color:#111}.board-wrap{position:relative;border-radius:18px;background:linear-gradient(180deg,#0f1430,#090d1f);border:1px solid var(--line);padding:.65rem .65rem .9rem}.board{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;height:300px;align-items:stretch}.lane{position:relative;border-radius:14px;background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.015));overflow:hidden}.lane.assigned{box-shadow:inset 0 0 0 2px rgba(255,204,0,.2)}.lane-header{position:absolute;top:6px;left:50%;transform:translateX(-50%);font-size:.8rem;font-weight:900;opacity:.78}.lane-hitline{position:absolute;left:8%;right:8%;bottom:54px;height:8px;border-radius:999px;background:rgba(255,255,255,.18);box-shadow:0 0 0 2px rgba(255,255,255,.05)}.note{position:absolute;left:12%;right:12%;height:22px;border-radius:999px;box-shadow:0 10px 18px rgba(0,0,0,.18)}.note.hit{opacity:.18}.note.missed{opacity:.12;filter:grayscale(1)}.feedback{min-height:1.2rem;text-align:center;font-weight:800}.feedback.good{color:var(--good)}.feedback.bad{color:var(--bad)}.lane-buttons{display:grid;grid-template-columns:repeat(3,1fr);gap:.55rem}.lane-btn{min-height:52px;color:#111}.lane-btn[data-active="true"]{outline:3px solid rgba(255,204,0,.4)}.small{font-size:.92rem}.result{font-size:1.2rem;font-weight:900}.subtle{opacity:.8}.countdown{font-size:1.4rem;font-weight:900;color:var(--accent)}
+.l0{background:var(--lane0)}.l1{background:var(--lane1)}.l2{background:var(--lane2)}.l3{background:var(--lane3)}.l4{background:var(--lane4)}.l5{background:var(--lane5)}
+@media (max-width:520px){.shell{padding:.75rem}.card{padding:.85rem}h1{font-size:1.7rem}.board{height:270px}.lane-buttons{grid-template-columns:repeat(2,1fr)}}
+@media (max-height:700px){.shell{padding:.45rem;gap:.45rem}.card{padding:.65rem}.stack{gap:.45rem}.hud{gap:.35rem}.pill{padding:.38rem .5rem;font-size:.9rem}.lane-tags{gap:.25rem}.board{height:168px}.board-wrap{padding:.42rem .42rem .55rem}.lane-buttons{gap:.32rem}.lane-btn{min-height:44px;padding:.58rem .45rem}.small{font-size:.78rem}p{margin:.1rem 0}}
+</style>
+</head>
+<body>
+<div class="back-bar"><a href="/">← Back to Games</a></div>
+<div class="shell">
+  <section id="screen-setup" class="screen active">
+    <div class="card stack">
+      <h1 data-i18n="title"></h1>
+      <p data-i18n="subtitle"></p>
+      <input id="player-name" maxlength="18" value="Spieler" data-i18n-placeholder="namePlaceholder">
+      <div class="row">
+        <button id="btn-create" class="primary" data-i18n="createRoom"></button>
+        <button id="btn-join-toggle" class="secondary" data-i18n="joinRoom"></button>
+      </div>
+      <div class="row">
+        <input id="room-code-input" maxlength="4" placeholder="ABCD">
+        <button id="btn-join" class="secondary" data-i18n="join"></button>
+      </div>
+      <p class="small" data-i18n="setupHint"></p>
+    </div>
+  </section>
+
+  <section id="screen-lobby" class="screen">
+    <div class="card stack center">
+      <div class="code" id="lobby-code">----</div>
+      <p data-i18n="lobbyHint"></p>
+      <div id="lobby-players" class="players"></div>
+      <button id="btn-start" class="primary" data-i18n="startJam"></button>
+    </div>
+  </section>
+
+  <section id="screen-game" class="screen">
+    <div class="card stack">
+      <div class="hud">
+        <div class="pill"><strong data-i18n="score"></strong><span id="score-value">0</span></div>
+        <div class="pill"><strong data-i18n="energy"></strong><span id="energy-value">12</span></div>
+        <div class="pill"><strong data-i18n="combo"></strong><span id="combo-value">0</span></div>
+        <div class="pill"><strong data-i18n="status"></strong><span id="status-value">...</span></div>
+      </div>
+      <div>
+        <strong data-i18n="yourLanes"></strong>
+        <div id="lane-tags" class="lane-tags"></div>
+      </div>
+      <div class="feedback" id="feedback-line">&nbsp;</div>
+      <div class="board-wrap">
+        <div class="board" id="board"></div>
+      </div>
+      <div class="lane-buttons" id="lane-buttons"></div>
+      <p class="small subtle" data-i18n="tapHint"></p>
+    </div>
+  </section>
+
+  <section id="screen-end" class="screen">
+    <div class="card stack center">
+      <h1 id="result-title"></h1>
+      <div class="result" id="result-copy"></div>
+      <p id="result-score"></p>
+      <p data-i18n="resultHint"></p>
+    </div>
+  </section>
+</div>
+<script src="/shared/i18n.js"></script>
+<script>
+const TRANSLATIONS={
+  de:{title:'Pulse Pact',subtitle:'Koop-Rhythmusspiel in Echtzeit: Alle sehen denselben Beat, aber jeder darf nur seine eigenen Spuren treffen. Haltet den Song gemeinsam am Leben.',namePlaceholder:'Spielername',createRoom:'Raum erstellen',joinRoom:'Raum beitreten',join:'Beitreten',setupHint:'2 bis 6 Spieler. Einer erstellt den Raum, alle anderen kommen per Code dazu. Jeder bekommt eigene Spuren.',lobbyHint:'Teilt den Code, dann startet der Host den Jam.',startJam:'Jam starten',score:'Team-Score',energy:'Energie',combo:'Combo',status:'Status',yourLanes:'Deine Spuren',tapHint:'Tippe nur deine markierten Tasten, wenn die Noten die Linie unten erreichen.',resultHint:'Für eine neue Runde einfach den Link neu öffnen.',statusLobby:'Lobby',statusCountdown:'Bereitmachen',statusPlaying:'Live',statusVictory:'Song gerettet!',statusDefeat:'Beat verloren',victoryTitle:'Song gerettet!',defeatTitle:'Beat verloren',victoryCopy:'Saubere Teamarbeit. Ihr habt die ganze Sequenz durchgezogen.',defeatCopy:'Der Track ist zusammengebrochen. Ein paar verpasste Einsätze zu viel.',resultScore:'Endscore',feedbackPerfect:'PERFEKT',feedbackGood:'GUT',feedbackOk:'OK',feedbackMiss:'VERPASST'},
+  en:{title:'Pulse Pact',subtitle:'Real-time co-op rhythm game: everyone sees the same beat, but each player may only hit their own lanes. Keep the song alive together.',namePlaceholder:'Player name',createRoom:'Create room',joinRoom:'Join room',join:'Join',setupHint:'2 to 6 players. One host creates the room, everyone else joins by code. Each player gets their own lanes.',lobbyHint:'Share the code, then let the host start the jam.',startJam:'Start jam',score:'Team score',energy:'Energy',combo:'Combo',status:'Status',yourLanes:'Your lanes',tapHint:'Tap only your highlighted buttons when notes hit the line below.',resultHint:'Reload the link for a fresh run.',statusLobby:'Lobby',statusCountdown:'Get ready',statusPlaying:'Live',statusVictory:'Song saved!',statusDefeat:'Beat dropped',victoryTitle:'Song saved!',defeatTitle:'Beat dropped',victoryCopy:'Clean teamwork. You held the full sequence together.',defeatCopy:'The track collapsed. A few too many missed hits.',resultScore:'Final score',feedbackPerfect:'PERFECT',feedbackGood:'GOOD',feedbackOk:'OK',feedbackMiss:'MISS'},
+  fr:{title:'Pulse Pact',subtitle:'Jeu de rythme coopératif en temps réel : tout le monde voit le même beat, mais chacun ne peut toucher que ses propres pistes. Gardez la chanson en vie ensemble.',namePlaceholder:'Nom du joueur',createRoom:'Créer une salle',joinRoom:'Rejoindre',join:'Entrer',setupHint:'2 à 6 joueurs. Un hôte crée la salle, les autres la rejoignent avec le code. Chacun reçoit ses propres pistes.',lobbyHint:'Partagez le code puis laissez l’hôte lancer le jam.',startJam:'Lancer le jam',score:'Score d’équipe',energy:'Énergie',combo:'Combo',status:'Statut',yourLanes:'Tes pistes',tapHint:'Touchez seulement vos boutons surlignés quand les notes atteignent la ligne.',resultHint:'Rechargez le lien pour recommencer.',statusLobby:'Salon',statusCountdown:'Préparez-vous',statusPlaying:'En direct',statusVictory:'Chanson sauvée !',statusDefeat:'Beat perdu',victoryTitle:'Chanson sauvée !',defeatTitle:'Beat perdu',victoryCopy:'Belle coordination. Vous avez tenu toute la séquence ensemble.',defeatCopy:'La piste s’est effondrée. Trop d’entrées manquées.',resultScore:'Score final',feedbackPerfect:'PARFAIT',feedbackGood:'BIEN',feedbackOk:'OK',feedbackMiss:'RATÉ'},
+  it:{title:'Pulse Pact',subtitle:'Gioco ritmico cooperativo in tempo reale: tutti vedono lo stesso beat, ma ogni giocatore può colpire solo le proprie corsie. Tenete viva la canzone insieme.',namePlaceholder:'Nome giocatore',createRoom:'Crea stanza',joinRoom:'Entra nella stanza',join:'Entra',setupHint:'Da 2 a 6 giocatori. Un host crea la stanza, gli altri entrano col codice. Ognuno riceve le proprie corsie.',lobbyHint:'Condividi il codice e poi fai partire il jam all’host.',startJam:'Avvia jam',score:'Punteggio squadra',energy:'Energia',combo:'Combo',status:'Stato',yourLanes:'Le tue corsie',tapHint:'Tocca solo i pulsanti evidenziati quando le note arrivano alla linea.',resultHint:'Ricarica il link per una nuova partita.',statusLobby:'Lobby',statusCountdown:'Preparati',statusPlaying:'Live',statusVictory:'Canzone salvata!',statusDefeat:'Beat perso',victoryTitle:'Canzone salvata!',defeatTitle:'Beat perso',victoryCopy:'Ottimo lavoro di squadra. Avete tenuto insieme tutta la sequenza.',defeatCopy:'La traccia è crollata. Troppi colpi mancati.',resultScore:'Punteggio finale',feedbackPerfect:'PERFETTO',feedbackGood:'BUONO',feedbackOk:'OK',feedbackMiss:'MANCATO'},
+  es:{title:'Pulse Pact',subtitle:'Juego rítmico cooperativo en tiempo real: todo el mundo ve el mismo beat, pero cada persona solo puede golpear sus propios carriles. Mantened viva la canción juntos.',namePlaceholder:'Nombre del jugador',createRoom:'Crear sala',joinRoom:'Unirse',join:'Entrar',setupHint:'De 2 a 6 jugadores. Una persona crea la sala y las demás entran con el código. Cada quien recibe sus propios carriles.',lobbyHint:'Compartid el código y luego el anfitrión inicia la sesión.',startJam:'Iniciar jam',score:'Puntuación del equipo',energy:'Energía',combo:'Combo',status:'Estado',yourLanes:'Tus carriles',tapHint:'Toca solo tus botones resaltados cuando las notas lleguen a la línea.',resultHint:'Recarga el enlace para otra partida.',statusLobby:'Sala',statusCountdown:'Prepárate',statusPlaying:'En vivo',statusVictory:'¡Canción salvada!',statusDefeat:'Beat perdido',victoryTitle:'¡Canción salvada!',defeatTitle:'Beat perdido',victoryCopy:'Buena coordinación. Aguantasteis toda la secuencia juntos.',defeatCopy:'La pista se vino abajo. Se escaparon demasiados golpes.',resultScore:'Puntuación final',feedbackPerfect:'PERFECTO',feedbackGood:'BIEN',feedbackOk:'OK',feedbackMiss:'FALLO'}
+};
+const { t } = initI18n(TRANSLATIONS);
+const screens={setup:document.getElementById('screen-setup'),lobby:document.getElementById('screen-lobby'),game:document.getElementById('screen-game'),end:document.getElementById('screen-end')};
+const boardEl=document.getElementById('board');
+const laneButtonsEl=document.getElementById('lane-buttons');
+const tagsEl=document.getElementById('lane-tags');
+const feedbackEl=document.getElementById('feedback-line');
+const laneNames=['A','S','D','J','K','L'];
+const laneColors=['l0','l1','l2','l3','l4','l5'];
+let socket=null; let state=null; let me={lanes:[]}; let serverOffset=0; let localFeedback=''; let feedbackTone='good'; let laneSignature='';
+const $=id=>document.getElementById(id);
+function show(name){Object.values(screens).forEach(el=>el.classList.remove('active'));screens[name].classList.add('active');}
+function wsUrl(){return window.__TEST_WS_URL||((location.protocol==='https:'?'wss://':'ws://')+'day-071-pulse-pact.lab.gogerl.com');}
+function connect(){if(socket&&socket.readyState<=1)return;socket=new WebSocket(wsUrl());socket.onmessage=(event)=>handle(JSON.parse(event.data));}
+function send(data){connect();const go=()=>socket.send(JSON.stringify(data));if(socket.readyState===1)go();else socket.addEventListener('open',go,{once:true});}
+function statusText(){if(!state)return t('statusLobby'); if(state.phase==='lobby')return t('statusLobby'); if(state.phase==='countdown')return t('statusCountdown'); if(state.phase==='playing')return t('statusPlaying'); return state.result==='victory'?t('statusVictory'):t('statusDefeat');}
+function laneTag(label,lane){const span=document.createElement('span');span.className=`lane-tag ${laneColors[lane]}`;span.textContent=label;return span;}
+function renderLobbyPlayers(players){$('lobby-players').innerHTML='';players.forEach(player=>{const pill=document.createElement('div');pill.className='player-pill';pill.textContent=`${player.name} · ${player.lanes.length?player.lanes.map(i=>laneNames[i]).join('/'): '...'}`;$('lobby-players').appendChild(pill);});}
+function renderLaneTags(){tagsEl.innerHTML='';me.lanes.forEach(lane=>tagsEl.appendChild(laneTag(laneNames[lane],lane)));}
+function renderLaneButtons(){laneButtonsEl.innerHTML='';for(let lane=0;lane<6;lane++){const btn=document.createElement('button');btn.className=`lane-btn ${laneColors[lane]}`;btn.textContent=laneNames[lane];btn.dataset.lane=String(lane);const active=me.lanes.includes(lane);btn.dataset.active=active?'true':'false';btn.disabled=!active;btn.addEventListener('click',()=>hitLane(lane));laneButtonsEl.appendChild(btn);}}
+function renderBoard(){boardEl.innerHTML='';const songTime=(Date.now()+serverOffset)-(state?.startAt||0);const travel=2400;for(let lane=0;lane<6;lane++){const col=document.createElement('div');col.className=`lane ${me.lanes.includes(lane)?'assigned':''}`;const header=document.createElement('div');header.className='lane-header';header.textContent=laneNames[lane];col.appendChild(header);const hitline=document.createElement('div');hitline.className='lane-hitline';col.appendChild(hitline);(state?.chart||[]).filter(note=>note.lane===lane).forEach(note=>{if(note.hit&&songTime-note.time>600)return;if(note.missed&&songTime-note.time>600)return;const delta=note.time-songTime;if(delta>travel||delta<-320)return;const noteEl=document.createElement('div');noteEl.className=`note ${laneColors[lane]} ${note.hit?'hit':''} ${note.missed?'missed':''}`;noteEl.dataset.lane=String(lane);const top=((travel-delta)/travel)*240;noteEl.style.top=`${Math.max(16,Math.min(250,top))}px`;col.appendChild(noteEl);});boardEl.appendChild(col);}}
+function renderState(){if(!state)return;$('score-value').textContent=String(state.score);$('energy-value').textContent=String(state.energy);$('combo-value').textContent=String(state.combo);$('status-value').textContent=statusText();$('lobby-code').textContent=state.code;renderLobbyPlayers(state.players);$('btn-start').disabled=!(me.isHost&&state.players.length>=2);const nextSignature=(me.lanes||[]).join(',');if(nextSignature!==laneSignature){laneSignature=nextSignature;renderLaneTags();renderLaneButtons();}if(state.phase==='lobby'){show('lobby');return;}if(state.phase==='ended'){show('end');$('result-title').textContent=state.result==='victory'?t('victoryTitle'):t('defeatTitle');$('result-copy').textContent=state.result==='victory'?t('victoryCopy'):t('defeatCopy');$('result-score').textContent=`${t('resultScore')}: ${state.score}`;return;}show('game');renderBoard();if(state.phase==='countdown'){const secs=Math.max(0,Math.ceil((state.startAt-(Date.now()+serverOffset))/1000));feedbackEl.textContent=`${t('statusCountdown')} · ${secs}`;feedbackEl.className='feedback good';}else if(localFeedback){feedbackEl.textContent=localFeedback;feedbackEl.className=`feedback ${feedbackTone}`;}else{feedbackEl.innerHTML='&nbsp;';feedbackEl.className='feedback';}}
+function setFeedback(key,tone='good'){localFeedback=t(key);feedbackTone=tone;renderState();setTimeout(()=>{if(localFeedback===t(key)){localFeedback='';renderState();}},450);}
+function hitLane(lane){send({type:'hit',lane});}
+function handle(msg){if(msg.type==='state'){state=msg.state;me={...msg.me};serverOffset=msg.state.serverNow-Date.now();renderState();}if(msg.type==='hit-feedback'){setFeedback(msg.key,msg.tone);}if(msg.type==='error'){alert(msg.message);}}
+$('btn-join-toggle').onclick=()=>$('room-code-input').focus();
+$('btn-create').onclick=()=>send({type:'create',name:$('player-name').value});
+$('btn-join').onclick=()=>send({type:'join',name:$('player-name').value,code:$('room-code-input').value.toUpperCase()});
+$('btn-start').onclick=()=>send({type:'start'});
+document.addEventListener('keydown',(event)=>{const idx=laneNames.indexOf(event.key.toUpperCase());if(idx>=0&&me.lanes.includes(idx)) hitLane(idx);});
+function loop(){if(state&&(state.phase==='playing'||state.phase==='countdown')) renderBoard();requestAnimationFrame(loop);}connect();loop();
+</script>
+</body>
+</html>
