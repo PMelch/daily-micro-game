@@ -2433,6 +2433,48 @@
       "whyFun_fr": "Tout le plaisir vient du placement serré : prends-tu le gros patch en L pour des points sûrs ou la petite bande pour finir une ligne ? Chaque offre ressemble à un mini draft, et chaque rotation peut sauver une étoile ou un groupe de couleur parfait.",
       "whyFun_it": "Il divertimento sta nel piazzamento tirato: prendi il grande patch a L per punti sicuri o la striscia sottile per chiudere una riga? Ogni offerta sembra un mini draft e ogni rotazione può salvare una stella o il gruppo colore perfetto.",
       "whyFun_es": "La gracia está en el puzle de colocación: ¿coges la pieza en L para puntos seguros o la tira fina para cerrar una fila? Cada oferta parece un mini draft y cada giro puede salvar una estrella o tu grupo de color perfecto."
+    },
+    {
+      "id": "day-072-constellation-corral",
+      "day": 72,
+      "slug": "constellation-corral",
+      "path": "/games/day-072-constellation-corral/",
+      "date": "2026-04-27",
+      "createdAt": "2026-04-26T22:00:00.000Z",
+      "mode": "single-player",
+      "tags": [
+        "single-player",
+        "geometry",
+        "enclosure",
+        "puzzle",
+        "spatial"
+      ],
+      "ratings": [],
+      "name": "Constellation Corral",
+      "name_de": "Constellation Corral",
+      "name_en": "Constellation Corral",
+      "name_fr": "Constellation Corral",
+      "name_it": "Constellation Corral",
+      "name_es": "Constellation Corral",
+      "description": "Solo-Geometriepuzzle! Spanne eine Schleife zwischen Ankerpunkten, fange alle goldenen Sterne ein und lass rote Minen draußen — alles unter knappem Seilbudget.",
+      "description_de": "Solo-Geometriepuzzle! Spanne eine Schleife zwischen Ankerpunkten, fange alle goldenen Sterne ein und lass rote Minen draußen — alles unter knappem Seilbudget.",
+      "description_en": "Solo geometry puzzle! Stretch a loop between anchor points, trap every golden star, and keep red mines out — all under a tight rope budget.",
+      "description_fr": "Puzzle géométrique solo ! Tendez une boucle entre des points d’ancrage, capturez toutes les étoiles dorées et laissez les mines rouges dehors, le tout avec un budget de corde limité.",
+      "description_it": "Puzzle geometrico in solitaria! Tendi un loop tra punti di ancoraggio, cattura tutte le stelle dorate e lascia fuori le mine rosse, il tutto con un budget di corda limitato.",
+      "description_es": "¡Puzzle geométrico en solitario! Tiende un bucle entre puntos de anclaje, captura todas las estrellas doradas y deja fuera las minas rojas, todo con un presupuesto de cuerda ajustado.",
+      "howToPlay": "Tippe Ankerpunkte in Reihenfolge an, um dein Seil zu legen. Mit „Schleife schließen“ wird die Form ausgewertet: Alle Sterne müssen innen liegen, Minen draußen bleiben und die gesamte Seillänge darf das Budget nicht überschreiten. Schaffst du das, geht es ins nächste Sternenfeld.",
+      "howToPlay_de": "Tippe Ankerpunkte in Reihenfolge an, um dein Seil zu legen. Mit „Schleife schließen“ wird die Form ausgewertet: Alle Sterne müssen innen liegen, Minen draußen bleiben und die gesamte Seillänge darf das Budget nicht überschreiten. Schaffst du das, geht es ins nächste Sternenfeld.",
+      "howToPlay_en": "Tap anchor points in order to lay your rope. “Seal Loop” evaluates the shape: every star must be inside, mines must stay outside, and the total rope length cannot exceed the budget. If you nail it, you move to the next star field.",
+      "howToPlay_fr": "Touchez les points d’ancrage dans l’ordre pour poser la corde. « Fermer la boucle » évalue la forme : toutes les étoiles doivent être à l’intérieur, les mines doivent rester dehors et la longueur totale de corde ne peut pas dépasser le budget. Si vous réussissez, vous passez au champ suivant.",
+      "howToPlay_it": "Tocca i punti di ancoraggio in ordine per stendere la corda. “Chiudi il loop” valuta la forma: tutte le stelle devono stare dentro, le mine devono restare fuori e la lunghezza totale della corda non può superare il budget. Se ci riesci, passi al campo successivo.",
+      "howToPlay_es": "Toca los puntos de anclaje en orden para tender la cuerda. «Cerrar bucle» evalúa la forma: todas las estrellas deben quedar dentro, las minas deben quedarse fuera y la longitud total de la cuerda no puede superar el presupuesto. Si lo logras, pasas al siguiente campo estelar.",
+      "whyFun": "Das Schöne daran ist die kleine Raumfalle im Kopf: Die große Schleife wirkt erst richtig, bis du merkst, dass sie eine Mine mitschluckt oder zu viel Seil frisst. Dann suchst du plötzlich nach einer eleganteren Form und fühlst dich sofort schlau, wenn sie klickt.",
+      "whyFun_de": "Das Schöne daran ist die kleine Raumfalle im Kopf: Die große Schleife wirkt erst richtig, bis du merkst, dass sie eine Mine mitschluckt oder zu viel Seil frisst. Dann suchst du plötzlich nach einer eleganteren Form und fühlst dich sofort schlau, wenn sie klickt.",
+      "whyFun_en": "The hook is the tiny spatial trap in your head. The big obvious loop looks right until you realize it swallows a mine or burns too much rope. Then you start hunting for a cleaner shape, and it feels instantly clever when it clicks.",
+      "whyFun_fr": "Tout le plaisir vient de ce petit piège spatial. La grande boucle évidente semble juste, jusqu’à ce qu’elle avale une mine ou dépense trop de corde. On cherche alors une forme plus élégante, et quand elle apparaît, c’est immédiatement satisfaisant.",
+      "whyFun_it": "Il bello sta in questa piccola trappola spaziale mentale. Il grande loop ovvio sembra giusto finché non capisci che ingloba una mina o consuma troppa corda. Allora inizi a cercare una forma più elegante, e quando funziona ti senti subito brillante.",
+      "whyFun_es": "La gracia está en esa pequeña trampa espacial mental. El gran bucle obvio parece correcto hasta que ves que atrapa una mina o gasta demasiada cuerda. Entonces empiezas a buscar una forma más limpia, y cuando encaja se siente muy inteligente.",
+      "screenshot": "screenshot.png"
     }
   ]
 }

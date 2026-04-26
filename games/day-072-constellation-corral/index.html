@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Constellation Corral</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script defer src="https://analytics.lab.gogerl.com/script.js" data-website-id="6544877e-6573-4ffa-b91f-db98c1bd4c77"></script>
+</head>
+<body>
+  <div class="back-bar"><a href="/">← Back to Games</a></div>
+  <div class="shell">
+    <section id="intro-screen" class="card screen active">
+      <h1 data-i18n="title"></h1>
+      <p data-i18n="intro"></p>
+      <ul class="bullet-list">
+        <li data-i18n="tipOne"></li>
+        <li data-i18n="tipTwo"></li>
+        <li data-i18n="tipThree"></li>
+      </ul>
+      <button id="start-btn" class="primary" data-i18n="start"></button>
+    </section>
+
+    <section id="game-screen" class="screen">
+      <div class="card hero">
+        <div>
+          <h1 data-i18n="title"></h1>
+          <p id="status-line"></p>
+        </div>
+        <div class="hero-pills">
+          <span id="level-pill" class="pill"></span>
+          <span id="budget-pill" class="pill accent"></span>
+        </div>
+      </div>
+
+      <div class="card board-card">
+        <div class="section-head">
+          <h2 data-i18n="boardTitle"></h2>
+          <p id="board-copy"></p>
+        </div>
+        <svg id="board" viewBox="0 0 340 360" aria-label="Constellation Corral board"></svg>
+      </div>
+
+      <div class="card controls-card">
+        <div class="legend">
+          <span><i class="legend-star"></i><span data-i18n="legendStar"></span></span>
+          <span><i class="legend-hazard"></i><span data-i18n="legendHazard"></span></span>
+          <span><i class="legend-peg"></i><span data-i18n="legendPeg"></span></span>
+        </div>
+        <div class="controls-row">
+          <button id="undo-btn" data-i18n="undo"></button>
+          <button id="reset-btn" data-i18n="reset"></button>
+          <button id="seal-btn" class="primary" data-i18n="seal"></button>
+          <button id="next-btn" class="success hidden" data-i18n="next"></button>
+        </div>
+        <p id="message-box" class="message-box"></p>
+      </div>
+    </section>
+
+    <section id="complete-screen" class="card screen">
+      <h1 data-i18n="completeTitle"></h1>
+      <p id="complete-copy"></p>
+      <button id="restart-btn" class="primary" data-i18n="playAgain"></button>
+    </section>
+  </div>
+
+  <script src="/shared/i18n.js"></script>
+  <script type="module" src="main.js"></script>
+</body>
+</html>
