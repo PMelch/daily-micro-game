@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Table Tangle</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card-bg: #1e293b;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --accent: #f59e0b;
+      --success: #22c55e;
+      --danger: #ef4444;
+      --border: #334155;
+    }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    .back-bar {
+      width: 100%;
+      background: #0a0a1a;
+      padding: 0.5rem 1rem;
+      border-bottom: 1px solid #333;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+      z-index: 100;
+    }
+    .back-bar a {
+      color: #ffcc00;
+      text-decoration: none;
+      font-size: 0.9rem;
+    }
+
+    .screen {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      padding: 1.5rem;
+      flex-grow: 1;
+      overflow-y: auto;
+      text-align: center;
+    }
+    .screen.active { display: flex; }
+
+    h1 { font-size: 2rem; margin: 0 0 0.5rem; color: var(--accent); }
+    .subtitle { color: var(--muted); margin-bottom: 2rem; max-width: 400px; }
+
+    /* Setup Screen */
+    #setup-screen select, #setup-screen input {
+      width: 100%;
+      max-width: 300px;
+      padding: 0.8rem;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 8px;
+      margin-bottom: 1rem;
+      font-size: 1rem;
+    }
+    .name-fields { width: 100%; max-width: 300px; margin-bottom: 1.5rem; }
+    .name-row { display: flex; flex-direction: column; align-items: flex-start; margin-bottom: 0.8rem; }
+    .name-row span { font-size: 0.8rem; color: var(--muted); margin-bottom: 0.2rem; }
+
+    .btn {
+      background: var(--accent);
+      color: #000;
+      border: none;
+      padding: 1rem 2rem;
+      font-size: 1.1rem;
+      font-weight: bold;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: transform 0.1s, opacity 0.2s;
+      width: 100%;
+      max-width: 300px;
+    }
+    .btn:active { transform: scale(0.96); }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-secondary { background: var(--card-bg); color: var(--text); border: 1px solid var(--border); }
+
+    /* Transition Screen */
+    #transition-screen h2 { font-size: 1.8rem; margin: 2rem 0; }
+    #transition-screen p { color: var(--muted); margin-bottom: 3rem; }
+
+    /* Game Screen */
+    #game-screen { padding: 0.5rem; }
+    .hud { width: 100%; display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; padding: 0 0.5rem; }
+    .pill { background: var(--card-bg); padding: 0.3rem 0.8rem; border-radius: 20px; font-size: 0.8rem; border: 1px solid var(--border); }
+
+    .table-container {
+      position: relative;
+      width: 280px;
+      height: 280px;
+      margin: 1.5rem auto;
+      flex-shrink: 0;
+    }
+    .table-center {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 160px;
+      height: 160px;
+      background: var(--card-bg);
+      border: 4px solid var(--border);
+      border-radius: 50%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
+    }
+    #score-preview { font-size: 2rem; font-weight: bold; color: var(--accent); }
+    .score-label { font-size: 0.7rem; color: var(--muted); text-transform: uppercase; }
+
+    .seat {
+      position: absolute;
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      background: var(--bg);
+      border: 2px dashed var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .seat.active { border-color: var(--accent); background: rgba(245, 158, 11, 0.1); }
+    .seat.filled { border-style: solid; border-color: var(--border); background: var(--card-bg); }
+
+    .guest-icon { font-size: 2rem; pointer-events: none; }
+
+    .guest-pool {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-bottom: 1.5rem;
+      width: 100%;
+    }
+    .guest-card {
+      width: 60px;
+      height: 60px;
+      background: var(--card-bg);
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: transform 0.1s, border-color 0.2s;
+    }
+    .guest-card.selected { border-color: var(--accent); transform: translateY(-5px); box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3); }
+    .guest-card.used { opacity: 0.3; cursor: default; pointer-events: none; filter: grayscale(1); }
+
+    .rules-panel {
+      width: 100%;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 0.8rem;
+      text-align: left;
+      margin-bottom: 1.5rem;
+    }
+    .rules-panel h3 { font-size: 0.9rem; margin: 0 0 0.8rem; color: var(--muted); text-transform: uppercase; border-bottom: 1px solid var(--border); padding-bottom: 0.4rem; }
+    .rule-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.85rem;
+      margin-bottom: 0.5rem;
+      line-height: 1.2;
+    }
+    .rule-status { width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.6rem; flex-shrink: 0; }
+    .rule-status.ok { background: var(--success); color: #fff; }
+    .rule-status.broken { background: var(--danger); color: #fff; }
+    .rule-status.pending { background: var(--border); color: transparent; }
+
+    /* Results */
+    .scoreboard { width: 100%; max-width: 300px; margin: 1.5rem 0; }
+    .score-row { display: flex; justify-content: space-between; padding: 0.8rem; background: var(--card-bg); border-radius: 8px; margin-bottom: 0.5rem; border: 1px solid var(--border); }
+    .score-row.winner { border-color: var(--accent); box-shadow: 0 0 10px rgba(245, 158, 11, 0.2); }
+
+    [data-i18n] { transition: opacity 0.2s; }
+  </style>
+</head>
+<body>
+  <div class="back-bar"><a href="/">← Back to Games</a></div>
+
+  <!-- Setup -->
+  <div id="setup-screen" class="screen active">
+    <h1 data-i18n="title">Table Tangle</h1>
+    <p class="subtitle" data-i18n="subtitle">Pass & Play Seating Challenge: Arrange your eccentric guests according to their whims. Who is the master of social harmony?</p>
+    
+    <label for="player-count" data-i18n="playerCount">How many players?</label>
+    <select id="player-count"></select>
+    
+    <div id="name-fields" class="name-fields"></div>
+    
+    <button id="start-btn" class="btn" data-i18n="start">Start Game</button>
+  </div>
+
+  <!-- Transition -->
+  <div id="transition-screen" class="screen">
+    <h2 id="transition-title">Gib das Gerät an Ada!</h2>
+    <p id="transition-copy">Only Ada should look at the screen now.</p>
+    <button id="ready-btn" class="btn" data-i18n="ready">I'm Ready</button>
+  </div>
+
+  <!-- Game -->
+  <div id="game-screen" class="screen">
+    <div class="hud">
+      <div id="round-pill" class="pill">Round 1 / 3</div>
+      <div id="turn-line" class="pill">Ada's Turn</div>
+    </div>
+
+    <div class="rules-panel">
+      <h3 data-i18n="rulesTitle">Seating Rules</h3>
+      <div id="rules-list"></div>
+    </div>
+
+    <div class="table-container" id="table">
+      <div class="table-center">
+        <div id="score-preview">0</div>
+        <div class="score-label" data-i18n="points">Points</div>
+      </div>
+      <!-- Seats generated by JS -->
+    </div>
+
+    <div class="guest-pool" id="guest-pool"></div>
+
+    <button id="submit-btn" class="btn" disabled data-i18n="submit">Finish Seating</button>
+  </div>
+
+  <!-- Results -->
+  <div id="result-screen" class="screen">
+    <h1 data-i18n="resultTitle">Final Rankings</h1>
+    <div id="final-scores" class="scoreboard"></div>
+    <h2 id="winner-line">Ada Wins!</h2>
+    <button id="restart-btn" class="btn" data-i18n="playAgain">Play Again</button>
+  </div>
+
+  <script src="/shared/i18n.js"></script>
+  <script type="module" src="logic.js"></script>
+  <script type="module" src="main.js"></script>
+</body>
+</html>

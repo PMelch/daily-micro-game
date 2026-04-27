@@ -2475,6 +2475,48 @@
       "whyFun_it": "Il bello sta in questa piccola trappola spaziale mentale. Il grande loop ovvio sembra giusto finché non capisci che ingloba una mina o consuma troppa corda. Allora inizi a cercare una forma più elegante, e quando funziona ti senti subito brillante.",
       "whyFun_es": "La gracia está en esa pequeña trampa espacial mental. El gran bucle obvio parece correcto hasta que ves que atrapa una mina o gasta demasiada cuerda. Entonces empiezas a buscar una forma más limpia, y cuando encaja se siente muy inteligente.",
       "screenshot": "screenshot.png"
+    },
+    {
+      "id": "day-073-table-tangle",
+      "day": 73,
+      "slug": "table-tangle",
+      "path": "/games/day-073-table-tangle/",
+      "date": "2026-04-28",
+      "createdAt": "2026-04-27T22:00:00.000Z",
+      "mode": "pass-and-play",
+      "tags": [
+        "pass-and-play",
+        "puzzle",
+        "logic",
+        "deduction",
+        "social"
+      ],
+      "ratings": [],
+      "name": "Table Tangle",
+      "name_de": "Table Tangle",
+      "name_en": "Table Tangle",
+      "name_fr": "Table Tangle",
+      "name_it": "Table Tangle",
+      "name_es": "Table Tangle",
+      "description": "Pass & Play Sitzplatz-Puzzle: Arranchiere deine exzentrischen Gäste nach ihren Wünschen.",
+      "description_de": "Pass & Play Sitzplatz-Puzzle: Arranchiere deine exzentrischen Gäste nach ihren Wünschen. Wer ist der Meister der sozialen Harmonie?",
+      "description_en": "Pass & Play Seating Challenge: Arrange your eccentric guests according to their whims. Who is the master of social harmony?",
+      "description_fr": "Défi de placement Pass & Play : Organisez vos invités excentriques selon leurs envies.",
+      "description_it": "Sfida di posti Pass & Play: Disponi i tuoi eccentrici ospiti secondo i loro desideri.",
+      "description_es": "Desafío de asientos Pass & Play: Organiza a tus excéntricos invitados según sus caprichos.",
+      "howToPlay": "2-4 Spieler lösen nacheinander das Sitzplatz-Rätsel. Ziehe die 6 Gäste auf die Stühle am runden Tisch, um möglichst viele ihrer Wünsche (Regeln) zu erfüllen. Einige Regeln geben Punkte, andere kosten bei Missachtung. Nach 3 Runden gewinnt der Spieler mit der höchsten sozialen Kompetenz!",
+      "howToPlay_de": "2-4 Spieler lösen nacheinander das Sitzplatz-Rätsel. Ziehe die 6 Gäste auf die Stühle am runden Tisch, um möglichst viele ihrer Wünsche (Regeln) zu erfüllen. Einige Regeln geben Punkte, andere kosten bei Missachtung. Nach 3 Runden gewinnt der Spieler mit der höchsten sozialen Kompetenz!",
+      "howToPlay_en": "2-4 players take turns solving the seating puzzle. Drag the 6 guests to the chairs at the round table to satisfy as many of their whims (rules) as possible. Some rules grant points, others penalize if ignored. After 3 rounds, the player with the highest social harmony score wins!",
+      "howToPlay_fr": "2-4 joueurs résolvent tour à tour le casse-tête des places assises. Faites glisser les 6 invités sur les chaises de la table ronde pour satisfaire le plus possible leurs caprices (règles).",
+      "howToPlay_it": "2-4 giocatori risolvono a turno il puzzle dei posti a sedere. Trascina i 6 ospiti sulle sedie del tavolo rotondo per soddisfare il maggior numero possibile dei loro capricci (regole).",
+      "howToPlay_es": "2-4 jugadores se turnan para resolver el puzzle de los asientos. Arrastra a los 6 invitados a las sillas de la mesa redonda para satisfacer el mayor número posible de sus caprichos (reglas).",
+      "whyFun": "Es ist wie ein Logik-Rätsel, das man gegen Freunde spielt. Man muss um die Ecke denken – wenn die Katze nicht neben dem DJ sitzen darf, aber der Koch gegenüber vom Roboter sein muss... gar nicht so einfach!",
+      "whyFun_de": "Es ist wie ein Logik-Rätsel, das man gegen Freunde spielt. Man muss um die Ecke denken – wenn die Katze nicht neben dem DJ sitzen darf, aber der Koch gegenüber vom Roboter sein muss... gar nicht so einfach! Die Schadenfreude, wenn der andere Minuspunkte kassiert, ist inklusive.",
+      "whyFun_en": "It's like a logic puzzle played against friends. You have to think outside the box – if the cat can't sit next to the DJ, but the chef must be opposite the robot... it's quite a challenge! The smug satisfaction when others hit those penalty rules is half the fun.",
+      "whyFun_fr": "C'est comme un puzzle de logique auquel on joue contre des amis. Il faut sortir des sentiers battus !",
+      "whyFun_it": "È come un puzzle di logica giocato contro gli amici. Devi pensare fuori dagli schemi!",
+      "whyFun_es": "Es como un rompecabezas de lógica jugado contra amigos. ¡Tienes que pensar fuera de lo común!",
+      "screenshot": "screenshot.png"
     }
   ]
 }
