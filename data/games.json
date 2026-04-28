@@ -2517,6 +2517,47 @@
       "whyFun_it": "È come un puzzle di logica giocato contro gli amici. Devi pensare fuori dagli schemi!",
       "whyFun_es": "Es como un rompecabezas de lógica jugado contra amigos. ¡Tienes que pensar fuera de lo común!",
       "screenshot": "screenshot.png"
+    },
+    {
+      "id": "day-074-echo-shift",
+      "day": 74,
+      "slug": "echo-shift",
+      "path": "/games/day-074-echo-shift/",
+      "date": "2026-04-29",
+      "createdAt": "2026-04-29T00:10:11.322791Z",
+      "mode": "single-player",
+      "tags": [
+        "single-player",
+        "puzzle",
+        "time",
+        "logic"
+      ],
+      "ratings": [],
+      "name": "Echo Shift",
+      "name_de": "Echo Shift",
+      "name_en": "Echo Shift",
+      "name_fr": "Echo Shift",
+      "name_it": "Echo Shift",
+      "name_es": "Echo Shift",
+      "description": "Ein Zeitreise-Puzzle! Nimm deine Pfade auf und kooperiere mit deinen eigenen Echos, um Schalter zu aktivieren und den Ausgang zu erreichen.",
+      "description_de": "Ein Zeitreise-Puzzle! Nimm deine Pfade auf und kooperiere mit deinen eigenen Echos, um Schalter zu aktivieren und den Ausgang zu erreichen.",
+      "description_en": "A time-travel puzzle! Record your paths and cooperate with your own echoes to activate switches and reach the exit.",
+      "description_fr": "Un puzzle de voyage dans le temps ! Enregistrez vos parcours et coopérez avec vos propres échos pour activer des interrupteurs et atteindre la sortie.",
+      "description_it": "Un puzzle di viaggio nel tempo! Registra i tuoi percorsi e coopera con i tuoi eco per attivare gli interruttori e raggiungere l'uscita.",
+      "description_es": "¡Un rompecabezas de viaje en el tiempo! Graba tus rutas y coopera con tus propios ecos para activar interruptores y llegar a la salida.",
+      "howToPlay": "Bewege dich mit den Pfeiltasten oder On-Screen-Buttons. Erreiche das Ziel. Wenn eine Tür im Weg ist, musst du alle Schalter gleichzeitig besetzen. Nutze 'Echo speichern', um deinen aktuellen Weg als Klon zu sichern. Das Echo wiederholt deine Schritte in jedem neuen Versuch.",
+      "howToPlay_de": "Bewege dich mit den Pfeiltasten oder On-Screen-Buttons. Erreiche das Ziel. Wenn eine Tür im Weg ist, musst du alle Schalter gleichzeitig besetzen. Nutze 'Echo speichern', um deinen aktuellen Weg als Klon zu sichern. Das Echo wiederholt deine Schritte in jedem neuen Versuch.",
+      "howToPlay_en": "Move with arrow keys or buttons. Reach the goal. If a door is blocked, you must occupy all plates simultaneously. Use 'Save Echo' to store your current path as a clone. The echo repeats your steps in every new run.",
+      "howToPlay_fr": "Déplacez-vous avec les flèches ou les boutons. Atteignez l'objectif. Si une porte est bloquée, vous devez occuper toutes les plaques simultanément. Utilisez 'Enregistrer l'Écho' pour stocker votre parcours comme un clone.",
+      "howToPlay_it": "Spostati con le frecce o i pulsanti. Raggiungi l'obiettivo. Se una porta è bloccata, devi occupare tutte le piastre contemporaneamente. Usa 'Salva Eco' per memorizzare il tuo percorso attuale come clone.",
+      "howToPlay_es": "Muévete con las flechas o los botones. Llega a la meta. Si una puerta está bloqueada, debes ocupar todas las placas simultáneamente. Usa 'Guardar Eco' para almacenar tu ruta actual como un clon.",
+      "whyFun": "Es fühlt sich an wie die perfekte Choreografie, wenn deine Echos genau im richtigen Moment auf die Schalter treten, während du durch die Tür flitzt. Ein echter Gehirntwister!",
+      "whyFun_de": "Es fühlt sich an wie die perfekte Choreografie, wenn deine Echos genau im richtigen Moment auf die Schalter treten, während du durch die Tür flitzt. Ein echter Gehirntwister!",
+      "whyFun_en": "It feels like a perfect choreography when your echoes step on the plates at just the right moment while you dash through the door. A real brain twister!",
+      "whyFun_fr": "On a l'impression d'une chorégraphie parfaite quand vos échos marchent sur les plaques au bon moment. Un vrai casse-tête !",
+      "whyFun_it": "Sembra una coreografia perfetta quando i tuoi eco calpestano le piastre al momento giusto. Un vero rompicapo!",
+      "whyFun_es": "Se siente como una coreografía perfecta cuando tus ecos pisan las placas en el momento justo. ¡Un auténtico rompecabezas!",
+      "screenshot": "screenshot.png"
     }
   ]
 }
